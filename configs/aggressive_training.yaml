@@ -1,0 +1,82 @@
+# Aggressive Training Configuration  
+# High-performance settings with strong anti-collapse measures
+
+# Dataset Configuration
+data:
+  train_file: "data/train.jsonl"
+  val_file: "data/val.jsonl" 
+  test_file: "data/test.jsonl"
+  
+# Model Architecture (larger model)
+model:
+  hidden_dim: 256  # Larger hidden size
+  num_classes: 2
+  dropout: 0.5     # Higher dropout
+  
+# Training Parameters
+training:
+  batch_size: 32   # Larger batches
+  learning_rate: 0.0005  # Lower LR for stability
+  weight_decay: 0.02     # Higher regularization
+  max_epochs: 100        # Long training
+  patience: 15           # More patience
+  gradient_clip_norm: 0.5  # Stricter clipping
+  
+# Anti-Collapse Configuration (aggressive)
+anti_collapse:
+  label_smoothing: 0.3    # Heavy smoothing
+  weighted_sampling: true
+  entropy_lambda: 0.003   # Enable entropy regularization
+  
+# Emergency Monitoring (strict)
+emergency_monitoring:
+  enabled: true
+  max_confidence_threshold: 0.90  # Lower threshold
+  min_chorus_rate: 0.10
+  max_chorus_rate: 0.70
+  max_conf_over_95_ratio: 0.5     # Stricter overconfidence limit
+  
+# Features
+features:
+  head_ssm:
+    enabled: true
+    output_dim: 12
+    head_words: 2
+  tail_ssm:
+    enabled: true
+    output_dim: 12
+    tail_words: 2
+  phonetic_ssm:
+    enabled: true
+    output_dim: 12
+    mode: "rhyme"
+    similarity_method: "edit_distance"
+    normalize: true
+    normalize_method: "zscore"
+    high_sim_threshold: 0.8
+  pos_ssm:
+    enabled: false
+    output_dim: 12
+    tagset: "universal"
+    similarity_method: "lcs"
+    high_sim_threshold: 0.7
+    
+# Output
+output:
+  base_dir: "training_sessions"
+  save_best_model: true
+  save_final_model: true
+  save_training_metrics: true
+  
+# System
+system:
+  seed: 42
+  device: "auto"
+  num_workers: 6  # More workers for larger batches
+  
+# Experiment
+experiment:
+  name: "aggressive_anti_collapse"
+  description: "High-performance training with aggressive anti-collapse measures"
+  tags: ["aggressive", "anti_collapse", "high_performance"]
+  notes: "Uses large model, heavy regularization, and strict monitoring"

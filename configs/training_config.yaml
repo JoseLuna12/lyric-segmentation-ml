@@ -1,0 +1,90 @@
+# BLSTM Training Configuration
+# Main training configuration file for verse/chorus segmentation
+
+# Dataset Configuration
+data:
+  train_file: "data/train.jsonl"
+  val_file: "data/val.jsonl" 
+  test_file: "data/test.jsonl"
+  
+# Model Architecture
+model:
+  feature_dim: 48  # Auto-computed from feature config (head_ssm: 12 + tail_ssm: 12 + phonetic_ssm: 12 + pos_ssm: 12 when enabled)
+  hidden_dim: 128
+  num_classes: 2
+  dropout: 0.4
+  
+# Training Parameters
+training:
+  batch_size: 16
+  learning_rate: 0.001
+  weight_decay: 0.01
+  max_epochs: 60
+  patience: 8  # Early stopping patience
+  gradient_clip_norm: 1.0
+  
+# Anti-Collapse Configuration
+anti_collapse:
+  label_smoothing: 0.2
+  weighted_sampling: true
+  entropy_lambda: 0.0  # Entropy regularization (0.0 = disabled)
+  
+# Emergency Monitoring
+emergency_monitoring:
+  enabled: true  # Set to false for debugging
+  max_confidence_threshold: 0.95
+  min_chorus_rate: 0.05
+  max_chorus_rate: 0.85
+  max_conf_over_95_ratio: 0.8
+  
+# Feature Configuration
+features:
+  head_ssm:
+    enabled: true
+    output_dim: 12
+    head_words: 2
+  tail_ssm:
+    enabled: true
+    output_dim: 12
+    tail_words: 2
+  phonetic_ssm:
+    enabled: true
+    output_dim: 12
+    mode: "rhyme"  # "rhyme", "alliteration", or "combined"
+    similarity_method: "edit_distance"  # "binary", "edit_distance", or "sequence_match"
+    normalize: true                     # Enable per-song normalization
+    normalize_method: "zscore"          # "zscore" or "minmax"
+    high_sim_threshold: 0.8             # Threshold for high similarity ratio feature
+  # POS-SSM (grammatical structure) - currently disabled
+  pos_ssm:
+    enabled: true
+    output_dim: 12
+    tagset: "universal"  # Options: "simplified", "universal", "penn"
+    similarity_method: "lcs"  # Options: "combined", "lcs", "position", "jaccard"  
+    high_sim_threshold: 0.7  # Threshold for high similarity detection
+  
+  # Future features can be added here:
+  # text_embeddings:
+  #   enabled: false
+  #   model_name: "sentence-transformers/all-MiniLM-L6-v2"
+  #   dimension: 384
+  
+# Output Configuration
+output:
+  base_dir: "training_sessions"
+  save_best_model: true
+  save_final_model: true
+  save_training_metrics: true
+  
+# System Configuration
+system:
+  seed: 42
+  device: "auto"  # "auto", "cpu", "mps", "cuda"
+  num_workers: 4
+  
+# Experiment Metadata (optional)
+experiment:
+  name: "blstm_baseline_v1"
+  description: "BiLSTM baseline with Head-SSM features and anti-collapse measures"
+  tags: ["baseline", "head_ssm", "anti_collapse"]
+  notes: "Initial baseline experiment with improved loss function"
