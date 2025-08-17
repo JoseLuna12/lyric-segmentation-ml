@@ -1,0 +1,38 @@
+[
+  {
+    "epoch": 1,
+    "train_loss": 0.4915117061138153,
+    "train_chorus_rate": 0.19946011898806318,
+    "train_max_prob": 0.5979228901863098,
+    "train_conf_over_90": 0.0,
+    "train_conf_over_95": 0.0,
+    "val_loss": 0.5128549734751383,
+    "val_macro_f1": 0.4742160933392689,
+    "val_verse_f1": 0.8184958809460537,
+    "val_chorus_f1": 0.12993630573248408,
+    "val_chorus_rate": 0.05647213446597258,
+    "val_max_prob": 0.6490146517753601,
+    "val_conf_over_90": 0.0,
+    "val_conf_over_95": 0.0,
+    "learning_rate": 0.0009998288338252908,
+    "epoch_time": 54.7641761302948
+  },
+  {
+    "epoch": 2,
+    "train_loss": 0.47502479314804075,
+    "train_chorus_rate": 0.15802517715841533,
+    "train_max_prob": 0.6442824792861939,
+    "train_conf_over_90": 0.0,
+    "train_conf_over_95": 0.0,
+    "val_loss": 0.4792303542296092,
+    "val_macro_f1": 0.6816886734281644,
+    "val_verse_f1": 0.7950713359273671,
+    "val_chorus_f1": 0.5683060109289617,
+    "val_chorus_rate": 0.35310329000155133,
+    "val_max_prob": 0.6226351459821066,
+    "val_conf_over_90": 0.0,
+    "val_conf_over_95": 0.0,
+    "learning_rate": 0.0009993154526099096,
+    "epoch_time": 48.06096792221069
+  }
+]

@@ -1,0 +1,22 @@
+# Default Prediction Configuration - Session-Based
+# ================================================
+# Uses training session as single source of truth for features
+# No feature specifications needed - they're loaded from training session!
+
+# Training session directory (contains model + exact config + results)
+training_session: "training_sessions/session_20250817_164259_blstm_optimized_v2"
+
+prediction:
+  # Core prediction parameters
+  temperature: 1.5                    # Temperature scaling for confidence calibration
+  input_file: "prediction_results/predict_lyric.txt"  # Single default location
+  output_dir: "prediction_results"    # Base directory for organized results
+  quiet: false                        # Set to true for silent operation (AI-less machines)
+
+# Device configuration
+device: "auto"  # auto, cpu, cuda, mps
+
+# Metadata
+config_version: "2.0"
+description: "Session-based prediction configuration - zero configuration drift!"
+note: "Features automatically loaded from training_session/training_config_snapshot.yaml"

@@ -7,7 +7,13 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim.lr_scheduler import (
+    ReduceLROnPlateau, 
+    CosineAnnealingLR, 
+    CosineAnnealingWarmRestarts,
+    StepLR,
+    LinearLR
+)
 
 import numpy as np
 from pathlib import Path
@@ -49,14 +55,24 @@ class EmergencyMonitor:
     def __init__(
         self,
         max_confidence: float = 0.95,
-        min_chorus_rate: float = 0.05,  # More tolerant for weighted sampling
-        max_chorus_rate: float = 0.85,  # More tolerant for weighted sampling
-        max_conf_over_95: float = 0.1
+        min_chorus_rate: float = 0.05,
+        max_chorus_rate: float = 0.85,
+        max_conf_over_95: float = 0.1,
+        val_overconf_threshold: float = 0.96,
+        val_f1_collapse_threshold: float = 0.1,
+        emergency_overconf_threshold: float = 0.98,
+        emergency_conf95_ratio: float = 0.8,
+        emergency_f1_threshold: float = 0.05
     ):
         self.max_confidence = max_confidence
         self.min_chorus_rate = min_chorus_rate
         self.max_chorus_rate = max_chorus_rate
         self.max_conf_over_95 = max_conf_over_95
+        self.val_overconf_threshold = val_overconf_threshold
+        self.val_f1_collapse_threshold = val_f1_collapse_threshold
+        self.emergency_overconf_threshold = emergency_overconf_threshold
+        self.emergency_conf95_ratio = emergency_conf95_ratio
+        self.emergency_f1_threshold = emergency_f1_threshold
         
         print(f"🛡️  Emergency Monitor Activated:")
         print(f"   Max confidence threshold: {max_confidence}")
@@ -111,27 +127,107 @@ class EmergencyMonitor:
         warnings = []
         
         # Check validation overconfidence
-        if metrics.val_max_prob > 0.96:
+        if metrics.val_max_prob > self.val_overconf_threshold:
             warnings.append(f"VAL_OVERCONF: {metrics.val_max_prob:.3f}")
         
         # Check F1 score collapse
-        if metrics.val_macro_f1 < 0.1:
+        if metrics.val_macro_f1 < self.val_f1_collapse_threshold:
             warnings.append(f"F1_COLLAPSE: {metrics.val_macro_f1:.3f}")
         
         should_stop = (
-            metrics.val_max_prob > 0.98 or
-            metrics.val_conf_over_95 > 0.8 or
-            metrics.val_macro_f1 < 0.05
+            metrics.val_max_prob > self.emergency_overconf_threshold or
+            metrics.val_conf_over_95 > self.emergency_conf95_ratio or
+            metrics.val_macro_f1 < self.emergency_f1_threshold
         )
         
         warning_msg = " | ".join(warnings) if warnings else ""
         return should_stop, warning_msg
 
 
+def create_scheduler(optimizer, config, total_steps: int = None):
+    """
+    Factory function to create learning rate scheduler based on configuration.
+    
+    Args:
+        optimizer: PyTorch optimizer
+        config: Training configuration object
+        total_steps: Total number of training steps (for cosine annealing)
+        
+    Returns:
+        scheduler: Configured learning rate scheduler
+        scheduler_type: Type of scheduler ('step' or 'epoch' based)
+    """
+    scheduler_name = getattr(config, 'scheduler', 'plateau')
+    
+    if scheduler_name == 'plateau':
+        scheduler = ReduceLROnPlateau(
+            optimizer,
+            mode='max',
+            factor=getattr(config, 'lr_factor', 0.5),
+            patience=getattr(config, 'lr_patience', config.patience // 2),
+            min_lr=float(getattr(config, 'min_lr', 1e-6))  # Ensure float conversion
+        )
+        return scheduler, 'epoch'
+    
+    elif scheduler_name == 'cosine':
+        T_max = getattr(config, 'cosine_t_max', config.max_epochs)
+        eta_min = float(getattr(config, 'min_lr', 1e-6))  # Ensure float conversion
+        scheduler = CosineAnnealingLR(
+            optimizer,
+            T_max=T_max,
+            eta_min=eta_min
+        )
+        return scheduler, 'epoch'
+    
+    elif scheduler_name == 'cosine_restarts':
+        T_0 = getattr(config, 'cosine_t0', 10)
+        T_mult = getattr(config, 'cosine_t_mult', 2)
+        eta_min = float(getattr(config, 'min_lr', 1e-6))  # Ensure float conversion
+        scheduler = CosineAnnealingWarmRestarts(
+            optimizer,
+            T_0=T_0,
+            T_mult=T_mult,
+            eta_min=eta_min
+        )
+        return scheduler, 'epoch'
+    
+    elif scheduler_name == 'step':
+        step_size = getattr(config, 'step_size', config.max_epochs // 4)
+        gamma = getattr(config, 'step_gamma', 0.5)
+        scheduler = StepLR(
+            optimizer,
+            step_size=step_size,
+            gamma=gamma
+        )
+        return scheduler, 'epoch'
+    
+    elif scheduler_name == 'warmup_cosine':
+        # Implement warmup + cosine annealing
+        warmup_epochs = getattr(config, 'warmup_epochs', 5)
+        if total_steps is None:
+            raise ValueError("total_steps required for warmup_cosine scheduler")
+        
+        # Create warmup scheduler (linearly increase LR for first few epochs)
+        def lr_lambda(step):
+            if step < warmup_epochs:
+                return step / warmup_epochs
+            else:
+                # Cosine decay after warmup
+                progress = (step - warmup_epochs) / (config.max_epochs - warmup_epochs)
+                return 0.5 * (1 + np.cos(np.pi * progress))
+        
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+        return scheduler, 'epoch'
+    
+    else:
+        raise ValueError(f"Unknown scheduler: {scheduler_name}")
+
+
 def calibrate_temperature(
     model: nn.Module,
     dataloader: DataLoader,
     device: torch.device,
+    config: Any = None,
     temperature_grid: List[float] = None
 ) -> float:
     """
@@ -150,7 +246,10 @@ def calibrate_temperature(
         best_temperature: Optimal temperature value
     """
     if temperature_grid is None:
-        temperature_grid = [0.8, 1.0, 1.2, 1.5, 1.7, 2.0]
+        if config is not None and hasattr(config, 'temperature_grid'):
+            temperature_grid = getattr(config, 'temperature_grid', [0.8, 1.0, 1.2, 1.5, 1.7, 2.0])
+        else:
+            temperature_grid = [0.8, 1.0, 1.2, 1.5, 1.7, 2.0]
     
     model.eval()
     best_temp = 1.0
@@ -214,21 +313,27 @@ class Trainer:
         self.config = config
         self.output_dir = output_dir
         
-        # Set up scheduler
-        self.scheduler = ReduceLROnPlateau(
-            optimizer,
-            mode='max',
-            factor=0.5,
-            patience=config.patience // 2,
-            min_lr=1e-6
+        # Set up scheduler using factory function
+        self.scheduler, self.scheduler_type = create_scheduler(
+            optimizer, 
+            config,
+            total_steps=config.max_epochs  # For cosine scheduling
         )
         
-        # Set up emergency monitoring (more tolerant for weighted sampling)
+        print(f"🎯 Scheduler: {getattr(config, 'scheduler', 'plateau')} ({self.scheduler_type}-based)")
+        
+        # Set up emergency monitoring using flattened configuration parameters
         if not disable_emergency_monitoring:
             self.emergency_monitor = EmergencyMonitor(
-                max_confidence=0.95,
-                min_chorus_rate=0.05,  # More tolerant for weighted sampling
-                max_chorus_rate=0.85   # More tolerant for weighted sampling
+                max_confidence=getattr(config, 'max_confidence_threshold', 0.95),
+                min_chorus_rate=getattr(config, 'min_chorus_rate', 0.05),
+                max_chorus_rate=getattr(config, 'max_chorus_rate', 0.85),
+                max_conf_over_95=getattr(config, 'max_conf_over_95_ratio', 0.1),
+                val_overconf_threshold=getattr(config, 'val_overconf_threshold', 0.96),
+                val_f1_collapse_threshold=getattr(config, 'val_f1_collapse_threshold', 0.1),
+                emergency_overconf_threshold=getattr(config, 'emergency_overconf_threshold', 0.98),
+                emergency_conf95_ratio=getattr(config, 'emergency_conf95_ratio', 0.8),
+                emergency_f1_threshold=getattr(config, 'emergency_f1_threshold', 0.05)
             )
         else:
             self.emergency_monitor = None
@@ -285,13 +390,16 @@ class Trainer:
             guardrails = batch_guardrails(logits, mask)
             all_guardrails.append(guardrails)
             
-            # Emergency monitoring (skip first 50 batches to allow model to stabilize)
+            # Emergency monitoring (skip first N batches to allow model to stabilize)
             should_stop, warning = False, ""
-            if self.emergency_monitor is not None and batch_idx >= 50:
+            skip_batches = getattr(self.config, 'skip_batches', 50)
+            print_batch_every = getattr(self.config, 'print_batch_every', 10)
+            
+            if self.emergency_monitor is not None and batch_idx >= skip_batches:
                 should_stop, warning = self.emergency_monitor.check_batch(guardrails, batch_idx)
             
             # Print batch info
-            if batch_idx % 10 == 0 or batch_idx == num_batches - 1:
+            if batch_idx % print_batch_every == 0 or batch_idx == num_batches - 1:
                 print(f"  Batch {batch_idx+1:3d}/{num_batches}: "
                       f"loss={loss.item():.4f}, "
                       f"chorus%={guardrails['chorus_rate']:.2f}, "
@@ -402,8 +510,11 @@ class Trainer:
                     # Validation  
                     val_metrics = self.evaluate(val_loader)
                     
-                    # Learning rate scheduling
-                    self.scheduler.step(val_metrics['macro_f1'])
+                    # Learning rate scheduling (different schedulers need different arguments)
+                    if isinstance(self.scheduler, ReduceLROnPlateau):
+                        self.scheduler.step(val_metrics['macro_f1'])
+                    else:
+                        self.scheduler.step()
                     current_lr = self.optimizer.param_groups[0]['lr']
                     
                     # Track metrics
@@ -440,9 +551,10 @@ class Trainer:
                           f"conf={metrics.val_max_prob:.3f}")
                     print(f"  Time: {epoch_time:.1f}s, LR: {current_lr:.2e}")
                     
-                    # Emergency monitoring (skip first 3 epochs to allow model to stabilize)
+                    # Emergency monitoring (skip first N epochs to allow model to stabilize)
                     should_stop, warning = False, ""
-                    if self.emergency_monitor is not None and epoch >= 3:
+                    skip_epochs = getattr(self.config, 'skip_epochs', 3)
+                    if self.emergency_monitor is not None and epoch >= skip_epochs:
                         should_stop, warning = self.emergency_monitor.check_epoch(metrics)
                     if warning:
                         print(f"  ⚠️  {warning}")
@@ -497,7 +609,7 @@ class Trainer:
         
         # Calibrate temperature
         print(f"\n🌡️  Calibrating temperature...")
-        best_temperature = calibrate_temperature(self.model, val_loader, self.device)
+        best_temperature = calibrate_temperature(self.model, val_loader, self.device, config=self.config)
         
         # Save final model and metrics
         torch.save(self.model.state_dict(), self.output_dir / "final_model.pt")

@@ -1,0 +1,110 @@
+# BLSTM Training Configuration - Optimized Version
+# Updated configuration with all performance improvements and best practices
+
+# Dataset Configuration
+data:
+  train_file: "data/train.jsonl"
+  val_file: "data/val.jsonl" 
+  test_file: "data/test.jsonl"
+  
+# Model Architecture
+model:
+  feature_dim: 60  # Auto-computed from enabled features (5 features × 12D each)
+  hidden_dim: 512  # Increased for better capacity
+  num_classes: 2
+  dropout: 0.3  # Reduced for better learning
+  
+# Training Parameters  
+training:
+  batch_size: 32  # Increased for stable gradients
+  learning_rate: 0.001  # Good starting point
+  weight_decay: 0.01
+  max_epochs: 100  # More epochs for better convergence
+  patience: 15  # Increased patience for better training
+  gradient_clip_norm: 1.0
+  
+  # Learning Rate Scheduling
+  scheduler: "plateau"  # Options: plateau, cosine, cosine_restarts, step, warmup_cosine
+  lr_factor: 0.5  # Reduce LR by this factor
+  lr_patience: 8  # Patience for LR reduction
+  min_lr: 0.00001  # Minimum learning rate
+  
+# Anti-Collapse Configuration
+anti_collapse:
+  label_smoothing: 0.15  # Slightly reduced for better learning
+  weighted_sampling: true
+  entropy_lambda: 0.05  # Small entropy regularization
+  
+# Emergency Monitoring (Updated thresholds)
+emergency_monitoring:
+  enabled: true
+  max_confidence_threshold: 0.90  # More reasonable threshold
+  min_chorus_rate: 0.08  # Slightly higher minimum
+  max_chorus_rate: 0.75  # More conservative maximum
+  max_conf_over_95_ratio: 0.60  # More strict confidence monitoring
+  max_conf_over_90_ratio: 0.80  # Additional monitoring level
+
+# Temperature Calibration
+temperature_calibration:
+  enabled: true
+  temperature_grid: [0.5, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0]  # Grid search values
+  validation_split: 0.2  # Use 20% of validation for calibration
+  
+# Feature Configuration (All 5 features enabled - 60D total)
+features:
+  head_ssm:
+    enabled: true
+    dimension: 12
+    head_words: 2
+    
+  tail_ssm:
+    enabled: true
+    dimension: 12
+    tail_words: 2
+    
+  phonetic_ssm:
+    enabled: true
+    dimension: 12
+    mode: "rhyme"  # Focus on rhyme detection
+    similarity_method: "binary"  # Faster binary similarity
+    normalize: true
+    normalize_method: "zscore"
+    high_sim_threshold: 0.4  # More sensitive threshold
+    
+  pos_ssm:
+    enabled: true
+    dimension: 12
+    tagset: "simplified"  # Faster simplified tagset
+    similarity_method: "combined"  # Best overall performance
+    high_sim_threshold: 0.3  # More sensitive threshold
+    
+  string_ssm:
+    enabled: true
+    dimension: 12
+    case_sensitive: false
+    remove_punctuation: true
+    similarity_threshold: 0.1  # Low threshold for more sensitivity
+    similarity_method: "word_overlap"  # Fast word overlap method
+  
+# Output Configuration
+output:
+  base_dir: "training_sessions"
+  save_best_model: true
+  save_final_model: true
+  save_training_metrics: true
+  
+# System Configuration
+system:
+  seed: 42
+  device: "auto"  # "auto", "cpu", "mps", "cuda"
+  num_workers: 4
+  
+# Experiment Metadata
+experiment:
+  name: "blstm_optimized_v2"
+  description: "Optimized BiLSTM with 5-feature ensemble, LR scheduling, and temperature calibration"
+  tags: ["optimized", "5-features", "lr-scheduling", "temperature-calibration"]
+  notes: "Updated configuration with all performance improvements: larger batch size, better features, LR scheduling"
+  
+# Training Time Estimate: ~45-60 minutes (100 epochs, batch_size=32)
+# Expected Performance: F1 > 0.65, Chorus F1 > 0.50

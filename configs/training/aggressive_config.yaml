@@ -1,8 +1,8 @@
 # ============================================================================
-# AGGRESSIVE CONFIGURATION - Maximum performance push
+# AGGRESSIVE CONFIGURATION - Maximum performance push  
 # For when you want to push performance limits with compute budget
 # Expected: Chorus F1 0.82-0.87, Macro F1 0.87-0.91  
-# Training time: 45-60 minutes
+# Training time: 35-50 minutes (improved with larger batch size)
 # ============================================================================
 
 # Data paths
@@ -19,12 +19,25 @@ model:
 
 # Training parameters - LONG & CAREFUL TRAINING
 training:
-  batch_size: 8          # 🚀 SMALLER batches for better gradients with large model
-  learning_rate: 0.0005  # 🚀 LOWER LR for stability with large model
+  batch_size: 32         # ✅ INCREASED from 8 for stable gradients with BiLSTM
+  learning_rate: 0.001   # ✅ SCALED UP (sqrt scaling) for larger batch size
   weight_decay: 0.005    # 🚀 REDUCED - less weight penalty
   max_epochs: 120        # 🚀 LONG training for convergence
   patience: 20           # 🚀 VERY PATIENT - let it find the best solution
   gradient_clip_norm: 0.5  # 🚀 TIGHTER clipping for stability
+  
+  # ✅ ADVANCED LEARNING RATE SCHEDULING
+  scheduler: "cosine"         # Options: plateau, cosine, cosine_restarts, step, warmup_cosine
+  min_lr: 1e-6               # Minimum learning rate for schedulers
+  cosine_t_max: 120          # T_max for cosine annealing (should match max_epochs)
+  warmup_epochs: 5           # For warmup_cosine scheduler
+  # Scheduler-specific parameters
+  lr_factor: 0.5             # Factor for plateau scheduler
+  lr_patience: 10            # Patience for plateau scheduler (default: patience // 2)
+  step_size: 30              # Step size for step scheduler (default: max_epochs // 4)
+  step_gamma: 0.5            # Gamma for step scheduler
+  cosine_t0: 10              # T_0 for cosine restarts
+  cosine_t_mult: 2           # T_mult for cosine restarts
 
 # Anti-collapse settings - adjusted for aggressive training
 anti_collapse:
@@ -32,13 +45,29 @@ anti_collapse:
   weighted_sampling: true
   entropy_lambda: 0.0
 
-# Emergency monitoring - allow higher confidence for strong model
+# ✅ EMERGENCY MONITORING - Configurable thresholds to prevent overconfidence collapse
 emergency_monitoring:
   enabled: true
-  max_confidence_threshold: 0.97  # 🚀 ALLOW high confidence
-  min_chorus_rate: 0.05
-  max_chorus_rate: 0.85
-  max_conf_over_95_ratio: 0.9  # 🚀 ALLOW more high-confidence predictions
+  # Batch-level monitoring thresholds
+  max_confidence_threshold: 0.95      # Max average confidence per batch
+  min_chorus_rate: 0.05              # Min chorus prediction rate
+  max_chorus_rate: 0.85              # Max chorus prediction rate  
+  max_conf_over_95_ratio: 0.1        # Max ratio of predictions with confidence > 0.95
+  # Epoch-level monitoring thresholds
+  val_overconf_threshold: 0.96       # Validation overconfidence threshold
+  val_f1_collapse_threshold: 0.1     # F1 collapse detection threshold
+  emergency_overconf_threshold: 0.98 # Emergency overconfidence threshold
+  emergency_conf95_ratio: 0.8        # Emergency high-confidence ratio
+  emergency_f1_threshold: 0.05       # Emergency F1 collapse threshold
+  # Timing parameters
+  skip_batches: 50                   # Skip emergency monitoring for first N batches
+  skip_epochs: 3                     # Skip emergency monitoring for first N epochs
+  print_batch_every: 10              # Print batch info every N batches
+
+# ✅ TEMPERATURE CALIBRATION - Configurable temperature grid for confidence calibration
+temperature_calibration:
+  temperature_grid: [0.8, 1.0, 1.2, 1.5, 1.7, 2.0]  # Grid of temperatures to test
+  default_temperature: 1.0          # Default temperature if calibration fails
 
 # Features configuration - VERY LOW THRESHOLDS (catch all patterns)
 features:
@@ -87,7 +116,7 @@ system:
 
 # Experiment metadata
 experiment:
-  name: "Aggressive_Maximum_Performance_v1"
+  name: "Aggressive_Maximum_Performance_v2_32_batch"
   description: "Maximum performance config with very low thresholds and large model"
   tags: ["aggressive", "max_capacity", "very_low_thresholds", "long_training"]
   notes: "Push performance limits: 512D model, very low SSM thresholds, long patient training"

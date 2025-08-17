@@ -32,17 +32,44 @@ class TrainingConfig:
     patience: int = 8
     gradient_clip_norm: float = 1.0
     
+    # Advanced Learning Rate Scheduling
+    scheduler: str = "plateau"
+    min_lr: float = 1e-6
+    cosine_t_max: int = 60
+    warmup_epochs: int = 5
+    lr_factor: float = 0.5
+    lr_patience: int = 10
+    step_size: int = 30
+    step_gamma: float = 0.5
+    cosine_t0: int = 10
+    cosine_t_mult: int = 2
+    
     # Anti-collapse settings
     label_smoothing: float = 0.2
     weighted_sampling: bool = True
     entropy_lambda: float = 0.0
     
-    # Emergency monitoring
+    # Enhanced Emergency Monitoring (all configurable)
     emergency_monitoring_enabled: bool = True
+    # Batch-level monitoring thresholds
     max_confidence_threshold: float = 0.95
     min_chorus_rate: float = 0.05
     max_chorus_rate: float = 0.85
-    max_conf_over_95_ratio: float = 0.8
+    max_conf_over_95_ratio: float = 0.1
+    # Epoch-level monitoring thresholds
+    val_overconf_threshold: float = 0.96
+    val_f1_collapse_threshold: float = 0.1
+    emergency_overconf_threshold: float = 0.98
+    emergency_conf95_ratio: float = 0.8
+    emergency_f1_threshold: float = 0.05
+    # Timing parameters
+    skip_batches: int = 50
+    skip_epochs: int = 3
+    print_batch_every: int = 10
+    
+    # Temperature Calibration
+    temperature_grid: list = None
+    default_temperature: float = 1.0
     
     # Features
     head_ssm_enabled: bool = True
@@ -90,6 +117,8 @@ class TrainingConfig:
     def __post_init__(self):
         if self.experiment_tags is None:
             self.experiment_tags = []
+        if self.temperature_grid is None:
+            self.temperature_grid = [0.8, 1.0, 1.2, 1.5, 1.7, 2.0]
 
 
 def load_yaml_config(config_path: str) -> Dict[str, Any]:
@@ -171,6 +200,7 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
     training = config.get('training', {})
     anti_collapse = config.get('anti_collapse', {})
     emergency = config.get('emergency_monitoring', {})
+    temperature_calib = config.get('temperature_calibration', {})
     features = config.get('features', {})
     head_ssm = features.get('head_ssm', {})
     tail_ssm = features.get('tail_ssm', {})
@@ -200,17 +230,44 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         patience=training.get('patience', 8),
         gradient_clip_norm=training.get('gradient_clip_norm', 1.0),
         
+        # ✅ NEW: Advanced Learning Rate Scheduling
+        scheduler=training.get('scheduler', 'plateau'),
+        min_lr=training.get('min_lr', 1e-6),
+        cosine_t_max=training.get('cosine_t_max', training.get('max_epochs', 60)),
+        warmup_epochs=training.get('warmup_epochs', 5),
+        lr_factor=training.get('lr_factor', 0.5),
+        lr_patience=training.get('lr_patience', training.get('patience', 8) // 2),
+        step_size=training.get('step_size', training.get('max_epochs', 60) // 4),
+        step_gamma=training.get('step_gamma', 0.5),
+        cosine_t0=training.get('cosine_t0', 10),
+        cosine_t_mult=training.get('cosine_t_mult', 2),
+        
         # Anti-collapse
         label_smoothing=anti_collapse.get('label_smoothing', 0.2),
         weighted_sampling=anti_collapse.get('weighted_sampling', True),
         entropy_lambda=anti_collapse.get('entropy_lambda', 0.0),
         
-        # Emergency monitoring
+        # ✅ UPDATED: Enhanced Emergency Monitoring
         emergency_monitoring_enabled=emergency.get('enabled', True),
+        # Batch-level monitoring thresholds
         max_confidence_threshold=emergency.get('max_confidence_threshold', 0.95),
         min_chorus_rate=emergency.get('min_chorus_rate', 0.05),
         max_chorus_rate=emergency.get('max_chorus_rate', 0.85),
-        max_conf_over_95_ratio=emergency.get('max_conf_over_95_ratio', 0.8),
+        max_conf_over_95_ratio=emergency.get('max_conf_over_95_ratio', 0.1),
+        # Epoch-level monitoring thresholds
+        val_overconf_threshold=emergency.get('val_overconf_threshold', 0.96),
+        val_f1_collapse_threshold=emergency.get('val_f1_collapse_threshold', 0.1),
+        emergency_overconf_threshold=emergency.get('emergency_overconf_threshold', 0.98),
+        emergency_conf95_ratio=emergency.get('emergency_conf95_ratio', 0.8),
+        emergency_f1_threshold=emergency.get('emergency_f1_threshold', 0.05),
+        # Timing parameters
+        skip_batches=emergency.get('skip_batches', 50),
+        skip_epochs=emergency.get('skip_epochs', 3),
+        print_batch_every=emergency.get('print_batch_every', 10),
+        
+        # ✅ NEW: Temperature Calibration
+        temperature_grid=temperature_calib.get('temperature_grid', [0.8, 1.0, 1.2, 1.5, 1.7, 2.0]),
+        default_temperature=temperature_calib.get('default_temperature', 1.0),
         
         # Features
         head_ssm_enabled=head_ssm.get('enabled', True),
@@ -292,7 +349,9 @@ def load_training_config(config_path: str) -> TrainingConfig:
     print(f"   Experiment: {training_config.experiment_name}")
     print(f"   Model: hidden_dim={training_config.hidden_dim}, dropout={training_config.dropout}")
     print(f"   Training: batch_size={training_config.batch_size}, lr={training_config.learning_rate}, epochs={training_config.max_epochs}")
+    print(f"   ✅ Scheduler: {training_config.scheduler} (min_lr={training_config.min_lr})")
     print(f"   Anti-collapse: smoothing={training_config.label_smoothing}, entropy_λ={training_config.entropy_lambda}")
+    print(f"   ✅ Emergency monitoring: {len([x for x in [training_config.max_confidence_threshold, training_config.val_overconf_threshold] if x])} thresholds")
     
     # Feature summary
     enabled_features = []

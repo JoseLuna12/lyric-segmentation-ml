@@ -1,0 +1,40 @@
+BLSTM Training Results - blstm_optimized_v2
+==================================================
+
+Configuration: configs/training/training_config.yaml
+Training time: 20.1 minutes
+Feature dimension: 60
+
+Feature Configuration:
+-------------------------
+  Head-SSM: Enabled (12D)
+    Head words: 2
+  Tail-SSM: Enabled (12D)
+    Tail words: 2
+  Phonetic-SSM: Enabled (12D)
+    Mode: rhyme
+    Similarity: binary
+    Normalize: True (zscore)
+    High sim threshold: 0.4
+  POS-SSM: Enabled (12D)
+    Tagset: simplified
+    Similarity: combined
+    High sim threshold: 0.3
+
+Model Architecture:
+------------------
+  Hidden dimension: 512
+  Dropout: 0.3
+  Batch size: 32
+  Learning rate: 0.001
+  Label smoothing: 0.15
+  Weighted sampling: True
+
+Test Results:
+-------------
+  Macro F1: 0.8156
+  Verse F1: 0.8824
+  Chorus F1: 0.7487
+  Confidence: 0.748
+  Chorus rate: 32.65%
+  Temperature: 0.80

@@ -1,0 +1,19 @@
+# Production Prediction Configuration - Session-Based
+# ===================================================
+# Optimized for AI-less machines and automated deployment
+# Uses training session for guaranteed compatibility
+
+# Training session directory (contains model + exact config + results)
+training_session: "training_sessions/session_20250817_024332_Aggressive_Maximum_Performance_v1"
+
+prediction:
+  temperature: 1.3                 # Slightly conservative for production
+  input_file: "production_inputs/predict_lyric.txt"  # Single production location
+  output_dir: "prediction_results"
+  quiet: true                      # Silent operation for production
+
+device: "auto"
+
+config_version: "2.0"  
+description: "Production session-based configuration - zero drift, maximum reliability"
+note: "Features automatically loaded from training_session/training_config_snapshot.yaml"
