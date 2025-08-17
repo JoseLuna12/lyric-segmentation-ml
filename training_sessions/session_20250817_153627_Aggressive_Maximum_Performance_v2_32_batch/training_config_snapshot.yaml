@@ -36,7 +36,7 @@ max_epochs: 2
 min_chorus_rate: 0.05
 min_lr: 1e-6
 num_classes: 2
-num_workers: 2
+num_workers: 0
 output_base_dir: training_sessions
 patience: 20
 phonetic_ssm_dimension: 12
@@ -82,6 +82,7 @@ train_file: data/train.jsonl
 val_f1_collapse_threshold: 0.1
 val_file: data/val.jsonl
 val_overconf_threshold: 0.96
+validation_strategy: line_f1
 warmup_epochs: 5
 weight_decay: 0.005
 weighted_sampling: true

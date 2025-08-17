@@ -71,6 +71,9 @@ class TrainingConfig:
     temperature_grid: list = None
     default_temperature: float = 1.0
     
+    # Validation Strategy (Phase 3) - Simplified
+    validation_strategy: str = "line_f1"  # Simple strategy selection
+    
     # Features
     head_ssm_enabled: bool = True
     head_ssm_dimension: int = 12
@@ -266,8 +269,11 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         print_batch_every=emergency.get('print_batch_every', 10),
         
         # ✅ NEW: Temperature Calibration
-        temperature_grid=temperature_calib.get('temperature_grid', [0.8, 1.0, 1.2, 1.5, 1.7, 2.0]),
+        temperature_grid=temperature_calib.get('temperature_grid', [0.6, 0.8, 1.0, 1.2, 1.5, 1.7, 2.0]),
         default_temperature=temperature_calib.get('default_temperature', 1.0),
+        
+        # 🎯 NEW: Validation Strategy (Phase 3) - Simplified
+        validation_strategy=config.get('validation_strategy', 'line_f1'),
         
         # Features
         head_ssm_enabled=head_ssm.get('enabled', True),

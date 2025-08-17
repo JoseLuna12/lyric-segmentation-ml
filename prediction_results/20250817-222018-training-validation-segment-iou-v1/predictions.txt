@@ -1,0 +1,58 @@
+Lyrics Structure Prediction
+==================================================
+
+VERSE   (0.971) | Oh, woah
+VERSE   (0.986) | Oh, woah
+VERSE   (0.983) | Oh, woah
+VERSE   (0.951) | You know you love me (Yo), I know you care (Uh-huh)
+VERSE   (0.933) | Just shout whenever (Yo), and I'll be there (Uh-huh)
+VERSE   (0.890) | You are my love (Yo), you are my heart (Uh-huh)
+VERSE   (0.839) | And we will never, ever, ever be apart (Yo, uh-huh)
+VERSE   (0.798) | Are we an item? (Yo) Girl, quit playin' (Uh-huh)
+VERSE   (0.738) | "We're just friends" (Yo), what are you sayin'? (Uh-huh)
+VERSE   (0.652) | Said, "There's another" (Yo), and looked right in my eyes (Uh-huh)
+CHORUS  (0.526) | My first love broke my heart for the first time (Yo), and I was like (Uh-huh)
+CHORUS  (0.870) | Baby, baby, baby, oh
+CHORUS  (0.914) | Like baby, baby, baby, no
+CHORUS  (0.952) | Like baby, baby, baby, oh
+CHORUS  (0.887) | I thought you'd always be mine, mine
+CHORUS  (0.945) | Baby, baby, baby, oh
+CHORUS  (0.928) | Like baby, baby, baby, no
+CHORUS  (0.916) | Like baby, baby, baby, oh
+CHORUS  (0.616) | I thought you'd always be mine, mine
+VERSE   (0.612) | Oh, for you, I would've done whatever (Uh-huh)
+VERSE   (0.738) | And I just can't believe we ain't together (Yo, uh-huh)
+VERSE   (0.818) | And I wanna play it cool (Yo), but I'm losin' you (Uh-huh)
+VERSE   (0.855) | I'll buy you anything (Yo), I'll buy you any ring (Uh-huh)
+VERSE   (0.837) | And I'm in pieces (Yo), baby, fix me (Uh-huh)
+VERSE   (0.790) | And just shake me 'til you wake me from this bad dream (Yo, uh-huh)
+VERSE   (0.687) | I'm goin' down (Yo), down, down, down (Uh-huh)
+VERSE   (0.596) | And I just can't believe my first love won't be around, and I'm like
+CHORUS  (0.875) | Baby, baby, baby, oh
+CHORUS  (0.939) | Like baby, baby, baby, no
+CHORUS  (0.972) | Like baby, baby, baby, oh
+CHORUS  (0.938) | I thought you'd always be mine, mine
+CHORUS  (0.966) | Baby, baby, baby, oh
+CHORUS  (0.949) | Like baby, baby, baby, no
+CHORUS  (0.926) | Like baby, baby, baby, oh
+CHORUS  (0.545) | I thought you'd always be mine, mine (Luda)
+VERSE   (0.794) | When I was thirteen, I had my first love
+VERSE   (0.889) | There was nobody that compared to my baby, and nobody came between us nor could ever come above
+VERSE   (0.925) | She had me goin' crazy, oh, I was starstruck
+VERSE   (0.935) | She woke me up daily, don't need no Starbucks (Woo)
+VERSE   (0.922) | She made my heart pound, and skip a beat when I see her in the street and
+VERSE   (0.888) | At school on the playground, but I really wanna see her on the weekend
+VERSE   (0.809) | She knows she got me dazin', 'cause she was so amazin'
+VERSE   (0.630) | And now my heart is breakin', but I just keep on sayin'
+CHORUS  (0.875) | Baby, baby, baby, oh
+CHORUS  (0.947) | Like baby, baby, baby, no
+CHORUS  (0.974) | Like baby, baby, baby, oh
+CHORUS  (0.935) | I thought you'd always be mine, mine
+CHORUS  (0.950) | Baby, baby, baby, oh
+CHORUS  (0.909) | Like baby, baby, baby, no
+CHORUS  (0.869) | Like baby, baby, baby, oh
+CHORUS  (0.504) | I thought you'd always be mine, mine
+VERSE   (0.838) | I'm gone (Yeah-yeah-yeah, yeah-yeah-yeah)
+VERSE   (0.925) | Now I'm all gone (Yeah-yeah-yeah, yeah-yeah-yeah)
+VERSE   (0.937) | Now I'm all gone (Yeah-yeah-yeah, yeah-yeah-yeah)
+VERSE   (0.906) | Now I'm all gone (Gone, gone, gone, gone), I'm gone

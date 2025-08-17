@@ -27,7 +27,9 @@ from ..metrics import (
     compute_boundary_metrics,
     compute_segment_metrics,
     compute_transition_metrics,
-    format_boundary_metrics_report
+    format_boundary_metrics_report,
+    compute_segmentation_metrics,
+    format_segmentation_metrics_report
 )
 
 
@@ -58,6 +60,9 @@ class TrainingMetrics:
     val_avg_segment_overlap: float = 0.0
     val_verse_to_chorus_acc: float = 0.0
     val_chorus_to_verse_acc: float = 0.0
+    # Segmentation metrics (Phase 3)
+    val_window_diff: float = 1.0
+    val_pk_metric: float = 1.0
 
 
 class EmergencyMonitor:
@@ -305,6 +310,56 @@ def calibrate_temperature(
     return best_temp
 
 
+def compute_validation_score(metrics: TrainingMetrics, config: Any) -> float:
+    """
+    Compute validation score based on configured strategy.
+    
+    Args:
+        metrics: Training metrics containing all computed values
+        config: Configuration object with validation strategy setting
+        
+    Returns:
+        Validation score for model selection (higher is better for all strategies)
+    """
+    strategy = getattr(config, 'validation_strategy', 'line_f1')
+    
+    if strategy == 'line_f1':
+        # Line-level macro F1 (original method)
+        return metrics.val_macro_f1
+    
+    elif strategy == 'boundary_f1':
+        # Boundary detection F1 (structural understanding) - RECOMMENDED
+        return metrics.val_boundary_f1
+    
+    elif strategy == 'windowdiff':
+        # WindowDiff (lower is better, so invert for "higher is better")
+        return 1.0 - metrics.val_window_diff
+    
+    elif strategy == 'pk':
+        # Pk metric (lower is better, so invert for "higher is better") 
+        return 1.0 - metrics.val_pk_metric
+    
+    elif strategy == 'segment_iou':
+        # Segment IoU (complete segment quality)
+        return metrics.val_avg_segment_overlap
+    
+    elif strategy == 'composite':
+        # Composite score with sensible hardcoded weights
+        # Emphasize structural understanding while maintaining some line-level performance
+        composite_score = (
+            0.25 * metrics.val_macro_f1 +                    # Line-level performance
+            0.40 * metrics.val_boundary_f1 +                 # Boundary detection (most important)
+            0.25 * metrics.val_avg_segment_overlap +         # Complete segment quality
+            0.10 * (1.0 - metrics.val_window_diff)          # Forgiving boundary evaluation
+        )
+        return composite_score
+    
+    else:
+        # Fallback to line-level F1
+        print(f"⚠️  Unknown validation strategy '{strategy}', falling back to line_f1")
+        return metrics.val_macro_f1
+
+
 class Trainer:
     """
     Main trainer class with anti-collapse guardrails.
@@ -327,6 +382,9 @@ class Trainer:
         self.config = config
         self.output_dir = output_dir
         
+        # Set validation strategy first
+        self.validation_strategy = getattr(config, 'validation_strategy', 'line_f1')
+        
         # Set up scheduler using factory function
         self.scheduler, self.scheduler_type = create_scheduler(
             optimizer, 
@@ -335,6 +393,7 @@ class Trainer:
         )
         
         print(f"🎯 Scheduler: {getattr(config, 'scheduler', 'plateau')} ({self.scheduler_type}-based)")
+        print(f"🎯 Validation Strategy: {self.validation_strategy} (for best model selection)")
         
         # Set up emergency monitoring using flattened configuration parameters
         if not disable_emergency_monitoring:
@@ -354,7 +413,7 @@ class Trainer:
             print("⚠️  Emergency monitoring DISABLED for debugging")
         
         # Training state
-        self.best_val_f1 = -1.0
+        self.best_val_score = -1.0  # Now tracks configurable validation metric
         self.patience_counter = 0
         self.training_metrics = []
         
@@ -535,6 +594,16 @@ class Trainer:
         v2c_accuracy = total_v2c_correct / total_v2c if total_v2c > 0 else 0.0
         c2v_accuracy = total_c2v_correct / total_c2v if total_c2v > 0 else 0.0
         
+        # Compute segmentation metrics (Phase 3 - WindowDiff and Pk)
+        segmentation_metrics_batch = []
+        for pred_batch, targ_batch, mask_batch in zip(all_predictions, all_targets, all_masks):
+            batch_segmentation = compute_segmentation_metrics(pred_batch, targ_batch, mask_batch)
+            segmentation_metrics_batch.append(batch_segmentation)
+        
+        # Aggregate segmentation metrics
+        avg_window_diff = np.mean([sm.window_diff for sm in segmentation_metrics_batch]) if segmentation_metrics_batch else 1.0
+        avg_pk_metric = np.mean([sm.pk_metric for sm in segmentation_metrics_batch]) if segmentation_metrics_batch else 1.0
+        
         # Combine all metrics
         metrics = {
             'loss': avg_loss,
@@ -550,6 +619,9 @@ class Trainer:
             # Transition metrics (aggregated across batches)
             'verse_to_chorus_acc': v2c_accuracy,
             'chorus_to_verse_acc': c2v_accuracy,
+            # Segmentation metrics (Phase 3 - WindowDiff and Pk)
+            'window_diff': avg_window_diff,
+            'pk_metric': avg_pk_metric,
         }
         
         return metrics
@@ -618,17 +690,23 @@ class Trainer:
                         val_complete_segments=val_metrics['complete_segments'],
                         val_avg_segment_overlap=val_metrics['avg_segment_overlap'],
                         val_verse_to_chorus_acc=val_metrics['verse_to_chorus_acc'],
-                        val_chorus_to_verse_acc=val_metrics['chorus_to_verse_acc']
+                        val_chorus_to_verse_acc=val_metrics['chorus_to_verse_acc'],
+                        # Segmentation metrics (Phase 3)
+                        val_window_diff=val_metrics['window_diff'],
+                        val_pk_metric=val_metrics['pk_metric']
                     )
                     
                     self._save_epoch_metrics(metrics)
                     
                     # Print epoch summary with boundary-aware metrics
                     print(f"\n📊 Epoch {epoch} Summary:")
+                    # Calculate validation score for display and early stopping
+                    current_val_score = compute_validation_score(metrics, self.config)
+                    
                     print(f"  Train: loss={metrics.train_loss:.4f}, "
                           f"chorus%={metrics.train_chorus_rate:.2f}, "
                           f"conf={metrics.train_max_prob:.3f}")
-                    print(f"  Val:   F1={metrics.val_macro_f1:.4f}, "
+                    print(f"  Val:   F1={current_val_score:.4f} ({self.validation_strategy}), "
                           f"chorus%={metrics.val_chorus_rate:.2f}, "
                           f"conf={metrics.val_max_prob:.3f}")
                     print(f"  📏 Boundary: F1={metrics.val_boundary_f1:.3f}, "
@@ -638,6 +716,9 @@ class Trainer:
                           f"Overlap={metrics.val_avg_segment_overlap:.3f}")
                     print(f"  🔄 Transitions: V→C={metrics.val_verse_to_chorus_acc:.1%}, "
                           f"C→V={metrics.val_chorus_to_verse_acc:.1%}")
+                    print(f"  📐 Segmentation: WindowDiff={metrics.val_window_diff:.3f}, "
+                          f"Pk={metrics.val_pk_metric:.3f}")
+                    print(f"  📊 Line-level F1: {metrics.val_macro_f1:.4f} (for reference)")
                     print(f"  Time: {epoch_time:.1f}s, LR: {current_lr:.2e}")
                     
                     # Emergency monitoring (skip first N epochs to allow model to stabilize)
@@ -651,15 +732,15 @@ class Trainer:
                         print(f"🛑 EMERGENCY STOP at epoch {epoch}")
                         break
                     
-                    # Early stopping and best model tracking
-                    if metrics.val_macro_f1 > self.best_val_f1:
-                        self.best_val_f1 = metrics.val_macro_f1
+                    # Early stopping and best model tracking with configurable validation metric
+                    if current_val_score > self.best_val_score:
+                        self.best_val_score = current_val_score
                         self.patience_counter = 0
                         best_model_state = {k: v.cpu().clone() for k, v in self.model.state_dict().items()}
                         
                         # Save best model
                         torch.save(best_model_state, self.output_dir / "best_model.pt")
-                        print(f"  ✅ New best F1: {self.best_val_f1:.4f}")
+                        print(f"  ✅ New best {self.validation_strategy}: {self.best_val_score:.4f}")
                     else:
                         self.patience_counter += 1
                         print(f"  📉 Patience: {self.patience_counter}/{self.config.patience}")
@@ -744,7 +825,7 @@ class Trainer:
             print(f"      Chorus→Verse: {final_metrics.val_chorus_to_verse_acc:.1%}")
 
         print(f"\n✅ Training completed!")
-        print(f"   Best validation F1: {self.best_val_f1:.4f}")
+        print(f"   Best validation score ({self.validation_strategy}): {self.best_val_score:.4f}")
         print(f"   Calibrated temperature: {best_temperature:.2f}")
         print(f"   Models saved to: {self.output_dir}")
         

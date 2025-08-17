@@ -69,6 +69,10 @@ temperature_calibration:
   temperature_grid: [0.8, 1.0, 1.2, 1.5, 1.7, 2.0]  # Grid of temperatures to test
   default_temperature: 1.0          # Default temperature if calibration fails
 
+# 🎯 VALIDATION STRATEGY - Simple model selection strategy
+# Options: "line_f1", "boundary_f1", "windowdiff", "pk", "segment_iou", "composite"  
+validation_strategy: "boundary_f1"
+
 # Features configuration - VERY LOW THRESHOLDS (catch all patterns)
 features:
   head_ssm:
@@ -112,7 +116,7 @@ output:
 system:
   seed: 42
   device: "auto"
-  num_workers: 2
+  num_workers: 0  # Disable multiprocessing until pickle issues are resolved
 
 # Experiment metadata
 experiment:

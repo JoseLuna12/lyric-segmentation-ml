@@ -1,0 +1,40 @@
+BLSTM Training Results - training_validation_windowdiff_v1
+==================================================
+
+Configuration: configs/training/training.yaml
+Training time: 22.0 minutes
+Feature dimension: 60
+
+Feature Configuration:
+-------------------------
+  Head-SSM: Enabled (12D)
+    Head words: 2
+  Tail-SSM: Enabled (12D)
+    Tail words: 2
+  Phonetic-SSM: Enabled (12D)
+    Mode: rhyme
+    Similarity: binary
+    Normalize: False
+    High sim threshold: 0.35
+  POS-SSM: Enabled (12D)
+    Tagset: simplified
+    Similarity: combined
+    High sim threshold: 0.28
+
+Model Architecture:
+------------------
+  Hidden dimension: 256
+  Dropout: 0.2
+  Batch size: 24
+  Learning rate: 0.0008
+  Label smoothing: 0.2
+  Weighted sampling: True
+
+Test Results:
+-------------
+  Macro F1: 0.7869
+  Verse F1: 0.8806
+  Chorus F1: 0.6931
+  Confidence: 0.718
+  Chorus rate: 24.55%
+  Temperature: 0.60

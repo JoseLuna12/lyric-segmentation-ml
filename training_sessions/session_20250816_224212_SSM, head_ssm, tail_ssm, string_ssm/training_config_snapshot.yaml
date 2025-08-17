@@ -1,7 +1,11 @@
 batch_size: 16
+default_temperature: 1.0
 device: mps
 dropout: 0.4
+emergency_conf95_ratio: 0.8
+emergency_f1_threshold: 0.05
 emergency_monitoring_enabled: true
+emergency_overconf_threshold: 0.98
 entropy_lambda: 0.0
 experiment_description: Testing SSM, head_ssm, tail_ssm, string_ssm
 experiment_name: SSM, head_ssm, tail_ssm, string_ssm
@@ -27,7 +31,7 @@ max_confidence_threshold: 0.95
 max_epochs: 5
 min_chorus_rate: 0.05
 num_classes: 2
-num_workers: 2
+num_workers: 0
 output_base_dir: training_sessions
 patience: 8
 phonetic_ssm_dimension: 12
@@ -45,6 +49,7 @@ pos_ssm_tagset: simplified
 save_best_model: true
 save_final_model: true
 save_training_metrics: true
+scheduler: plateau
 seed: 42
 string_ssm_case_sensitive: false
 string_ssm_dimension: 12
@@ -54,8 +59,17 @@ string_ssm_similarity_threshold: 0.3
 tail_ssm_dimension: 12
 tail_ssm_enabled: true
 tail_ssm_words: 2
+temperature_grid:
+- 0.6
+- 0.8
+- 1.0
+- 1.2
+- 1.5
+- 1.7
+- 2.0
 test_file: data/test.jsonl
 train_file: data/train.jsonl
 val_file: data/val.jsonl
+validation_strategy: line_f1
 weight_decay: 0.01
 weighted_sampling: true

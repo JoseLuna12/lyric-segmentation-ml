@@ -19,7 +19,7 @@ training:
   learning_rate: 0.0008    # Slightly lower than working (0.001) for stability
   weight_decay: 0.008      # Slightly higher than working (0.005) for regularization
   max_epochs: 100          # Slightly shorter than working (120) to prevent overtraining
-  patience: 20             # Slightly less than working (25) for earlier stopping
+  patience: 12             # Slightly less than working (25) for earlier stopping
   gradient_clip_norm: 0.4  # Slightly tighter than working (0.5)
   
   # Learning rate scheduling - Keep proven cosine from working config
@@ -53,12 +53,14 @@ emergency_monitoring:
   # Monitoring timing - Earlier than working config
   skip_batches: 30        # Earlier than working (50) but not extreme
   skip_epochs: 3          # Earlier than working (5) 
-  print_batch_every: 15   # More frequent than working (20)
+  print_batch_every: 10   # More frequent than working (20)
 
 # Temperature Calibration - Based on working config with extended range
 temperature_calibration:
-  temperature_grid: [0.6, 0.8, 1.0, 1.2, 1.5, 1.8, 2.2, 2.5]  # Based on working config, slightly extended
-  default_temperature: 1.0  # Same as working config
+  temperature_grid: [0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 1.8, 2.2, 2.5]  # Based on working config, slightly extended
+  default_temperature: 0.6  # Same as working config
+
+validation_strategy: "segment_iou"
 
 # Feature Configuration - Balanced feature extraction
 features:
@@ -118,7 +120,7 @@ system:
 
 # Experiment Metadata
 experiment:
-  name: "training_v2_robust_enhanced"
-  description: "Robust enhanced version of working training_config.yaml with improved stability measures"
-  tags: ["robust-enhancement", "enhanced-stability", "based-on-working-config", "balanced-robustness", "improved-monitoring", "moderate-regularization", "production-ready"]
-  notes: "Enhanced robustness based on proven training_config.yaml. Moderate improvements: slightly smaller batches (24 vs 32), slightly lower LR (0.0008 vs 0.001), increased dropout (0.3 vs 0.2), higher label smoothing (0.20 vs 0.15), light entropy regularization (0.05 vs 0.0), and enhanced monitoring. Maintains performance potential while adding stability. Good balance between the working config and collapse prevention."
+  name: "training_validation_segment_iou_v1"
+  description: "Training configuration with segment_iou validation strategy"
+  tags: ["validation-focused", "segmentation-metrics", "enhanced-monitoring", "production-ready"]
+  notes: "Training configuration with segment_iou validation strategy. Uses Segment IoU for complete segment quality evaluation. Enhanced monitoring of segment-level performance and transition accuracy. Optimized for structural coherence in predictions."

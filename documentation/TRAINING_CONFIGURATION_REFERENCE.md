@@ -197,6 +197,29 @@ temperature_calibration:
 
 ---
 
+## 🎯 **Validation Strategy (Phase 3)**
+
+```yaml
+# Simple validation strategy selection
+validation_strategy: "boundary_f1"
+```
+
+**Available Strategies:**
+- `"line_f1"` - Line-level macro F1 score (original method)
+- `"boundary_f1"` - **Boundary detection F1 (RECOMMENDED for structural understanding)**
+- `"windowdiff"` - WindowDiff metric (forgiving boundary evaluation)
+- `"pk"` - Pk metric (penalty-based boundary evaluation)
+- `"segment_iou"` - Segment IoU (complete segment quality focus)
+- `"composite"` - Balanced combination (boundary=40%, line=25%, segment=25%, window=10%)
+
+**Recommendations:**
+- **For verse/chorus segmentation**: Use `"boundary_f1"` (detects section boundaries)
+- **For research comparison**: Use `"windowdiff"` or `"pk"` (standard text segmentation)
+- **For balanced approach**: Use `"composite"` (optimizes multiple objectives)
+- **For backward compatibility**: Use `"line_f1"` (original behavior)
+
+---
+
 ## 🧩 **Feature System**
 
 The system supports 5 feature extractors. All feature extractors output 12-dimensional vectors by default.
@@ -387,6 +410,10 @@ The system automatically computes and exports the following metrics:
 - `val_verse_to_chorus_acc` - Verse-to-chorus transition accuracy
 - `val_chorus_to_verse_acc` - Chorus-to-verse transition accuracy
 
+### Segmentation Metrics (Phase 3)
+- `val_window_diff` - WindowDiff metric (lower is better)
+- `val_pk_metric` - Pk metric (lower is better)
+
 ### Confidence Metrics
 - `val_chorus_rate` - Validation chorus prediction rate
 - `val_max_prob` - Maximum prediction confidence
@@ -448,6 +475,9 @@ emergency_monitoring:
 temperature_calibration:
   temperature_grid: [0.6, 0.8, 1.0, 1.2, 1.5, 1.8, 2.2]
   default_temperature: 1.0
+
+# Validation Strategy (Phase 3) - Simple selection
+validation_strategy: "boundary_f1"
 
 # Feature Configuration
 features:
