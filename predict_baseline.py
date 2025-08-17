@@ -28,6 +28,7 @@ from segmodel.utils.prediction_config import (
 )
 
 
+
 def load_model(model_path: str, device: torch.device) -> BLSTMTagger:
     """Load trained model from file."""
     print(f"📦 Loading model from {model_path}...")

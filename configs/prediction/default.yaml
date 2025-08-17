@@ -4,7 +4,7 @@
 # No feature specifications needed - they're loaded from training session!
 
 # Training session directory (contains model + exact config + results)
-training_session: "training_sessions/session_20250817_164259_blstm_optimized_v2"
+training_session: "training_sessions/session_20250817_184608_training_v2_robust_enhanced"
 
 prediction:
   # Core prediction parameters

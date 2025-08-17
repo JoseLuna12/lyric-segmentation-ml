@@ -1,0 +1,5 @@
+Lyrics Structure Prediction
+==================================================
+
+CHORUS  (0.514) | This is a test verse
+CHORUS  (0.583) | This could be a catchy chorus

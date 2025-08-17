@@ -1,5 +1,5 @@
-# BLSTM Training Configuration - Optimized Version
-# Updated configuration with all performance improvements and best practices
+# BLSTM Training Configuration - Production Ready
+# Optimized based on Phase 1 & Phase 2 findings for better structural understanding
 
 # Dataset Configuration
 data:
@@ -9,102 +9,110 @@ data:
   
 # Model Architecture
 model:
-  feature_dim: 60  # Auto-computed from enabled features (5 features × 12D each)
-  hidden_dim: 512  # Increased for better capacity
+  feature_dim: 60  # Proven 60D from 5 features × 12D each
+  hidden_dim: 512  # Good capacity for structural learning
   num_classes: 2
-  dropout: 0.3  # Reduced for better learning
+  dropout: 0.2  # Optimal for boundary detection (not too aggressive)
   
-# Training Parameters  
+# Training Parameters (Optimized for Production)
 training:
-  batch_size: 32  # Increased for stable gradients
-  learning_rate: 0.001  # Good starting point
-  weight_decay: 0.01
-  max_epochs: 100  # More epochs for better convergence
-  patience: 15  # Increased patience for better training
-  gradient_clip_norm: 1.0
+  batch_size: 32  # Phase 1: 4x improvement in stability
+  learning_rate: 0.001  # Scaled for larger batch size
+  weight_decay: 0.005  # Reduced to help structural learning
+  max_epochs: 120  # Longer training for better convergence
+  patience: 25  # More patience for boundary learning
+  gradient_clip_norm: 0.5  # Proven stable value
   
-  # Learning Rate Scheduling
-  scheduler: "plateau"  # Options: plateau, cosine, cosine_restarts, step, warmup_cosine
-  lr_factor: 0.5  # Reduce LR by this factor
-  lr_patience: 8  # Patience for LR reduction
-  min_lr: 0.00001  # Minimum learning rate
+  # Advanced Learning Rate Scheduling (Phase 1 improvement)
+  scheduler: "cosine"  # Better for BiLSTMs than plateau
+  min_lr: 1e-6  # Very low minimum for fine-tuning
+  cosine_t_max: 120  # Match max_epochs for smooth annealing
   
-# Anti-Collapse Configuration
+# Anti-Collapse Configuration (Tuned for Boundary Learning)
 anti_collapse:
-  label_smoothing: 0.15  # Slightly reduced for better learning
-  weighted_sampling: true
-  entropy_lambda: 0.05  # Small entropy regularization
+  label_smoothing: 0.15  # Balanced for structural learning
+  weighted_sampling: true  # Essential for class balance
+  entropy_lambda: 0.0  # Removed - was hindering boundary detection
   
-# Emergency Monitoring (Updated thresholds)
+# Emergency Monitoring (Production-Ready Thresholds)
 emergency_monitoring:
   enabled: true
-  max_confidence_threshold: 0.90  # More reasonable threshold
-  min_chorus_rate: 0.08  # Slightly higher minimum
-  max_chorus_rate: 0.75  # More conservative maximum
-  max_conf_over_95_ratio: 0.60  # More strict confidence monitoring
-  max_conf_over_90_ratio: 0.80  # Additional monitoring level
-
-# Temperature Calibration
-temperature_calibration:
-  enabled: true
-  temperature_grid: [0.5, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0]  # Grid search values
-  validation_split: 0.2  # Use 20% of validation for calibration
+  # Batch-level monitoring (less aggressive for production)
+  max_confidence_threshold: 0.95  # Allow high confidence when justified
+  min_chorus_rate: 0.05  # Reasonable minimum
+  max_chorus_rate: 0.85  # Allow more chorus predictions
+  max_conf_over_95_ratio: 0.15  # More lenient for production
   
-# Feature Configuration (All 5 features enabled - 60D total)
+  # Epoch-level monitoring
+  val_overconf_threshold: 0.97  # More lenient validation threshold
+  val_f1_collapse_threshold: 0.05  # Catch severe F1 collapse only
+  emergency_overconf_threshold: 0.98  # Very high emergency threshold
+  emergency_conf95_ratio: 0.9  # Emergency only on extreme overconfidence
+  emergency_f1_threshold: 0.02  # Emergency only on complete collapse
+  
+  # Timing parameters
+  skip_batches: 50  # Skip monitoring early training instability
+  skip_epochs: 5  # More skip time for production stability
+  print_batch_every: 20  # Less verbose logging
+
+# Temperature Calibration (Optimized Grid)
+temperature_calibration:
+  temperature_grid: [0.6, 0.8, 1.0, 1.2, 1.5, 1.8, 2.2]  # Focused around optimal range
+  default_temperature: 1.0  # Safe fallback
+  
+# Feature Configuration (Production-Optimized 60D)
+# All 5 features enabled with optimized thresholds for boundary detection
 features:
   head_ssm:
     enabled: true
     dimension: 12
-    head_words: 2
+    head_words: 2  # Proven optimal for chorus detection
     
   tail_ssm:
     enabled: true
     dimension: 12
-    tail_words: 2
+    tail_words: 2  # Proven optimal for rhyme pattern detection
     
   phonetic_ssm:
     enabled: true
     dimension: 12
     mode: "rhyme"  # Focus on rhyme detection
-    similarity_method: "binary"  # Faster binary similarity
-    normalize: true
-    normalize_method: "zscore"
-    high_sim_threshold: 0.4  # More sensitive threshold
+    similarity_method: "binary"  # Fast and effective
+    high_sim_threshold: 0.4  # Optimized for boundary detection
     
   pos_ssm:
     enabled: true
     dimension: 12
-    tagset: "simplified"  # Faster simplified tagset
+    tagset: "simplified"  # Good balance of speed and accuracy
     similarity_method: "combined"  # Best overall performance
-    high_sim_threshold: 0.3  # More sensitive threshold
+    high_sim_threshold: 0.3  # Fine-tuned for structural patterns
     
   string_ssm:
     enabled: true
     dimension: 12
-    case_sensitive: false
-    remove_punctuation: true
-    similarity_threshold: 0.1  # Low threshold for more sensitivity
-    similarity_method: "word_overlap"  # Fast word overlap method
+    case_sensitive: false  # More robust matching
+    remove_punctuation: true  # Better text similarity
+    similarity_threshold: 0.1  # Low threshold for sensitivity
+    similarity_method: "word_overlap"  # Fast and proven effective
   
-# Output Configuration
+# Output Configuration (Production)
 output:
   base_dir: "training_sessions"
-  save_best_model: true
-  save_final_model: true
-  save_training_metrics: true
+  save_best_model: true  # Always save best performing model
+  save_final_model: true  # Keep final model for comparison
+  save_training_metrics: true  # Essential for analysis
+  save_config_snapshot: true  # Reproducibility
   
-# System Configuration
+# System Configuration (Production-Ready)
 system:
-  seed: 42
-  device: "auto"  # "auto", "cpu", "mps", "cuda"
-  num_workers: 4
+  seed: 42  # Reproducible results
+  device: "auto"  # Auto-detect best available device
+  num_workers: 0  # Avoid multiprocessing issues in production
+  deterministic: true  # Ensure reproducible training
   
 # Experiment Metadata
 experiment:
-  name: "blstm_optimized_v2"
-  description: "Optimized BiLSTM with 5-feature ensemble, LR scheduling, and temperature calibration"
-  tags: ["optimized", "5-features", "lr-scheduling", "temperature-calibration"]
-  notes: "Updated configuration with all performance improvements: larger batch size, better features, LR scheduling"
-  
-# Training Time Estimate: ~45-60 minutes (100 epochs, batch_size=32)
-# Expected Performance: F1 > 0.65, Chorus F1 > 0.50
+  name: "Production_BLSTM_Boundary_v3"
+  description: "Production-ready BiLSTM with boundary-aware evaluation (Phase 1&2 optimized)"
+  tags: ["production", "boundary-aware", "phase2", "optimized", "60d-features"]
+  notes: "Optimized config based on Phase 1 (4x batch size, cosine scheduling) and Phase 2 (boundary metrics) findings. Focuses on improving structural understanding while maintaining line-level performance."

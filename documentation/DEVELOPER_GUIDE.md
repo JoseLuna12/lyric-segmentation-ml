@@ -202,6 +202,242 @@ def __init__(self, config: TrainingConfig):
 
 ---
 
+## 🎯 **Adding New Evaluation Metrics (Phase 2 System)**
+
+### Step 1: Create Metric Implementation
+
+**File to create:** `segmodel/metrics/your_metric.py`
+
+```python
+import torch
+import numpy as np
+from typing import Dict, List, Tuple
+from dataclasses import dataclass
+
+@dataclass 
+class YourMetricResults:
+    """Container for your metric results."""
+    metric_value: float
+    additional_info: Dict[str, float]
+    
+def compute_your_metric(
+    predictions: torch.Tensor,
+    targets: torch.Tensor, 
+    mask: torch.Tensor
+) -> YourMetricResults:
+    """
+    Compute your custom metric.
+    
+    Args:
+        predictions: Predicted labels (batch_size, seq_len)
+        targets: True labels (batch_size, seq_len)
+        mask: Boolean mask (batch_size, seq_len)
+        
+    Returns:
+        YourMetricResults with computed values
+    """
+    # Your metric computation here
+    metric_value = 0.0  # Replace with actual computation
+    
+    return YourMetricResults(
+        metric_value=metric_value,
+        additional_info={"extra_stat": 0.0}
+    )
+```
+
+### Step 2: Update Metrics Module
+
+**File to modify:** `segmodel/metrics/__init__.py`
+
+```python
+from .your_metric import (
+    compute_your_metric,
+    YourMetricResults
+)
+
+__all__ = [
+    # ... existing exports ...
+    'compute_your_metric',
+    'YourMetricResults'
+]
+```
+
+### Step 3: Integrate into Trainer
+
+**File to modify:** `segmodel/train/trainer.py`
+
+```python
+# Add import
+from ..metrics import (
+    # ... existing imports ...
+    compute_your_metric
+)
+
+# In TrainingMetrics dataclass
+@dataclass
+class TrainingMetrics:
+    # ... existing fields ...
+    val_your_metric: float = 0.0
+
+# In evaluate() method
+def evaluate(self, val_loader: DataLoader) -> Dict[str, float]:
+    # ... existing code ...
+    
+    # Compute your metric
+    your_metric_results = compute_your_metric(all_pred_batch, all_targ_batch, all_mask_batch)
+    
+    # Add to metrics dict
+    metrics = {
+        # ... existing metrics ...
+        'your_metric': your_metric_results.metric_value,
+    }
+    
+    return metrics
+
+# In training loop metric creation
+metrics = TrainingMetrics(
+    # ... existing fields ...
+    val_your_metric=val_metrics['your_metric'],
+)
+```
+
+### Step 4: Update Training Display
+
+**File to modify:** `segmodel/train/trainer.py` in epoch summary
+
+```python
+print(f"  🆕 Your Metric: {metrics.val_your_metric:.3f}")
+```
+
+### ✅ **Validation Checklist for New Metrics**
+
+- [ ] Metric handles variable sequence lengths correctly
+- [ ] Proper tensor masking implemented
+- [ ] Cross-batch aggregation works properly  
+- [ ] Metric appears in training logs
+- [ ] Values are saved to training_metrics.json
+- [ ] Metric provides meaningful signal for model improvement
+- [ ] Edge cases handled (empty sequences, all same label, etc.)
+
+---
+
+## 📊 **Understanding Boundary Metrics Output (Phase 2)**
+
+### **Training Session Output Files**
+
+After training, you'll find these boundary-related files:
+
+```
+training_sessions/session_*/
+├── boundary_metrics_summary.json    # 🆕 Detailed structural analysis
+├── training_metrics.json           # Enhanced with boundary metrics per epoch  
+└── final_results.txt               # Human-readable summary
+```
+
+### **Interpreting Boundary Metrics**
+
+**Boundary Detection Scores:**
+- **F1 > 0.8**: Excellent boundary detection
+- **F1 0.6-0.8**: Good structural understanding  
+- **F1 0.4-0.6**: Moderate boundary detection
+- **F1 0.2-0.4**: Poor structural understanding
+- **F1 < 0.2**: Catastrophic structural failure ⚠️
+
+**Segment Quality Scores:**
+- **Complete Segments > 80%**: Excellent section detection
+- **Complete Segments 60-80%**: Good section quality
+- **Complete Segments 40-60%**: Moderate fragmentation
+- **Complete Segments < 40%**: Severe fragmentation ⚠️
+
+**Transition Accuracy:**
+- **> 80%**: Excellent transition detection
+- **60-80%**: Good transition handling
+- **40-60%**: Moderate transition issues
+- **< 40%**: Major transition problems ⚠️
+
+### **Using Analysis Insights**
+
+The `boundary_metrics_summary.json` contains clean boundary metrics data:
+
+```json
+{
+  "boundary_metrics": {
+    "boundary_detection": {
+      "f1": 0.040,
+      "precision": 0.105,
+      "recall": 0.025
+    },
+    "segment_quality": {
+      "complete_segments_detected": 0.036,
+      "avg_segment_overlap_iou": 0.207
+    },
+    "transition_accuracy": {
+      "verse_to_chorus": 0.031,
+      "chorus_to_verse": 0.009
+    }
+  }
+}
+```
+
+**Boundary Metrics Interpretation Guidelines:**
+
+| Metric Range | Boundary F1 | Segment Complete | Interpretation |
+|--------------|-------------|------------------|----------------|
+| **Excellent** | > 0.8 | > 80% | Good structural understanding |
+| **Good** | 0.6-0.8 | 60-80% | Reasonable boundary detection |
+| **Moderate** | 0.4-0.6 | 40-60% | Some structural issues |
+| **Poor** | 0.2-0.4 | 20-40% | Significant boundary problems |
+| **Failure** | < 0.2 | < 20% | Catastrophic structural failure |
+
+### **Historical Analysis**
+
+Use the `historical_progression` data for:
+
+```python
+import json
+import matplotlib.pyplot as plt
+
+# Load training data
+with open('training_sessions/session_*/boundary_metrics_summary.json') as f:
+    data = json.load(f)
+
+# Plot boundary F1 evolution
+epochs = [m['epoch'] for m in data['historical_progression']]
+boundary_f1 = [m['boundary_f1'] for m in data['historical_progression']]
+
+plt.plot(epochs, boundary_f1)
+plt.title('Boundary F1 Evolution During Training')
+plt.ylabel('Boundary F1')
+plt.xlabel('Epoch')
+plt.show()
+```
+
+### **Comparative Model Analysis**
+
+Compare different models using boundary metrics:
+
+```python
+def compare_models(session_dirs):
+    results = []
+    for session_dir in session_dirs:
+        with open(f'{session_dir}/boundary_metrics_summary.json') as f:
+            data = json.load(f)
+            results.append({
+                'model': session_dir,
+                'boundary_f1': data['boundary_metrics']['boundary_detection']['f1'],
+                'complete_segments': data['boundary_metrics']['segment_quality']['complete_segments_detected'],
+                'line_f1': data['boundary_metrics']['line_level_metrics']['macro_f1']
+            })
+    
+    # Sort by boundary F1 (the most important metric)
+    results.sort(key=lambda x: x['boundary_f1'], reverse=True)
+    return results
+```
+
+This analysis helps identify which models truly understand structure vs just memorizing patterns.
+
+---
+
 ## 📝 **Editing Existing Configuration**
 
 ### Safe Configuration Editing Process

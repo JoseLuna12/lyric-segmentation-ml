@@ -1,0 +1,4 @@
+Lyrics Structure Prediction
+==================================================
+
+CHORUS  (0.511) | This is a test verse line

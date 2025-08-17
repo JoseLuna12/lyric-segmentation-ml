@@ -314,8 +314,68 @@ CHORUS  (0.795) | What the hell am I doin' here?
 }
 ```
 
+### 📊 **Training Session Output Structure (Enhanced)**
+
+Training produces comprehensive session directories with all data needed for analysis:
+
+```
+training_sessions/
+└── session_20250817_175255_Aggressive_Maximum_Performance_v2_32_batch/
+    ├── best_model.pt                        # 🏆 Best performing model
+    ├── final_model.pt                       # 📝 Final epoch model  
+    ├── training_config_snapshot.yaml        # ⚙️  Exact training parameters
+    ├── training_metrics.json                # 📈 Complete training history
+    ├── boundary_metrics_summary.json        # 🆕 Phase 2: Boundary analysis
+    └── final_results.txt                    # 📋 Human-readable summary
+```
+
+### **🆕 Enhanced Boundary Metrics Export (Phase 2)**
+
+**boundary_metrics_summary.json** contains comprehensive structural analysis:
+```json
+{
+  "boundary_metrics": {
+    "line_level_metrics": {
+      "macro_f1": 0.4742,
+      "verse_f1": 0.8185,
+      "chorus_f1": 0.1299
+    },
+    "boundary_detection": {
+      "f1": 0.040,
+      "precision": 0.105, 
+      "recall": 0.025
+    },
+    "segment_quality": {
+      "complete_segments_detected": 0.036,
+      "avg_segment_overlap_iou": 0.207
+    },
+    "transition_accuracy": {
+      "verse_to_chorus": 0.031,
+      "chorus_to_verse": 0.009
+    }
+  },
+  "historical_progression": [...], // Boundary metrics evolution across epochs
+  "model_config": {...}           // Model parameters for reference
+}
+```
+
+**training_metrics.json** now includes boundary metrics for each epoch:
+```json
+[
+  {
+    "epoch": 1,
+    "val_macro_f1": 0.4742,
+    "val_boundary_f1": 0.040,           // 🆕 NEW: Boundary F1
+    "val_complete_segments": 0.036,     // 🆕 NEW: Segment quality
+    "val_verse_to_chorus_acc": 0.031,   // 🆕 NEW: Transition accuracy
+    // ... other metrics
+  }
+]
+```
+
 ## 🧩 Features
 
+### **Core System Features**
 - **Modular Design**: Easy to extend with new features
 - **Anti-Collapse**: Prevents overconfidence with label smoothing + class weights
 - **Weighted Sampling**: Ensures balanced training despite class imbalance  
@@ -324,22 +384,64 @@ CHORUS  (0.795) | What the hell am I doin' here?
 - **✅ Configurable Monitoring**: No more magic numbers - all thresholds configurable
 - **Temperature Calibration**: Post-hoc confidence calibration with configurable grid
 - **Emergency Monitoring**: Real-time training guardrails with full parameter control
+- **YAML Configuration**: Flexible configuration system with command-line overrides and reproducibility snapshots
+
+### **🆕 Boundary-Aware Evaluation System (Phase 2)**
+- **📏 Boundary Detection Metrics**: Precision, recall, and F1 for section boundary detection
+- **🎯 Segment Quality Assessment**: Complete vs partial segment detection with IoU scoring
+- **🔄 Transition-Specific Analysis**: Separate accuracy tracking for verse→chorus and chorus→verse transitions
+- **📊 Real-Time Structural Monitoring**: Live boundary/segment metrics during training
+- **📈 Historical Progression Tracking**: Boundary metrics evolution across epochs
+- **💾 Comprehensive Data Export**: Detailed boundary metrics summaries and historical progression
+
+### **Feature Extraction System**
 - **Head-SSM Features**: Line-beginning similarity for chorus detection
 - **Tail-SSM Features**: Line-ending similarity for rhyme pattern detection
 - **String-SSM Features**: Overall textual similarity with multiple algorithms
 - **Comprehensive Metrics**: Incremental saving of training progress with analysis tools
-- **YAML Configuration**: Flexible configuration system with command-line overrides and reproducibility snapshots
 
-## 📊 Expected Performance
+## 📊 Performance Metrics & Insights
 
-**With Head-SSM + Tail-SSM + String-SSM Features:**
-- **Accuracy**: 75-85% (improved with triple features)
-- **F1 Macro**: 0.70-0.80
-- **Verse F1**: 0.80-0.90 (high precision)
-- **Chorus F1**: 0.60-0.75 (challenging due to variety)
-- **Confidence**: Well-calibrated (avg ~0.70-0.80)
-- **Training Time**: ✅ **Improved** ~35-50 minutes on modern hardware (faster with larger batches)
-- **Feature Dimension**: 36D (12D Head-SSM + 12D Tail-SSM + 12D String-SSM)
+### **🎯 Current Performance (Multi-Level Analysis)**
+
+**Line-Level Classification Performance:**
+- **F1 Macro**: 0.45-0.50 (individual line classification)
+- **Verse F1**: 0.80-0.85 (high precision on verse lines)
+- **Chorus F1**: 0.10-0.15 (struggles with chorus line classification)
+- **Confidence**: Well-calibrated (avg ~0.65-0.70)
+
+### **🔍 Structural Understanding Performance (Phase 2 Discovery)**
+
+**⚠️ Critical Finding: Line-level metrics masked severe structural failures**
+
+**Boundary Detection (The Real Challenge):**
+- **Boundary F1**: 0.04-0.08 (catastrophic structural failure)
+- **Boundary Precision**: 0.10-0.15 (high false positive rate)
+- **Boundary Recall**: 0.02-0.05 (misses most section transitions)
+
+**Segment Quality (Complete Section Detection):**
+- **Complete Segments Detected**: 3-7% (severe fragmentation)
+- **Average Segment Overlap (IoU)**: 0.20-0.25 (poor section boundaries)
+
+**Transition Analysis (Direction-Specific):**
+- **Verse→Chorus Accuracy**: 3-5% (cannot detect chorus starts)
+- **Chorus→Verse Accuracy**: 1-2% (cannot detect verse returns)
+
+### **🚨 Key Insight: The Model Needs Architectural Enhancement**
+
+**What This Means:**
+- ✅ **Can classify individual lines** with moderate success
+- ❌ **Cannot detect verse/chorus structure** (the actual task goal)  
+- ❌ **Fragments sections** instead of identifying complete segments
+- ❌ **Misses transitions** between structural components
+
+**Recommended Next Steps:** Phase 4 (Architecture Enhancement) - add positional encoding, attention mechanisms, and structural awareness
+
+### **System Performance**
+- **Training Time**: ✅ **Optimized** ~35-50 minutes on modern hardware (4x faster with larger batches)
+- **Feature Dimension**: 60D (12D Head-SSM + 12D Tail-SSM + 12D Phonetic-SSM + 12D POS-SSM + 12D String-SSM)
+- **Memory Usage**: <100MB inference, ~1GB training
+- **Device Support**: CPU, CUDA, MPS (Apple Silicon)
 
 ## 🔧 Configuration
 
@@ -1482,10 +1584,17 @@ This testing system provides **comprehensive validation** of your trained models
 
 ### 📖 **Complete Developer Documentation**
 
-For comprehensive guides on extending and maintaining this system, see:
-**[📋 Developer Guide](documentation/DEVELOPER_GUIDE.md)**
+For comprehensive guides on using, configuring, and maintaining this system:
 
-**Quick Reference:**
+**[📋 Training Configuration Reference](documentation/TRAINING_CONFIGURATION_REFERENCE.md)** - **COMPLETE REFERENCE**
+- 🎛️ **All Configuration Options**: Every possible training setting with explanations
+- 📊 **Feature System Documentation**: Complete documentation of all 5 feature extractors  
+- 🔧 **Advanced Scheduling**: 5 different LR schedulers with parameter details
+- 🛡️ **Anti-Collapse System**: Emergency monitoring and safety configurations
+- 📋 **Complete Example**: Full configuration file with all parameters
+- 🔧 **Command Line Overrides**: Available parameter overrides
+
+**[📋 Developer Guide](documentation/DEVELOPER_GUIDE.md)** - **SYSTEM MAINTENANCE**
 - 🧩 **Adding New Features**: Step-by-step guide for feature extractors
 - ⚙️ **Adding Configuration Parameters**: YAML → Dataclass → Code integration  
 - 📝 **Editing Configurations**: Safe editing and validation procedures

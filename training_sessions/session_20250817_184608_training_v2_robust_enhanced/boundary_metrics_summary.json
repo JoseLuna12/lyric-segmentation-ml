@@ -1,0 +1,417 @@
+{
+  "boundary_metrics": {
+    "description": "Boundary-aware evaluation metrics for structural understanding",
+    "line_level_metrics": {
+      "macro_f1": 0.7815475125713036,
+      "verse_f1": 0.8749229821318546,
+      "chorus_f1": 0.6881720430107526
+    },
+    "boundary_detection": {
+      "f1": 0.424,
+      "precision": 0.4108527131782946,
+      "recall": 0.4380165289256198
+    },
+    "segment_quality": {
+      "complete_segments_detected": 0.25449990807133666,
+      "avg_segment_overlap_iou": 0.5447018509001837
+    },
+    "transition_accuracy": {
+      "verse_to_chorus": 0.4496124031007752,
+      "chorus_to_verse": 0.39823008849557523
+    }
+  },
+  "historical_progression": [
+    {
+      "epoch": 1,
+      "boundary_f1": 0.16430594900849857,
+      "complete_segments": 0.1451829380400809,
+      "verse_to_chorus_acc": 0.12403100775193798,
+      "chorus_to_verse_acc": 0.08849557522123894
+    },
+    {
+      "epoch": 2,
+      "boundary_f1": 0.3096085409252669,
+      "complete_segments": 0.20604430961573816,
+      "verse_to_chorus_acc": 0.29457364341085274,
+      "chorus_to_verse_acc": 0.35398230088495575
+    },
+    {
+      "epoch": 3,
+      "boundary_f1": 0.34853420195439744,
+      "complete_segments": 0.270578231292517,
+      "verse_to_chorus_acc": 0.4263565891472868,
+      "chorus_to_verse_acc": 0.3893805309734513
+    },
+    {
+      "epoch": 4,
+      "boundary_f1": 0.3765822784810127,
+      "complete_segments": 0.2622403015260158,
+      "verse_to_chorus_acc": 0.4883720930232558,
+      "chorus_to_verse_acc": 0.4247787610619469
+    },
+    {
+      "epoch": 5,
+      "boundary_f1": 0.3930817610062893,
+      "complete_segments": 0.2958632101489244,
+      "verse_to_chorus_acc": 0.46511627906976744,
+      "chorus_to_verse_acc": 0.48672566371681414
+    },
+    {
+      "epoch": 6,
+      "boundary_f1": 0.37217391304347824,
+      "complete_segments": 0.22014157014157013,
+      "verse_to_chorus_acc": 0.3643410852713178,
+      "chorus_to_verse_acc": 0.4424778761061947
+    },
+    {
+      "epoch": 7,
+      "boundary_f1": 0.41269841269841273,
+      "complete_segments": 0.24220444934730648,
+      "verse_to_chorus_acc": 0.4186046511627907,
+      "chorus_to_verse_acc": 0.4690265486725664
+    },
+    {
+      "epoch": 8,
+      "boundary_f1": 0.3877551020408163,
+      "complete_segments": 0.2434868542011399,
+      "verse_to_chorus_acc": 0.4108527131782946,
+      "chorus_to_verse_acc": 0.4424778761061947
+    },
+    {
+      "epoch": 9,
+      "boundary_f1": 0.3321167883211679,
+      "complete_segments": 0.16315039529325243,
+      "verse_to_chorus_acc": 0.3798449612403101,
+      "chorus_to_verse_acc": 0.3185840707964602
+    },
+    {
+      "epoch": 10,
+      "boundary_f1": 0.3957968476357268,
+      "complete_segments": 0.2340917448060305,
+      "verse_to_chorus_acc": 0.43410852713178294,
+      "chorus_to_verse_acc": 0.4247787610619469
+    },
+    {
+      "epoch": 11,
+      "boundary_f1": 0.4375,
+      "complete_segments": 0.2890191211619783,
+      "verse_to_chorus_acc": 0.5193798449612403,
+      "chorus_to_verse_acc": 0.45132743362831856
+    },
+    {
+      "epoch": 12,
+      "boundary_f1": 0.40942028985507245,
+      "complete_segments": 0.22839216767788195,
+      "verse_to_chorus_acc": 0.4108527131782946,
+      "chorus_to_verse_acc": 0.4336283185840708
+    },
+    {
+      "epoch": 13,
+      "boundary_f1": 0.3740157480314961,
+      "complete_segments": 0.19536679536679538,
+      "verse_to_chorus_acc": 0.3798449612403101,
+      "chorus_to_verse_acc": 0.336283185840708
+    },
+    {
+      "epoch": 14,
+      "boundary_f1": 0.4198473282442748,
+      "complete_segments": 0.2098501562787277,
+      "verse_to_chorus_acc": 0.4263565891472868,
+      "chorus_to_verse_acc": 0.415929203539823
+    },
+    {
+      "epoch": 15,
+      "boundary_f1": 0.42885771543086176,
+      "complete_segments": 0.23634399705828277,
+      "verse_to_chorus_acc": 0.43410852713178294,
+      "chorus_to_verse_acc": 0.39823008849557523
+    },
+    {
+      "epoch": 16,
+      "boundary_f1": 0.4101633393829401,
+      "complete_segments": 0.2198933627505056,
+      "verse_to_chorus_acc": 0.4418604651162791,
+      "chorus_to_verse_acc": 0.4247787610619469
+    },
+    {
+      "epoch": 17,
+      "boundary_f1": 0.39530332681017605,
+      "complete_segments": 0.21607372678801248,
+      "verse_to_chorus_acc": 0.46511627906976744,
+      "chorus_to_verse_acc": 0.30973451327433627
+    },
+    {
+      "epoch": 18,
+      "boundary_f1": 0.4007707129094412,
+      "complete_segments": 0.21607372678801248,
+      "verse_to_chorus_acc": 0.4108527131782946,
+      "chorus_to_verse_acc": 0.3805309734513274
+    },
+    {
+      "epoch": 19,
+      "boundary_f1": 0.41229656419529837,
+      "complete_segments": 0.2191349512778084,
+      "verse_to_chorus_acc": 0.4496124031007752,
+      "chorus_to_verse_acc": 0.415929203539823
+    },
+    {
+      "epoch": 20,
+      "boundary_f1": 0.39357429718875503,
+      "complete_segments": 0.21623460194888763,
+      "verse_to_chorus_acc": 0.3953488372093023,
+      "chorus_to_verse_acc": 0.37168141592920356
+    },
+    {
+      "epoch": 21,
+      "boundary_f1": 0.38645418326693226,
+      "complete_segments": 0.19783048354476926,
+      "verse_to_chorus_acc": 0.4108527131782946,
+      "chorus_to_verse_acc": 0.3274336283185841
+    },
+    {
+      "epoch": 22,
+      "boundary_f1": 0.4389312977099236,
+      "complete_segments": 0.2572118036403751,
+      "verse_to_chorus_acc": 0.4418604651162791,
+      "chorus_to_verse_acc": 0.4424778761061947
+    },
+    {
+      "epoch": 23,
+      "boundary_f1": 0.4115523465703971,
+      "complete_segments": 0.24204357418643133,
+      "verse_to_chorus_acc": 0.46511627906976744,
+      "chorus_to_verse_acc": 0.40707964601769914
+    },
+    {
+      "epoch": 24,
+      "boundary_f1": 0.4216417910447761,
+      "complete_segments": 0.2243978672550101,
+      "verse_to_chorus_acc": 0.4496124031007752,
+      "chorus_to_verse_acc": 0.4247787610619469
+    },
+    {
+      "epoch": 25,
+      "boundary_f1": 0.43151969981238275,
+      "complete_segments": 0.24714561500275786,
+      "verse_to_chorus_acc": 0.4573643410852713,
+      "chorus_to_verse_acc": 0.40707964601769914
+    },
+    {
+      "epoch": 26,
+      "boundary_f1": 0.3798449612403101,
+      "complete_segments": 0.18192682478396763,
+      "verse_to_chorus_acc": 0.4186046511627907,
+      "chorus_to_verse_acc": 0.336283185840708
+    },
+    {
+      "epoch": 27,
+      "boundary_f1": 0.3966597077244259,
+      "complete_segments": 0.21623460194888763,
+      "verse_to_chorus_acc": 0.4108527131782946,
+      "chorus_to_verse_acc": 0.35398230088495575
+    },
+    {
+      "epoch": 28,
+      "boundary_f1": 0.4083969465648855,
+      "complete_segments": 0.21517742232027948,
+      "verse_to_chorus_acc": 0.4418604651162791,
+      "chorus_to_verse_acc": 0.36283185840707965
+    },
+    {
+      "epoch": 29,
+      "boundary_f1": 0.42526315789473684,
+      "complete_segments": 0.2303456517742232,
+      "verse_to_chorus_acc": 0.4108527131782946,
+      "chorus_to_verse_acc": 0.3893805309734513
+    },
+    {
+      "epoch": 30,
+      "boundary_f1": 0.428842504743833,
+      "complete_segments": 0.2775464239749954,
+      "verse_to_chorus_acc": 0.4728682170542636,
+      "chorus_to_verse_acc": 0.40707964601769914
+    },
+    {
+      "epoch": 31,
+      "boundary_f1": 0.44100580270793033,
+      "complete_segments": 0.25645339216767793,
+      "verse_to_chorus_acc": 0.4883720930232558,
+      "chorus_to_verse_acc": 0.39823008849557523
+    },
+    {
+      "epoch": 32,
+      "boundary_f1": 0.41851851851851846,
+      "complete_segments": 0.2621529692958265,
+      "verse_to_chorus_acc": 0.4883720930232558,
+      "chorus_to_verse_acc": 0.3893805309734513
+    },
+    {
+      "epoch": 33,
+      "boundary_f1": 0.4,
+      "complete_segments": 0.22568027210884353,
+      "verse_to_chorus_acc": 0.40310077519379844,
+      "chorus_to_verse_acc": 0.336283185840708
+    },
+    {
+      "epoch": 34,
+      "boundary_f1": 0.40515653775322286,
+      "complete_segments": 0.22733498804927374,
+      "verse_to_chorus_acc": 0.4883720930232558,
+      "chorus_to_verse_acc": 0.36283185840707965
+    },
+    {
+      "epoch": 35,
+      "boundary_f1": 0.424,
+      "complete_segments": 0.25449990807133666,
+      "verse_to_chorus_acc": 0.4496124031007752,
+      "chorus_to_verse_acc": 0.39823008849557523
+    },
+    {
+      "epoch": 36,
+      "boundary_f1": 0.4115384615384616,
+      "complete_segments": 0.22432432432432434,
+      "verse_to_chorus_acc": 0.4806201550387597,
+      "chorus_to_verse_acc": 0.34513274336283184
+    },
+    {
+      "epoch": 37,
+      "boundary_f1": 0.39555555555555555,
+      "complete_segments": 0.21998069498069497,
+      "verse_to_chorus_acc": 0.3953488372093023,
+      "chorus_to_verse_acc": 0.3274336283185841
+    },
+    {
+      "epoch": 38,
+      "boundary_f1": 0.4159663865546218,
+      "complete_segments": 0.24549089906232766,
+      "verse_to_chorus_acc": 0.4573643410852713,
+      "chorus_to_verse_acc": 0.3274336283185841
+    },
+    {
+      "epoch": 39,
+      "boundary_f1": 0.4386317907444668,
+      "complete_segments": 0.2483406876264019,
+      "verse_to_chorus_acc": 0.46511627906976744,
+      "chorus_to_verse_acc": 0.40707964601769914
+    },
+    {
+      "epoch": 40,
+      "boundary_f1": 0.3616557734204793,
+      "complete_segments": 0.20361739290310718,
+      "verse_to_chorus_acc": 0.3875968992248062,
+      "chorus_to_verse_acc": 0.2743362831858407
+    },
+    {
+      "epoch": 41,
+      "boundary_f1": 0.42629482071713143,
+      "complete_segments": 0.23422963780106637,
+      "verse_to_chorus_acc": 0.4186046511627907,
+      "chorus_to_verse_acc": 0.39823008849557523
+    },
+    {
+      "epoch": 42,
+      "boundary_f1": 0.43312101910828027,
+      "complete_segments": 0.26734234234234233,
+      "verse_to_chorus_acc": 0.4573643410852713,
+      "chorus_to_verse_acc": 0.37168141592920356
+    },
+    {
+      "epoch": 43,
+      "boundary_f1": 0.42038216560509556,
+      "complete_segments": 0.2550974443831587,
+      "verse_to_chorus_acc": 0.43410852713178294,
+      "chorus_to_verse_acc": 0.36283185840707965
+    },
+    {
+      "epoch": 44,
+      "boundary_f1": 0.41350210970464135,
+      "complete_segments": 0.20472513329656186,
+      "verse_to_chorus_acc": 0.4108527131782946,
+      "chorus_to_verse_acc": 0.3805309734513274
+    },
+    {
+      "epoch": 45,
+      "boundary_f1": 0.4110169491525424,
+      "complete_segments": 0.2438361831218974,
+      "verse_to_chorus_acc": 0.4418604651162791,
+      "chorus_to_verse_acc": 0.34513274336283184
+    },
+    {
+      "epoch": 46,
+      "boundary_f1": 0.4034334763948498,
+      "complete_segments": 0.22627780842066555,
+      "verse_to_chorus_acc": 0.3875968992248062,
+      "chorus_to_verse_acc": 0.34513274336283184
+    },
+    {
+      "epoch": 47,
+      "boundary_f1": 0.4468546637744034,
+      "complete_segments": 0.24804191947049092,
+      "verse_to_chorus_acc": 0.4263565891472868,
+      "chorus_to_verse_acc": 0.3805309734513274
+    },
+    {
+      "epoch": 48,
+      "boundary_f1": 0.4150943396226415,
+      "complete_segments": 0.24158393086964516,
+      "verse_to_chorus_acc": 0.43410852713178294,
+      "chorus_to_verse_acc": 0.37168141592920356
+    },
+    {
+      "epoch": 49,
+      "boundary_f1": 0.4102564102564103,
+      "complete_segments": 0.24204357418643133,
+      "verse_to_chorus_acc": 0.3953488372093023,
+      "chorus_to_verse_acc": 0.37168141592920356
+    },
+    {
+      "epoch": 50,
+      "boundary_f1": 0.421978021978022,
+      "complete_segments": 0.2536036036036036,
+      "verse_to_chorus_acc": 0.3953488372093023,
+      "chorus_to_verse_acc": 0.3893805309734513
+    },
+    {
+      "epoch": 51,
+      "boundary_f1": 0.4140786749482402,
+      "complete_segments": 0.24788104430961572,
+      "verse_to_chorus_acc": 0.4186046511627907,
+      "chorus_to_verse_acc": 0.3893805309734513
+    },
+    {
+      "epoch": 52,
+      "boundary_f1": 0.44067796610169496,
+      "complete_segments": 0.2550974443831587,
+      "verse_to_chorus_acc": 0.4418604651162791,
+      "chorus_to_verse_acc": 0.3805309734513274
+    },
+    {
+      "epoch": 53,
+      "boundary_f1": 0.4307036247334755,
+      "complete_segments": 0.25344272844272847,
+      "verse_to_chorus_acc": 0.4418604651162791,
+      "chorus_to_verse_acc": 0.37168141592920356
+    },
+    {
+      "epoch": 54,
+      "boundary_f1": 0.4032258064516129,
+      "complete_segments": 0.20608108108108109,
+      "verse_to_chorus_acc": 0.4573643410852713,
+      "chorus_to_verse_acc": 0.336283185840708
+    },
+    {
+      "epoch": 55,
+      "boundary_f1": 0.4458598726114649,
+      "complete_segments": 0.2227431513145799,
+      "verse_to_chorus_acc": 0.4496124031007752,
+      "chorus_to_verse_acc": 0.3805309734513274
+    }
+  ],
+  "export_timestamp": 1755455593.1313221,
+  "model_config": {
+    "experiment_name": "training_v2_robust_enhanced",
+    "batch_size": 24,
+    "learning_rate": 0.0008,
+    "scheduler": "cosine"
+  }
+}

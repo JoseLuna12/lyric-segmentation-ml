@@ -50,112 +50,180 @@
   - ✅ **FINAL**: Created comprehensive developer guide and testing procedures
   - *Files modified: `configs/aggressive_config.yaml`, `segmodel/train/trainer.py`, `README.md`, `segmodel/utils/config_loader.py`, `predict_baseline.py`, `documentation/DEVELOPER_GUIDE.md`*
 
-### Phase 2: Evaluation System Overhaul
-**Priority: HIGH** | **Estimated Time: 3-4 hours**
+### Phase 2: Evaluation System Overhaul ✅ COMPLETED
+**Priority: HIGH** | **Completed Time: 2 hours** | **Status: 🎉 SUCCESS**
 
-- [ ] **Task 2.1: Implement Boundary-Aware Metrics**
-  - Add boundary precision/recall metrics
-  - Measure transition accuracy (verse→chorus, chorus→verse)
-  - Create boundary detection F1 score
-  - *Files to create: `segmodel/metrics/boundary_metrics.py`*
+- [x] **Task 2.1: Implement Boundary-Aware Metrics** ✅ COMPLETED
+  - ✅ Added boundary precision/recall metrics (F1, precision, recall)
+  - ✅ Implemented transition accuracy (verse→chorus, chorus→verse) 
+  - ✅ Created boundary detection F1 score with proper aggregation
+  - *Files created: `segmodel/metrics/boundary_metrics.py`, `segmodel/metrics/__init__.py`*
 
-- [ ] **Task 2.2: Add Segment-Level Evaluation**
-  - Implement complete segment detection
-  - Measure segment boundary accuracy
-  - Add segment length distribution analysis
-  - *Files to modify: `segmodel/train/trainer.py`, create evaluation utils*
+- [x] **Task 2.2: Add Segment-Level Evaluation** ✅ COMPLETED
+  - ✅ Implemented complete segment detection with IoU scoring
+  - ✅ Added segment boundary accuracy measurement
+  - ✅ Created segment length distribution analysis
+  - *Files modified: `segmodel/train/trainer.py`, enhanced evaluation system*
 
-- [ ] **Task 2.3: Enhance Validation Reporting**
-  - Add detailed per-class confusion matrices
-  - Include boundary transition analysis
-  - Create visualization for segment detection
+- [x] **Task 2.3: Enhance Validation Reporting** ✅ COMPLETED
+  - ✅ Added boundary-aware metrics to epoch summaries
+  - ✅ Integrated transition analysis into training logs
+  - ✅ Created comprehensive final metrics report
+  - *Files modified: `segmodel/train/trainer.py`, `TrainingMetrics` dataclass*
+
+**🔍 MAJOR DISCOVERY: Boundary metrics revealed critical structural issues hidden by line-level metrics!**
+
+**Example Results (1-epoch test):**
+- Line-level Macro F1: **0.4742** (appears reasonable)
+- **BUT** Boundary F1: **0.040** (catastrophic structural failure!)  
+- Complete segments detected: **3.6%** (severe fragmentation)
+- Transition accuracy: V→C **3.1%**, C→V **0.9%** (boundary confusion)
+
+### Phase 3: Validation Metric Strategy Configuration
+**Priority: HIGH** | **Estimated Time: 2-3 hours**
+
+- [ ] **Task 3.1: Implement Configurable Validation Metrics**
+  - Add new config section for validation metric selection
+  - Support multiple validation criteria for early stopping and best model selection
+  - Enable A/B testing between different validation strategies
+  - Update default configuration with new validation strategy settings
+  - *Files to modify: `configs/training/training_v2.yaml`, `segmodel/utils/config_loader.py`*
+
+- [ ] **Task 3.2: Add Standard Text Segmentation Metrics**
+  - Implement WindowDiff metric (standard in text segmentation research)
+  - Add Pk (penalty-based) metric for boundary evaluation
+  - Create more forgiving "near miss" boundary evaluation
+  - Add comprehensive metric documentation and usage examples
+  - *Files to create: `segmodel/metrics/segmentation_metrics.py`*
+
+- [ ] **Task 3.3: Support Four Validation Strategies**
+  - **Strategy 1:** Current line-level macro F1 (baseline)
+  - **Strategy 2:** Boundary F1 (structural focus)
+  - **Strategy 3:** WindowDiff/Pk metrics (text segmentation standard, forgiving)
+  - **Strategy 4:** Segment-Level IoU (complete segment quality)
   - *Files to modify: `segmodel/train/trainer.py`*
 
-### Phase 3: Confidence Calibration System
+- [ ] **Task 3.4: Update Training Output & Logging**
+  - Enhance epoch summaries to show selected validation metric prominently
+  - Add validation strategy identification to training logs
+  - Update progress reporting to highlight the chosen metric
+  - Modify best model selection logging to show metric rationale
+  - *Files to modify: `segmodel/train/trainer.py`*
+
+- [ ] **Task 3.5: Configuration System Integration**
+  - Add validation strategy options to configuration dataclass
+  - Update config validation and error handling
+  - Enable metric weighting and combination strategies
+  - Create validation strategy comparison tools
+  - Set default validation strategy (recommend boundary F1 or composite)
+  - *Files to modify: `segmodel/utils/config_loader.py`, `segmodel/train/trainer.py`*
+
+- [ ] **Task 3.6: Documentation Updates**
+  - Update `TRAINING_CONFIGURATION_REFERENCE.md` with validation metric options
+  - Add validation strategy guide to `DEVELOPER_GUIDE.md`
+  - Update `README.md` with new validation capabilities
+  - Document WindowDiff/Pk metrics and when to use each strategy
+  - Add configuration examples for different validation approaches
+  - Update `bilstm_improvement_plan.md` with implementation notes
+  - *Files to modify: `documentation/TRAINING_CONFIGURATION_REFERENCE.md`, `documentation/DEVELOPER_GUIDE.md`, `README.md`, `bilstm_improvement_plan.md`*
+
+- [ ] **Task 3.7: Phase Completion Documentation**
+  - Create comprehensive Phase 3 completion report following established format
+  - Document validation metric strategy implementation results and discoveries
+  - Compare performance of different validation strategies through A/B testing
+  - Record impact on model selection quality and training stability
+  - Document technical implementation details and integration challenges
+  - Analyze which validation strategies work best for verse-chorus segmentation
+  - Create recommendations for default validation strategy settings
+  - Update improvement plan with Phase 3 completion status and key findings
+  - *Files to create: `documentation/phase3_completion_august17_2025.md`*
+  - *Files to modify: `bilstm_improvement_plan.md` (mark Phase 3 complete)*
+
+### Phase 4: Confidence Calibration System
 **Priority: MEDIUM-HIGH** | **Estimated Time: 2-3 hours**
 
-- [ ] **Task 3.1: Implement Advanced Temperature Calibration**
+- [ ] **Task 4.1: Implement Advanced Temperature Calibration**
   - Extend current temperature calibration
   - Add Platt scaling option
   - Implement isotonic regression calibration
   - *Files to modify: `segmodel/train/trainer.py`*
 
-- [ ] **Task 3.2: Add Confidence Monitoring Dashboard**
+- [ ] **Task 4.2: Add Confidence Monitoring Dashboard**
   - Create confidence distribution plots
   - Add reliability diagrams (calibration curves)
   - Implement Expected Calibration Error (ECE)
   - *Files to create: `segmodel/metrics/calibration_metrics.py`*
 
-- [ ] **Task 3.3: Confidence-Based Training Adjustments**
+- [ ] **Task 4.3: Confidence-Based Training Adjustments**
   - Implement confidence penalty in loss function
   - Add uncertainty regularization
   - Create confidence-aware early stopping
   - *Files to modify: `segmodel/losses/`, `segmodel/train/trainer.py`*
 
-### Phase 4: Architecture Enhancements
+### Phase 5: Architecture Enhancements
 **Priority: MEDIUM** | **Estimated Time: 4-5 hours**
 
-- [ ] **Task 4.1: Add Positional Encoding**
+- [ ] **Task 5.1: Add Positional Encoding**
   - Implement sinusoidal positional encoding
   - Add learnable positional embeddings option
   - Test relative position encoding
   - *Files to modify: `segmodel/models/blstm_tagger.py`*
 
-- [ ] **Task 4.2: Implement Multi-Scale Temporal Processing**
+- [ ] **Task 5.2: Implement Multi-Scale Temporal Processing**
   - Add dilated convolutions before BiLSTM
   - Implement multi-resolution feature extraction
   - Create temporal pyramid pooling
   - *Files to modify: `segmodel/models/blstm_tagger.py`*
 
-- [ ] **Task 4.3: Add Attention Mechanism**
+- [ ] **Task 5.3: Add Attention Mechanism**
   - Implement self-attention layers
   - Add cross-attention between different scales
   - Create attention visualization tools
   - *Files to modify: `segmodel/models/blstm_tagger.py`*
 
-- [ ] **Task 4.4: Fix Feature Dimension Mismatch**
+- [ ] **Task 5.4: Fix Feature Dimension Mismatch**
   - Add intermediate projection layers
   - Implement gradual dimension scaling
   - Optimize hidden dimension ratios
   - *Files to modify: `segmodel/models/blstm_tagger.py`*
 
-### Phase 5: Advanced Training Strategies
+### Phase 6: Advanced Training Strategies
 **Priority: MEDIUM** | **Estimated Time: 3-4 hours**
 
-- [ ] **Task 5.1: Implement Curriculum Learning**
+- [ ] **Task 6.1: Implement Curriculum Learning**
   - Start with easier sequences (shorter songs)
   - Gradually introduce complex patterns
   - Add difficulty scoring for sequences
   - *Files to create: `segmodel/train/curriculum.py`*
 
-- [ ] **Task 5.2: Add Data Augmentation**
+- [ ] **Task 6.2: Add Data Augmentation**
   - Implement sequence-aware augmentation
   - Add noise injection to features
   - Create label smoothing strategies
   - *Files to create: `segmodel/data/augmentation.py`*
 
-- [ ] **Task 5.3: Multi-Task Learning Setup**
+- [ ] **Task 6.3: Multi-Task Learning Setup**
   - Add auxiliary tasks (e.g., next section prediction)
   - Implement shared encoder architecture
   - Balance task weights dynamically
   - *Files to modify: `segmodel/models/`, `segmodel/losses/`*
 
-### Phase 6: Comprehensive Testing & Validation
+### Phase 7: Comprehensive Testing & Validation
 **Priority: HIGH** | **Estimated Time: 2-3 hours**
 
-- [ ] **Task 6.1: Create Test Suite**
+- [ ] **Task 7.1: Create Test Suite**
   - Unit tests for all new components
   - Integration tests for full pipeline
   - Regression tests vs current performance
   - *Files to create: `tests/` directory structure*
 
-- [ ] **Task 6.2: Performance Benchmarking**
+- [ ] **Task 7.2: Performance Benchmarking**
   - Compare against current best model
   - Measure training time and memory usage
   - Create performance vs accuracy trade-off analysis
   - *Files to create: `scripts/benchmark.py`*
 
-- [ ] **Task 6.3: Ablation Studies**
+- [ ] **Task 7.3: Ablation Studies**
   - Test individual component contributions
   - Find optimal hyperparameter combinations
   - Document performance gains per improvement
@@ -167,16 +235,19 @@
 
 1. **Start with Phase 1** (Training Config) - immediate impact with minimal risk
 2. **Move to Phase 2** (Evaluation) - better visibility into model performance
-3. **Phase 3** (Calibration) - address confidence issues
-4. **Phase 4** (Architecture) - major improvements, higher risk
-5. **Phase 5** (Advanced) - experimental improvements
-6. **Phase 6** (Testing) - validate everything works
+3. **Phase 3** (Validation Metrics) - address structural evaluation issues revealed by Phase 2
+4. **Phase 4** (Calibration) - address confidence issues
+5. **Phase 5** (Architecture) - major improvements, higher risk
+6. **Phase 6** (Advanced) - experimental improvements
+7. **Phase 7** (Testing) - validate everything works
 
 ## ⚡ Quick Wins (Can be done in parallel)
 - Increase batch size (Task 1.1)
 - Add boundary metrics (Task 2.1) 
 - Implement cosine annealing (Task 1.2)
-- Basic confidence monitoring (Task 3.2)
+- Configure validation metric strategy (Task 3.1)
+- Add WindowDiff/Pk metrics (Task 3.2)
+- Basic confidence monitoring (Task 4.2)
 
 ## 🎯 Success Metrics
 - **Training:** Stable convergence with larger batch sizes, better LR scheduling
@@ -186,19 +257,28 @@
 
 ---
 
-**Current Status:** 🎉 **PHASE 1 COMPLETED SUCCESSFULLY!** 
+**Current Status:** 🚀 **PHASE 2 COMPLETED SUCCESSFULLY!** 
 
-**Progress:** 3/5 major tasks completed (60% done)
+**Progress:** 2/7 phases completed (29% done, major milestones achieved)
 - ✅ **Phase 1 Complete**: Training configuration optimization  
   - ✅ Batch size optimization (8 → 32, 4x improvement)
   - ✅ Advanced LR scheduling (5 scheduler types, cosine default)
   - ✅ Configuration cleanup (zero magic numbers)
-- ⏳ **Ready for Phase 2**: Boundary-aware metrics
+- ✅ **Phase 2 Complete**: Boundary-aware evaluation system
+  - ✅ Boundary detection metrics (precision, recall, F1)
+  - ✅ Segment-level quality metrics (complete detection, IoU)
+  - ✅ Transition-specific accuracy metrics (verse↔chorus)
+  - ✅ **CRITICAL DISCOVERY**: Revealed severe structural issues hidden by line-level metrics
 
 **Performance Improvements Achieved:**
-- 🚀 **Training speed**: 25-35% faster (35-50 min vs 60-120 min)
+- 🚀 **Training speed**: 25-35% faster (35-50 min vs 60-120 min) 
 - 🎯 **Gradient stability**: 4x larger batch size for stable training
 - 📚 **Maintainability**: All parameters configurable via YAML
 - 🔧 **Flexibility**: 5 scheduler types + full monitoring control
+- 🔍 **Evaluation insights**: Deep structural understanding vs surface metrics
+- 📊 **Real-time visibility**: Boundary/segment metrics tracked every epoch
 
-**Next Action:** Start Phase 2, Task 2.1 (Boundary-aware metrics) for better evaluation
+**🎯 BREAKTHROUGH INSIGHT:** Line-level F1 of 0.47 **masked** boundary F1 of 0.04!  
+**Critical Finding:** The model fragments sections rather than detecting complete verse/chorus boundaries.
+
+**Next Action:** Address validation metric strategy with Phase 3, then structural issues with Phase 5 (Architecture enhancements)

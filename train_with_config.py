@@ -43,7 +43,8 @@ def setup_data_loaders(config: TrainingConfig, feature_extractor):
         feature_extractor,
         batch_size=config.batch_size,
         shuffle=True,
-        use_weighted_sampling=config.weighted_sampling
+        use_weighted_sampling=config.weighted_sampling,
+        num_workers=config.num_workers
     )
     
     val_loader = create_dataloader(
@@ -51,7 +52,8 @@ def setup_data_loaders(config: TrainingConfig, feature_extractor):
         feature_extractor,
         batch_size=config.batch_size, 
         shuffle=False,
-        use_weighted_sampling=False
+        use_weighted_sampling=False,
+        num_workers=config.num_workers
     )
     
     test_loader = create_dataloader(
@@ -59,7 +61,8 @@ def setup_data_loaders(config: TrainingConfig, feature_extractor):
         feature_extractor,
         batch_size=config.batch_size,
         shuffle=False, 
-        use_weighted_sampling=False
+        use_weighted_sampling=False,
+        num_workers=config.num_workers
     )
     
     return train_loader, val_loader, test_loader, train_dataset

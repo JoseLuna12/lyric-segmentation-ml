@@ -1,23 +1,26 @@
 #!/bin/bash
 
 # BLSTM Text Segmentation Training Script
-# Hardcoded arguments for training_config.yaml
 # Usage: ./train.sh
 
 set -e  # Exit on any error
 
-echo "Starting BLSTM Training with training_config.yaml..."
+# Configuration file path
+CONFIG_FILE="configs/training/training_v2.yaml"
+
+echo "Starting BLSTM Training with $(basename $CONFIG_FILE)..."
 echo "=================================================="
 echo
 
-# Check if training_config.yaml exists
-if [ ! -f "configs/training/training_config.yaml" ]; then
-    echo "❌ Error: configs/training/training_config.yaml not found!"
+# Check if config file exists
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "❌ Error: $CONFIG_FILE not found!"
     exit 1
 fi
 
+echo "Using configuration: $CONFIG_FILE"
 echo "Starting training..."
 echo
 
 # Main training command with hardcoded arguments
-python train_with_config.py configs/training/training_config.yaml
+python train_with_config.py "$CONFIG_FILE"

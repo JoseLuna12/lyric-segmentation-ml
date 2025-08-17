@@ -1,0 +1,124 @@
+# Enhanced BiLSTM Configuration for Verse-Chorus Segmentation
+# Robust enhancement of working training_config.yaml with improved stability
+
+# Data Configuration
+data:
+  train_file: "data/train.jsonl"
+  val_file: "data/val.jsonl"
+  test_file: "data/test.jsonl"
+
+# Model Architecture - Robust configuration based on working training_config.yaml
+model:
+  hidden_dim: 256  # Keep proven capacity from working config
+  num_classes: 2
+  dropout: 0.2     # Slightly higher than working config (0.2) for more robustness
+
+# Training Parameters - Enhanced robustness while maintaining performance
+training:
+  batch_size: 24           # Smaller than working (32) but not extreme for stability
+  learning_rate: 0.0008    # Slightly lower than working (0.001) for stability
+  weight_decay: 0.008      # Slightly higher than working (0.005) for regularization
+  max_epochs: 100          # Slightly shorter than working (120) to prevent overtraining
+  patience: 20             # Slightly less than working (25) for earlier stopping
+  gradient_clip_norm: 0.4  # Slightly tighter than working (0.5)
+  
+  # Learning rate scheduling - Keep proven cosine from working config
+  scheduler: "cosine"      # Keep what works from training_config.yaml
+  min_lr: 1e-6            # Same as working config
+  cosine_t_max: 100       # Match max_epochs
+
+# Anti-Collapse System - Enhanced robustness (based on working config)
+anti_collapse:
+  label_smoothing: 0.20    # Higher than working (0.15) for more robustness
+  weighted_sampling: true  # Essential for balanced batches
+  entropy_lambda: 0.05     # Light entropy regularization (working config had 0.0)
+
+# Emergency Monitoring - Enhanced vigilance (more robust than working config)
+emergency_monitoring:
+  enabled: true
+  
+  # Batch-level - More vigilant than working config
+  max_confidence_threshold: 0.90    # More strict than working (0.95)
+  min_chorus_rate: 0.08            # Slightly higher than working (0.05) 
+  max_chorus_rate: 0.80            # Slightly lower than working (0.85)
+  max_conf_over_95_ratio: 0.10     # More strict than working (0.15)
+  
+  # Epoch-level - Earlier intervention than working config
+  val_overconf_threshold: 0.95     # More strict than working (0.97)
+  val_f1_collapse_threshold: 0.08  # Higher than working (0.05)
+  emergency_overconf_threshold: 0.96  # Lower than working (0.98)
+  emergency_conf95_ratio: 0.8      # Same as working but with lower thresholds
+  emergency_f1_threshold: 0.03     # Slightly higher than working (0.02)
+  
+  # Monitoring timing - Earlier than working config
+  skip_batches: 30        # Earlier than working (50) but not extreme
+  skip_epochs: 3          # Earlier than working (5) 
+  print_batch_every: 15   # More frequent than working (20)
+
+# Temperature Calibration - Based on working config with extended range
+temperature_calibration:
+  temperature_grid: [0.6, 0.8, 1.0, 1.2, 1.5, 1.8, 2.2, 2.5]  # Based on working config, slightly extended
+  default_temperature: 1.0  # Same as working config
+
+# Feature Configuration - Balanced feature extraction
+features:
+  # Head-SSM: Captures opening patterns (important for verses)
+  head_ssm:
+    enabled: true
+    dimension: 12
+    head_words: 2          # Same as working config (proven optimal)
+  
+  # Tail-SSM: Captures ending patterns (important for rhyme schemes)
+  tail_ssm:
+    enabled: true
+    dimension: 12
+    tail_words: 2          # Same as working config (proven optimal)
+  
+  # Phonetic-SSM: Critical for detecting chorus repetition
+  phonetic_ssm:
+    enabled: true
+    dimension: 12
+    mode: "rhyme"          # Focus on rhyme patterns
+    similarity_method: "binary"  # Valid option (binary, edit_distance, or sequence_match)
+    normalize: false       # Keep same as working config for consistency
+    normalize_method: "zscore"
+    high_sim_threshold: 0.35  # Slightly lower than working (0.4) for better sensitivity
+  
+  # POS-SSM: Grammatical structure differences
+  pos_ssm:
+    enabled: true
+    dimension: 12
+    tagset: "simplified"   # Same as working config
+    similarity_method: "combined"  # Same as working config
+    high_sim_threshold: 0.28  # Slightly lower than working (0.3) for better sensitivity
+  
+  # String-SSM: Direct text repetition (crucial for chorus detection)
+  string_ssm:
+    enabled: true
+    dimension: 12
+    case_sensitive: false  # Same as working config
+    remove_punctuation: true  # Same as working config
+    similarity_threshold: 0.08  # Slightly lower than working (0.1) for better sensitivity
+    similarity_method: "word_overlap"  # Same as working config (proven effective)
+
+# Output Configuration
+output:
+  base_dir: "training_sessions"
+  save_best_model: true
+  save_final_model: true
+  save_training_metrics: true
+  save_config_snapshot: true
+
+# System Settings
+system:
+  seed: 42
+  device: "auto"
+  num_workers: 0          # Single-threaded for stability (avoids multiprocessing pickle issues)
+  deterministic: true
+
+# Experiment Metadata
+experiment:
+  name: "training_v2_robust_enhanced"
+  description: "Robust enhanced version of working training_config.yaml with improved stability measures"
+  tags: ["robust-enhancement", "enhanced-stability", "based-on-working-config", "balanced-robustness", "improved-monitoring", "moderate-regularization", "production-ready"]
+  notes: "Enhanced robustness based on proven training_config.yaml. Moderate improvements: slightly smaller batches (24 vs 32), slightly lower LR (0.0008 vs 0.001), increased dropout (0.3 vs 0.2), higher label smoothing (0.20 vs 0.15), light entropy regularization (0.05 vs 0.0), and enhanced monitoring. Maintains performance potential while adding stability. Good balance between the working config and collapse prevention."

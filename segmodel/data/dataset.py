@@ -256,7 +256,8 @@ def create_dataloader(
     feature_extractor,
     batch_size: int = 8,
     shuffle: bool = True,
-    use_weighted_sampling: bool = True
+    use_weighted_sampling: bool = True,
+    num_workers: int = 0
 ) -> DataLoader:
     """
     Create DataLoader with proper collation and sampling.
@@ -267,6 +268,7 @@ def create_dataloader(
         batch_size: Batch size
         shuffle: Whether to shuffle (ignored if using weighted sampling)
         use_weighted_sampling: Whether to use anti-collapse weighted sampling
+        num_workers: Number of worker processes for data loading (0 = single-threaded)
     """
     
     def collate_fn(batch_items):
@@ -303,7 +305,7 @@ def create_dataloader(
         shuffle=shuffle,
         sampler=sampler,
         collate_fn=collate_fn,
-        num_workers=0,  # Keep simple for now
+        num_workers=num_workers,
         pin_memory=torch.cuda.is_available()
     )
 

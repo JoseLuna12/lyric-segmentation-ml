@@ -228,6 +228,7 @@ data/external/
 *.tsv
 *.json
 !training_sessions/*/training_metrics.json
+!training_sessions/*/boundary_metrics_summary.json
 *.jsonl
 *.parquet
 *.feather
