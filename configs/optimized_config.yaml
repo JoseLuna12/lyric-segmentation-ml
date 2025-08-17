@@ -1,0 +1,92 @@
+# ============================================================================
+# OPTIMIZED CONFIGURATION - Based on bottleneck analysis
+# Key improvements: Model capacity + threshold optimization + training patience
+# Expected: Chorus F1 0.78-0.82, Macro F1 0.84-0.87
+# ============================================================================
+
+# Data paths
+data:
+  train_file: "data/train.jsonl"
+  val_file: "data/val.jsonl"
+  test_file: "data/test.jsonl"
+
+# Model architecture - CAPACITY INCREASE (main bottleneck fix)
+model:
+  hidden_dim: 256        # 🚀 DOUBLED from 128 - address 60D→128D bottleneck
+  num_classes: 2
+  dropout: 0.3           # 🚀 REDUCED from 0.4 - less over-regularization
+
+# Training parameters - PATIENCE INCREASE (let model converge properly)
+training:
+  batch_size: 16
+  learning_rate: 0.001
+  weight_decay: 0.01
+  max_epochs: 80         # 🚀 INCREASED from 55 - model was improving at epoch 22
+  patience: 12           # 🚀 INCREASED from 8 - prevent early stopping
+  gradient_clip_norm: 1.0
+
+# Anti-collapse settings
+anti_collapse:
+  label_smoothing: 0.2
+  weighted_sampling: true
+  entropy_lambda: 0.0
+
+# Emergency monitoring - allow slightly higher confidence
+emergency_monitoring:
+  enabled: true
+  max_confidence_threshold: 0.96  # 🚀 SLIGHT INCREASE from 0.95
+  min_chorus_rate: 0.05
+  max_chorus_rate: 0.85
+  max_conf_over_95_ratio: 0.8
+
+# Features configuration - THRESHOLD OPTIMIZATION (biggest expected win)
+features:
+  head_ssm:
+    enabled: true
+    output_dim: 12
+    head_words: 2
+  tail_ssm:
+    enabled: true
+    output_dim: 12
+    tail_words: 2
+  phonetic_ssm:
+    enabled: true
+    output_dim: 12
+    mode: "rhyme"
+    similarity_method: "binary"
+    normalize: false
+    normalize_method: "zscore"
+    high_sim_threshold: 0.6  # 🚀 REDUCED from 0.8 - catch more chorus variations
+  pos_ssm:
+    enabled: true
+    output_dim: 12
+    tagset: "simplified"
+    similarity_method: "combined"
+    high_sim_threshold: 0.5  # 🚀 REDUCED from 0.7 - less restrictive grammar matching
+  string_ssm:
+    enabled: true
+    output_dim: 12
+    case_sensitive: false
+    remove_punctuation: true
+    similarity_threshold: 0.2  # 🚀 REDUCED from 0.3 - capture subtler repetitions
+    similarity_method: "word_overlap"
+
+# Output settings
+output:
+  base_dir: "training_sessions"
+  save_best_model: true
+  save_final_model: true
+  save_training_metrics: true
+
+# System settings
+system:
+  seed: 42
+  device: "auto"
+  num_workers: 2
+
+# Experiment metadata
+experiment:
+  name: "Optimized_Threshold_Capacity_v1"
+  description: "Optimized config addressing capacity bottleneck and restrictive thresholds"
+  tags: ["optimized", "increased_capacity", "lower_thresholds", "better_patience"]
+  notes: "Based on analysis: 60D→256D capacity, lower SSM thresholds, more training patience"

@@ -30,6 +30,13 @@ from .pos_ssm import (
     extract_pos_sequence,
     compute_pos_similarity
 )
+from .string_ssm import (
+    StringSSMExtractor,
+    extract_string_ssm_features,
+    compute_string_ssm,
+    normalized_levenshtein_similarity,
+    normalize_string
+)
 from .extractor import (
     FeatureExtractor,
     create_feature_extractor,
@@ -59,6 +66,11 @@ __all__ = [
     'compute_pos_ssm',
     'extract_pos_sequence',
     'compute_pos_similarity',
+    'StringSSMExtractor',
+    'extract_string_ssm_features',
+    'compute_string_ssm',
+    'normalized_levenshtein_similarity',
+    'normalize_string',
     'FeatureExtractor',
     'create_feature_extractor',
     'validate_feature_config'

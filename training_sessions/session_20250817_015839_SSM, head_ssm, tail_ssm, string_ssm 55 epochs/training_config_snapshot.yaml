@@ -1,0 +1,62 @@
+batch_size: 16
+device: mps
+dropout: 0.4
+emergency_monitoring_enabled: true
+entropy_lambda: 0.0
+experiment_description: Testing SSM, head_ssm, tail_ssm, string_ssm
+experiment_name: SSM, head_ssm, tail_ssm, string_ssm 55 epochs
+experiment_notes: Verify SSM, head_ssm, tail_ssm, string_ssm feature works in full
+  training pipeline
+experiment_tags:
+- SSM
+- head_ssm
+- tail_ssm
+- string_ssm
+- test
+- baseline
+gradient_clip_norm: 1.0
+head_ssm_dimension: 12
+head_ssm_enabled: true
+head_ssm_words: 2
+hidden_dim: 128
+label_smoothing: 0.2
+learning_rate: 0.001
+max_chorus_rate: 0.85
+max_conf_over_95_ratio: 0.8
+max_confidence_threshold: 0.95
+max_epochs: 55
+min_chorus_rate: 0.05
+num_classes: 2
+num_workers: 2
+output_base_dir: training_sessions
+patience: 8
+phonetic_ssm_dimension: 12
+phonetic_ssm_enabled: true
+phonetic_ssm_high_sim_threshold: 0.8
+phonetic_ssm_mode: rhyme
+phonetic_ssm_normalize: false
+phonetic_ssm_normalize_method: zscore
+phonetic_ssm_similarity_method: binary
+pos_ssm_dimension: 12
+pos_ssm_enabled: true
+pos_ssm_high_sim_threshold: 0.7
+pos_ssm_similarity_method: combined
+pos_ssm_tagset: simplified
+save_best_model: true
+save_final_model: true
+save_training_metrics: true
+seed: 42
+string_ssm_case_sensitive: false
+string_ssm_dimension: 12
+string_ssm_enabled: true
+string_ssm_remove_punctuation: true
+string_ssm_similarity_method: word_overlap
+string_ssm_similarity_threshold: 0.3
+tail_ssm_dimension: 12
+tail_ssm_enabled: true
+tail_ssm_words: 2
+test_file: data/test.jsonl
+train_file: data/train.jsonl
+val_file: data/val.jsonl
+weight_decay: 0.01
+weighted_sampling: true

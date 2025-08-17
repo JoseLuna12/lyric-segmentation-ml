@@ -1,0 +1,40 @@
+BLSTM Training Results - SSM, head_ssm, tail_ssm, string_ssm 55 epochs
+==================================================
+
+Configuration: configs/string_ssm_test.yaml
+Training time: 16.6 minutes
+Feature dimension: 60
+
+Feature Configuration:
+-------------------------
+  Head-SSM: Enabled (12D)
+    Head words: 2
+  Tail-SSM: Enabled (12D)
+    Tail words: 2
+  Phonetic-SSM: Enabled (12D)
+    Mode: rhyme
+    Similarity: binary
+    Normalize: False
+    High sim threshold: 0.8
+  POS-SSM: Enabled (12D)
+    Tagset: simplified
+    Similarity: combined
+    High sim threshold: 0.7
+
+Model Architecture:
+------------------
+  Hidden dimension: 128
+  Dropout: 0.4
+  Batch size: 16
+  Learning rate: 0.001
+  Label smoothing: 0.2
+  Weighted sampling: True
+
+Test Results:
+-------------
+  Macro F1: 0.8121
+  Verse F1: 0.8951
+  Chorus F1: 0.7291
+  Confidence: 0.765
+  Chorus rate: 27.37%
+  Temperature: 0.80

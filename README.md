@@ -112,14 +112,14 @@ echo "Line 1\nLine 2" | python predict_baseline.py \
 
 ## 📊 Expected Performance
 
-**With Head-SSM + Tail-SSM Features:**
-- **Accuracy**: 75-85% (improved with dual features)
+**With Head-SSM + Tail-SSM + String-SSM Features:**
+- **Accuracy**: 75-85% (improved with triple features)
 - **F1 Macro**: 0.70-0.80
 - **Verse F1**: 0.80-0.90 (high precision)
 - **Chorus F1**: 0.60-0.75 (challenging due to variety)
 - **Confidence**: Well-calibrated (avg ~0.70-0.80)
 - **Training Time**: ~60-120 minutes on modern hardware
-- **Feature Dimension**: 24D (12D Head-SSM + 12D Tail-SSM)
+- **Feature Dimension**: 36D (12D Head-SSM + 12D Tail-SSM + 12D String-SSM)
 
 ## 🔧 Configuration
 
@@ -193,12 +193,12 @@ lines = [
     "Thinking of you every day"            # chorus (repeated)
 ]
 
-# Output: Feature matrix (4 lines × 24 dimensions)
+# Output: Feature matrix (4 lines × 36 dimensions)
 features = torch.tensor([
-    [0.33, 1.00, 0.47, ...],  # Line 0: 24D feature vector
-    [0.25, 1.00, 0.50, ...],  # Line 1: 24D feature vector  
-    [0.25, 1.00, 0.50, ...],  # Line 2: 24D feature vector
-    [0.25, 1.00, 0.50, ...]   # Line 3: 24D feature vector
+    [0.33, 1.00, 0.47, ..., 0.51, 0.94, 0.33, ...],  # Line 0: 36D feature vector
+    [0.25, 1.00, 0.50, ..., 0.45, 0.78, 0.25, ...],  # Line 1: 36D feature vector  
+    [0.25, 1.00, 0.50, ..., 0.48, 0.94, 0.22, ...],  # Line 2: 36D feature vector
+    [0.25, 1.00, 0.50, ..., 0.52, 0.78, 0.31, ...]   # Line 3: 36D feature vector
 ])
 ```
 
@@ -234,11 +234,75 @@ features = torch.tensor([
 
 **Why it works**: Verses and choruses often have different rhyme schemes. Choruses may rhyme more consistently (`"day"/"way"/"say"`), while verses may have more varied endings.
 
-#### 3. **Combined Features** (24 dimensions total)
-When both extractors are enabled, features are concatenated:
+#### 3. **String-SSM Features** (12 dimensions)
+**Purpose**: Detect overall textual similarity between lines using normalized Levenshtein distance.
+
+**How it works:**
+- Normalizes text by removing punctuation and converting to lowercase (configurable)
+- Computes Levenshtein distance between all pairs of lines
+- Normalizes distance by dividing by the length of the longer string
+- Converts to similarity score: `similarity = 1 - (distance / max_length)`
+- Generates 12 statistical features per line (same structure as Head-SSM and Tail-SSM)
+
+| Feature | Description | Example Value |
+|---------|-------------|---------------|
+| `string_mean_similarity` | Average similarity to all lines | 0.45 |
+| `string_max_similarity` | Highest similarity to any line | 0.94 |
+| `string_high_sim_ratio` | Fraction of high similarities (≥0.7) | 0.33 |
+| `string_prev_similarity` | Similarity to previous line | 0.22 |
+| ... | 8 more features | ... |
+
+**Configuration options:**
+- `case_sensitive`: Whether to preserve case during comparison
+- `remove_punctuation`: Whether to remove punctuation before comparison  
+- `similarity_threshold`: Minimum similarity threshold (values below are set to 0)
+- `similarity_method`: Algorithm to use (`"word_overlap"`, `"jaccard"`, `"levenshtein"`)
+
+**Similarity Methods:**
+
+| Method | Speed | Accuracy | Best For | Trade-offs |
+|--------|-------|----------|----------|------------|
+| `word_overlap` | **Fastest** (0.24s/500 lines) | Medium | Repeated phrases, chorus detection | Ignores word order; simple word counting |
+| `jaccard` | Medium (0.51s/500 lines) | Medium-High | Content similarity, topic overlap | Set-based; good for similar themes |
+| `levenshtein` | Slowest (89s/500 lines) | **Highest** | Exact repetitions, typo detection | Character-level; very expensive |
+
+**Example Comparison:**
+```
+Line A: "thinking of you every single day"
+Line B: "thinking of you every day"
+
+word_overlap:  0.833  (5 matches / 6 words)
+jaccard:       0.833  (5 shared / 6 total unique words)  
+levenshtein:   0.781  (7 character edits / 32 chars)
+```
+
+**When to Use Each Method:**
+- **`word_overlap`** (default): General training, fast iterations, chorus detection
+- **`jaccard`**: When you want better semantic similarity than word_overlap
+- **`levenshtein`**: Research/analysis only, when you need exact character-level similarity
+
+**Performance Impact:**
+```
+For a typical song (50 lines):
+word_overlap:  ~0.002 seconds  ✅ 
+jaccard:       ~0.005 seconds  ✅
+levenshtein:   ~2.5 seconds    ⚠️  (would cause training hangs)
+
+Training time difference (1000 songs):
+word_overlap:  ~2 seconds   
+jaccard:       ~5 seconds   
+levenshtein:   ~42 minutes  (unusable for training)
+```
+
+**Recommendation**: Use `"word_overlap"` (default) for training - it's 373x faster than Levenshtein while capturing the key repetition patterns needed for verse/chorus classification.
+
+**Why it works**: Captures general textual repetition patterns that complement the specific head/tail patterns. Useful for detecting exact or near-exact line repetitions, variations of the same lyrical content, and overall structural similarity.
+
+#### 4. **Combined Features** (36 dimensions total)
+When multiple extractors are enabled, features are concatenated:
 ```python
-combined_features = torch.cat([head_features, tail_features], dim=-1)
-# Shape: (num_lines, 24) = (num_lines, 12 + 12)
+combined_features = torch.cat([head_features, tail_features, string_features], dim=-1)
+# Shape: (num_lines, 36) = (num_lines, 12 + 12 + 12)
 ```
 
 ### Feature Configuration
@@ -255,6 +319,13 @@ features:
     enabled: true  
     output_dim: 12
     tail_words: 2      # Number of words from line end
+  string_ssm:
+    enabled: true
+    output_dim: 12
+    case_sensitive: false        # Case-insensitive comparison
+    remove_punctuation: true     # Remove punctuation before comparison
+    similarity_threshold: 0.0    # No minimum threshold
+    similarity_method: "word_overlap"  # Fast method: word_overlap, jaccard, levenshtein
   # Future features...
   text_embeddings:
     enabled: false     # Not implemented yet
@@ -499,6 +570,7 @@ python -m train.trainer          # Test training components
 ### ✅ Completed
 - ✅ Head-SSM features for chorus detection
 - ✅ Tail-SSM features for rhyme pattern detection  
+- ✅ String-SSM features for overall textual similarity
 - ✅ Modular feature architecture
 - ✅ YAML configuration system
 - ✅ Anti-collapse measures

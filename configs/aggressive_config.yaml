@@ -1,0 +1,93 @@
+# ============================================================================
+# AGGRESSIVE CONFIGURATION - Maximum performance push
+# For when you want to push performance limits with compute budget
+# Expected: Chorus F1 0.82-0.87, Macro F1 0.87-0.91  
+# Training time: 45-60 minutes
+# ============================================================================
+
+# Data paths
+data:
+  train_file: "data/train.jsonl"
+  val_file: "data/val.jsonl"
+  test_file: "data/test.jsonl"
+
+# Model architecture - MAXIMUM CAPACITY
+model:
+  hidden_dim: 512        # 🚀 MAXIMUM - 4x increase for complex pattern learning
+  num_classes: 2
+  dropout: 0.2           # 🚀 MINIMAL regularization - let model learn
+
+# Training parameters - LONG & CAREFUL TRAINING
+training:
+  batch_size: 8          # 🚀 SMALLER batches for better gradients with large model
+  learning_rate: 0.0005  # 🚀 LOWER LR for stability with large model
+  weight_decay: 0.005    # 🚀 REDUCED - less weight penalty
+  max_epochs: 120        # 🚀 LONG training for convergence
+  patience: 20           # 🚀 VERY PATIENT - let it find the best solution
+  gradient_clip_norm: 0.5  # 🚀 TIGHTER clipping for stability
+
+# Anti-collapse settings - adjusted for aggressive training
+anti_collapse:
+  label_smoothing: 0.15  # 🚀 REDUCED - trust the model more
+  weighted_sampling: true
+  entropy_lambda: 0.0
+
+# Emergency monitoring - allow higher confidence for strong model
+emergency_monitoring:
+  enabled: true
+  max_confidence_threshold: 0.97  # 🚀 ALLOW high confidence
+  min_chorus_rate: 0.05
+  max_chorus_rate: 0.85
+  max_conf_over_95_ratio: 0.9  # 🚀 ALLOW more high-confidence predictions
+
+# Features configuration - VERY LOW THRESHOLDS (catch all patterns)
+features:
+  head_ssm:
+    enabled: true
+    output_dim: 12
+    head_words: 3          # 🚀 MORE CONTEXT
+  tail_ssm:
+    enabled: true
+    output_dim: 12
+    tail_words: 3          # 🚀 MORE CONTEXT  
+  phonetic_ssm:
+    enabled: true
+    output_dim: 12
+    mode: "rhyme"
+    similarity_method: "binary"
+    normalize: false
+    normalize_method: "zscore"
+    high_sim_threshold: 0.4  # 🚀 VERY LOW - catch weak rhyme patterns
+  pos_ssm:
+    enabled: true
+    output_dim: 12
+    tagset: "simplified"
+    similarity_method: "combined"
+    high_sim_threshold: 0.3  # 🚀 VERY LOW - loose grammatical requirements
+  string_ssm:
+    enabled: true
+    output_dim: 12
+    case_sensitive: false
+    remove_punctuation: true
+    similarity_threshold: 0.1  # 🚀 VERY LOW - catch weak word overlaps
+    similarity_method: "word_overlap"
+
+# Output settings
+output:
+  base_dir: "training_sessions"
+  save_best_model: true
+  save_final_model: true
+  save_training_metrics: true
+
+# System settings
+system:
+  seed: 42
+  device: "auto"
+  num_workers: 2
+
+# Experiment metadata
+experiment:
+  name: "Aggressive_Maximum_Performance_v1"
+  description: "Maximum performance config with very low thresholds and large model"
+  tags: ["aggressive", "max_capacity", "very_low_thresholds", "long_training"]
+  notes: "Push performance limits: 512D model, very low SSM thresholds, long patient training"

@@ -9,6 +9,7 @@ from .head_ssm import HeadSSMExtractor
 from .tail_ssm import TailSSMExtractor
 from .phonetic_ssm import PhoneticSSMExtractor
 from .pos_ssm import POSSSMExtractor
+from .string_ssm import StringSSMExtractor
 
 
 class FeatureExtractor:
@@ -106,6 +107,32 @@ class FeatureExtractor:
             self.total_dim += output_dim
             sim_short = similarity_method if similarity_method != 'combined' else 'comb'
             enabled_features.append(f"pos_ssm({output_dim}D,{tagset},{sim_short},th={high_sim_threshold})")
+        
+        # String-SSM features (overall textual similarity using Levenshtein distance)
+        if self.feature_config.get('string_ssm', {}).get('enabled', False):
+            string_config = self.feature_config['string_ssm']
+            case_sensitive = string_config.get('case_sensitive', False)
+            remove_punctuation = string_config.get('remove_punctuation', True)
+            similarity_threshold = string_config.get('similarity_threshold', 0.0)
+            similarity_method = string_config.get('similarity_method', 'word_overlap')
+            output_dim = string_config.get('output_dim', 12)
+            
+            self.extractors['string_ssm'] = StringSSMExtractor(
+                case_sensitive=case_sensitive,
+                remove_punctuation=remove_punctuation,
+                similarity_threshold=similarity_threshold,
+                similarity_method=similarity_method,
+                output_dim=output_dim
+            )
+            self.total_dim += output_dim
+            desc_parts = [f"string_ssm({output_dim}D,{similarity_method})"]
+            if case_sensitive:
+                desc_parts.append("case_sens")
+            if not remove_punctuation:
+                desc_parts.append("keep_punct")
+            if similarity_threshold > 0:
+                desc_parts.append(f"th={similarity_threshold}")
+            enabled_features.append(",".join(desc_parts))
         
         # Text embeddings (placeholder for future)
         if self.feature_config.get('text_embeddings', {}).get('enabled', False):
@@ -256,6 +283,13 @@ if __name__ == "__main__":
             'tagset': 'universal',
             'similarity_method': 'lcs',
             'high_sim_threshold': 0.8
+        },
+        'string_ssm': {
+            'enabled': True,
+            'output_dim': 12,
+            'case_sensitive': False,
+            'remove_punctuation': True,
+            'similarity_threshold': 0.2
         }
     }
     

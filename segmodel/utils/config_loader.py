@@ -63,6 +63,12 @@ class TrainingConfig:
     pos_ssm_tagset: str = "simplified"
     pos_ssm_similarity_method: str = "combined"
     pos_ssm_high_sim_threshold: float = 0.7
+    string_ssm_enabled: bool = True
+    string_ssm_dimension: int = 12
+    string_ssm_case_sensitive: bool = False
+    string_ssm_remove_punctuation: bool = True
+    string_ssm_similarity_threshold: float = 0.0
+    string_ssm_similarity_method: str = "word_overlap"
     
     # Output settings
     output_base_dir: str = "training_sessions"
@@ -170,6 +176,7 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
     tail_ssm = features.get('tail_ssm', {})
     phonetic_ssm = features.get('phonetic_ssm', {})
     pos_ssm = features.get('pos_ssm', {})
+    string_ssm = features.get('string_ssm', {})
     output = config.get('output', {})
     system = config.get('system', {})
     experiment = config.get('experiment', {})
@@ -224,6 +231,12 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         pos_ssm_tagset=pos_ssm.get('tagset', 'simplified'),
         pos_ssm_similarity_method=pos_ssm.get('similarity_method', 'combined'),
         pos_ssm_high_sim_threshold=pos_ssm.get('high_sim_threshold', 0.7),
+        string_ssm_enabled=string_ssm.get('enabled', True),
+        string_ssm_dimension=string_ssm.get('output_dim', 12),
+        string_ssm_case_sensitive=string_ssm.get('case_sensitive', False),
+        string_ssm_remove_punctuation=string_ssm.get('remove_punctuation', True),
+        string_ssm_similarity_threshold=string_ssm.get('similarity_threshold', 0.0),
+        string_ssm_similarity_method=string_ssm.get('similarity_method', 'word_overlap'),
         
         # Output
         output_base_dir=output.get('base_dir', 'training_sessions'),
@@ -303,6 +316,17 @@ def load_training_config(config_path: str) -> TrainingConfig:
         pos_desc = f"POS-SSM({training_config.pos_ssm_dimension}D,{training_config.pos_ssm_tagset},{training_config.pos_ssm_similarity_method},th={training_config.pos_ssm_high_sim_threshold})"
         enabled_features.append(pos_desc)
         total_dim += training_config.pos_ssm_dimension
+    if training_config.string_ssm_enabled:
+        string_desc = f"String-SSM({training_config.string_ssm_dimension}D"
+        if training_config.string_ssm_case_sensitive:
+            string_desc += ",case_sens"
+        if not training_config.string_ssm_remove_punctuation:
+            string_desc += ",keep_punct"
+        if training_config.string_ssm_similarity_threshold > 0:
+            string_desc += f",th={training_config.string_ssm_similarity_threshold}"
+        string_desc += ")"
+        enabled_features.append(string_desc)
+        total_dim += training_config.string_ssm_dimension
     
     if enabled_features:
         print(f"   Features: {', '.join(enabled_features)} = {total_dim}D total")

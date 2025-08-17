@@ -251,6 +251,14 @@ Examples:
                 'similarity_method': config.pos_ssm_similarity_method,
                 'high_sim_threshold': config.pos_ssm_high_sim_threshold,
                 'output_dim': config.pos_ssm_dimension
+            },
+            'string_ssm': {
+                'enabled': config.string_ssm_enabled,
+                'case_sensitive': config.string_ssm_case_sensitive,
+                'remove_punctuation': config.string_ssm_remove_punctuation,
+                'similarity_threshold': config.string_ssm_similarity_threshold,
+                'similarity_method': config.string_ssm_similarity_method,
+                'output_dim': config.string_ssm_dimension
             }
         }
         feature_extractor = FeatureExtractor(feature_config)
@@ -273,6 +281,16 @@ Examples:
         if config.pos_ssm_enabled:
             pos_desc = f"POS-SSM({config.pos_ssm_dimension}D,{config.pos_ssm_tagset},{config.pos_ssm_similarity_method},th={config.pos_ssm_high_sim_threshold})"
             enabled_features.append(pos_desc)
+        if config.string_ssm_enabled:
+            string_desc = f"String-SSM({config.string_ssm_dimension}D"
+            if config.string_ssm_case_sensitive:
+                string_desc += ",case_sens"
+            if not config.string_ssm_remove_punctuation:
+                string_desc += ",keep_punct"
+            if config.string_ssm_similarity_threshold > 0:
+                string_desc += f",th={config.string_ssm_similarity_threshold}"
+            string_desc += ")"
+            enabled_features.append(string_desc)
         
         if enabled_features:
             print(f"   Active features: {', '.join(enabled_features)}")
@@ -281,6 +299,8 @@ Examples:
         
         if config.pos_ssm_enabled:
             print(f"   🧩 POS-SSM config: {config.pos_ssm_tagset} tags, {config.pos_ssm_similarity_method} similarity, threshold={config.pos_ssm_high_sim_threshold}")
+        if config.string_ssm_enabled:
+            print(f"   🧩 String-SSM config: case_sensitive={config.string_ssm_case_sensitive}, remove_punctuation={config.string_ssm_remove_punctuation}, threshold={config.string_ssm_similarity_threshold}")
         
         # Setup data loaders
         train_loader, val_loader, test_loader, train_dataset = setup_data_loaders(config, feature_extractor)

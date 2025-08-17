@@ -20,4 +20,4 @@ echo "Starting training..."
 echo
 
 # Main training command with hardcoded arguments
-python train_with_config.py configs/training_config.yaml
+python train_with_config.py configs/aggressive_config.yaml
