@@ -4,11 +4,11 @@
 # No feature specifications needed - they're loaded from training session!
 
 # Training session directory (contains model + exact config + results)
-training_session: "training_sessions/session_20250817_203021_training_robust_enhanced_boundary_f1_v1"
+training_session: "training_sessions/session_20250818_021703_training_validation_2layer_optimized_v2"
 
 prediction:
   # Core prediction parameters
-  temperature: 0.6                   # Temperature scaling for confidence calibration
+  temperature: 1.0
   input_file: "prediction_results/predict_lyric.txt"  # Single default location
   output_dir: "prediction_results"    # Base directory for organized results
   quiet: false                        # Set to true for silent operation (AI-less machines)

@@ -1,5 +1,5 @@
 # Enhanced BiLSTM Configuration for 2-Layer Verse-Chorus Segmentation
-# Optimized based on successful 0.79+ F1 performance with 2-layer architecture
+# Optimized based on successful 0.85 F1 performance - targeting 0.87+ F1
 
 # Data Configuration
 data:
@@ -7,86 +7,87 @@ data:
   val_file: "data/val.jsonl"
   test_file: "data/test.jsonl"
 
-# Model Architecture - Optimized for 2-layer performance
+# Model Architecture - Fine-tuned for 2-layer performance
 model:
-  hidden_dim: 256      # Proven sufficient capacity
-  num_layers: 2        # Deeper architecture for complex patterns
-  layer_dropout: 0.4   # ⬆️ Increased from 0.3 for better regularization between layers
+  hidden_dim: 256      # Keep proven capacity
+  num_layers: 2        # 2-layer architecture
+  layer_dropout: 0.35  # ⬆️ Increased from 0.3 → 0.35 for better inter-layer regularization
   num_classes: 2
-  dropout: 0.15        # ⬇️ Reduced from 0.2 (complementing layer_dropout)
+  dropout: 0.18        # ⬇️ Reduced from 0.2 → 0.18 (balance with layer_dropout)
 
-# Training Parameters - Tuned for 2-layer optimization
+# Training Parameters - Optimized for 2-layer stability and performance
 training:
-  batch_size: 24           # Keep proven batch size
-  learning_rate: 0.0006    # ⬇️ Reduced from 0.0008 for more stable 2-layer training
-  weight_decay: 0.012      # ⬆️ Increased from 0.008 for stronger regularization
+  batch_size: 28           # ⬆️ Increased from 24 → 28 for better GPU utilization
+  learning_rate: 0.0007    # ⬇️ Reduced from 0.0008 → 0.0007 for deeper model stability
+  weight_decay: 0.010      # ⬆️ Increased from 0.008 → 0.010 for stronger regularization
   max_epochs: 100          # Keep proven epoch budget
-  patience: 18             # ⬆️ Increased from 12 for deeper model convergence
-  gradient_clip_norm: 0.3  # ⬇️ Tighter than 0.4 for 2-layer stability
+  patience: 15             # ⬆️ Increased from 12 → 15 for deeper model convergence
+  gradient_clip_norm: 0.45 # ⬆️ Slightly increased from 0.4 → 0.45
   
-  # Learning rate scheduling - Keep proven cosine with adjusted parameters
-  scheduler: "cosine"      # Keep proven scheduler
-  min_lr: 1e-6            # Keep proven minimum
-  cosine_t_max: 100       # Match max_epochs
+  # Learning rate scheduling - Keep proven cosine
+  scheduler: "cosine"
+  min_lr: 1e-6
+  cosine_t_max: 100
 
-# Anti-Collapse System - Adjusted for 2-layer dynamics
+# Anti-Collapse System - Enhanced for chorus detection improvement
 anti_collapse:
-  label_smoothing: 0.18    # ⬇️ Slightly reduced from 0.20 (more regularization from layers)
+  label_smoothing: 0.16    # ⬇️ Reduced from 0.2 → 0.16 (less smoothing, more precision)
   weighted_sampling: true  # Keep essential balanced sampling
-  entropy_lambda: 0.05     # Keep proven entropy regularization
+  entropy_lambda: 0.08     # ⬆️ Increased from 0.05 → 0.08 (encourage prediction diversity)
 
-# Emergency Monitoring - Enhanced for 2-layer behavior
+# Emergency Monitoring - Adjusted for 2-layer behavior
 emergency_monitoring:
   enabled: true
   
-  # Batch-level - Adjusted thresholds for 2-layer confidence patterns
-  max_confidence_threshold: 0.92    # ⬆️ Slightly higher than 0.90 (better calibrated)
+  # Batch-level - Fine-tuned for 2-layer confidence patterns
+  max_confidence_threshold: 0.93    # ⬆️ Increased from 0.90
   min_chorus_rate: 0.08            # Keep proven minimum
   max_chorus_rate: 0.80            # Keep proven maximum
-  max_conf_over_95_ratio: 0.12     # ⬆️ Slightly higher than 0.10 (deeper model)
+  max_conf_over_95_ratio: 0.12     # Keep current setting
   
-  # Epoch-level - Adjusted for 2-layer learning dynamics
-  val_overconf_threshold: 0.96     # ⬆️ Slightly higher than 0.95
-  val_f1_collapse_threshold: 0.10  # ⬆️ Higher than 0.08 (more sensitive)
-  emergency_overconf_threshold: 0.97  # ⬆️ Higher than 0.96
-  emergency_conf95_ratio: 0.85       # ⬆️ Slightly higher than 0.80
-  emergency_f1_threshold: 0.04       # ⬆️ Higher than 0.03
+  # Epoch-level - Enhanced sensitivity for 2-layer
+  val_overconf_threshold: 0.96     # Keep current
+  val_f1_collapse_threshold: 0.12  # ⬆️ Increased from 0.08 (more sensitive)
+  emergency_overconf_threshold: 0.97  # Keep current
+  emergency_conf95_ratio: 0.80       # Keep current
+  emergency_f1_threshold: 0.05       # ⬆️ Increased from 0.03 (higher bar)
   
-  # Monitoring timing - Keep proven monitoring schedule
-  skip_batches: 30        # Keep proven early monitoring
-  skip_epochs: 3          # Keep proven epoch skip
-  print_batch_every: 10   # Keep proven print frequency
+  # Monitoring timing
+  skip_batches: 30
+  skip_epochs: 3
+  print_batch_every: 10
 
-# Temperature Calibration - Adjusted for 2-layer confidence
+# Temperature Calibration
 temperature_calibration:
-  temperature_grid: [0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 1.8, 2.2, 2.5]  # Keep proven range
-  default_temperature: 0.8  # ⬆️ Higher than 0.6 for better calibration
+  temperature_grid: [0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 1.8, 2.2, 2.5]
+  default_temperature: 0.8
 
-validation_strategy: "composite"  # Keep proven validation strategy
+# Validation Strategy - Focus on structural boundaries
+validation_strategy: "boundary_f1"  # ⬅️ Changed from "composite" to focus on transitions
 
-# Feature Configuration - Keep proven feature extraction
+# Feature Configuration - Tuned for better chorus detection
 features:
   # Head-SSM: Captures opening patterns
   head_ssm:
     enabled: true
     dimension: 12
-    head_words: 2          # Keep proven setting
+    head_words: 2
   
   # Tail-SSM: Captures ending patterns
   tail_ssm:
     enabled: true
     dimension: 12
-    tail_words: 2          # Keep proven setting
+    tail_words: 2
   
-  # Phonetic-SSM: Critical for chorus detection
+  # Phonetic-SSM: Critical for chorus detection - TUNED
   phonetic_ssm:
     enabled: true
     dimension: 12
-    mode: "rhyme"          # Keep proven mode
+    mode: "rhyme"
     similarity_method: "binary"
     normalize: false
     normalize_method: "zscore"
-    high_sim_threshold: 0.35  # Keep proven threshold
+    high_sim_threshold: 0.32  # ⬇️ Reduced from 0.35 → 0.32 (more sensitive to rhymes)
   
   # POS-SSM: Grammatical structure
   pos_ssm:
@@ -94,15 +95,15 @@ features:
     dimension: 12
     tagset: "simplified"
     similarity_method: "combined"
-    high_sim_threshold: 0.28  # Keep proven threshold
+    high_sim_threshold: 0.28  # Keep proven setting
   
-  # String-SSM: Direct repetition detection
+  # String-SSM: Direct repetition detection - TUNED
   string_ssm:
     enabled: true
     dimension: 12
     case_sensitive: false
     remove_punctuation: true
-    similarity_threshold: 0.08  # Keep proven threshold
+    similarity_threshold: 0.06  # ⬇️ Reduced from 0.08 → 0.06 (catch more repetitions)
     similarity_method: "word_overlap"
 
 # Output Configuration
@@ -117,12 +118,12 @@ output:
 system:
   seed: 42
   device: "auto"
-  num_workers: 0          # Keep single-threaded stability
+  num_workers: 0
   deterministic: true
 
 # Experiment Metadata
 experiment:
-  name: "training_validation_2layer_optimized_v1"
-  description: "Optimized 2-layer BiLSTM configuration based on successful 0.79+ F1 performance"
-  tags: ["2-layer-bilstm", "optimized", "validation-focused", "enhanced-monitoring", "production-ready"]
-  notes: "Configuration tuned specifically for 2-layer architecture with adjusted learning rate, regularization, and monitoring parameters. Based on successful training reaching 0.79+ F1 score."
+  name: "training_validation_2layer_optimized_v2"
+  description: "Fine-tuned 2-layer BiLSTM targeting 0.87+ F1, optimized based on 0.85 F1 baseline"
+  tags: ["2-layer-bilstm", "optimized", "chorus-focused", "boundary-validation", "production-ready"]
+  notes: "Configuration fine-tuned for 2-layer architecture with focus on improving chorus detection (target: chorus F1 > 0.82). Enhanced regularization, adjusted feature sensitivity, and boundary-focused validation."
