@@ -16,7 +16,15 @@ class PredictionConfig:
     
     # Model parameters
     model_path: str = ""
-    temperature: float = 1.5
+    
+    # Training session reference (for calibration loading)
+    training_session: str = ""
+    
+    # Calibration configuration
+    calibration_method: str = "auto"  # auto, temperature, platt, none
+    temperature: float = 1.0          # Temperature scaling parameter
+    platt_A: float = 1.0             # Platt scaling A coefficient  
+    platt_B: float = 0.0             # Platt scaling B coefficient
     
     # Input/Output parameters  
     input_file: str = "prediction_results/predict_lyric.txt"  # Single default location
@@ -75,7 +83,28 @@ def load_prediction_config(config_path: str) -> tuple[PredictionConfig, str]:
     
     # Extract prediction-specific sections
     if 'prediction' in config_dict:
-        flattened.update(config_dict['prediction'])
+        pred_section = config_dict['prediction']
+        
+        # Handle calibration configuration
+        if 'calibration' in pred_section:
+            calib_config = pred_section['calibration']
+            if 'method' in calib_config:
+                flattened['calibration_method'] = calib_config['method']
+            if 'temperature' in calib_config:
+                flattened['temperature'] = calib_config['temperature']
+            if 'platt_A' in calib_config:
+                flattened['platt_A'] = calib_config['platt_A']
+            if 'platt_B' in calib_config:
+                flattened['platt_B'] = calib_config['platt_B']
+        
+        # Handle other prediction parameters
+        for key in ['input_file', 'output_dir', 'quiet']:
+            if key in pred_section:
+                flattened[key] = pred_section[key]
+        
+        # Handle legacy temperature field (backward compatibility)
+        if 'temperature' in pred_section and 'temperature' not in flattened:
+            flattened['temperature'] = pred_section['temperature']
     
     if 'model' in config_dict:
         flattened.update({f"model_{k}": v for k, v in config_dict['model'].items()})
@@ -95,8 +124,23 @@ def load_prediction_config(config_path: str) -> tuple[PredictionConfig, str]:
             
             # Override with prediction-specific settings from config file
             prediction_params = config_dict.get('prediction', {})
+            
+            # Handle calibration configuration
+            if 'calibration' in prediction_params:
+                calib_config = prediction_params['calibration']
+                if calib_config.get('method') is not None:
+                    session_config.calibration_method = calib_config['method']
+                if calib_config.get('temperature') is not None:
+                    session_config.temperature = calib_config['temperature']
+                if calib_config.get('platt_A') is not None:
+                    session_config.platt_A = calib_config['platt_A']
+                if calib_config.get('platt_B') is not None:
+                    session_config.platt_B = calib_config['platt_B']
+            
+            # Handle legacy temperature field (backward compatibility)
             if prediction_params.get('temperature') is not None:
                 session_config.temperature = prediction_params['temperature']
+                
             if prediction_params.get('input_file') is not None:
                 session_config.input_file = prediction_params['input_file']
             if prediction_params.get('output_dir') is not None:
@@ -112,8 +156,8 @@ def load_prediction_config(config_path: str) -> tuple[PredictionConfig, str]:
         else:
             raise FileNotFoundError(f"Training session directory not found: {training_session_dir}")
     
-    # Handle direct top-level keys (for simple configs)
-    for key in ['temperature', 'input_file', 'output_dir', 'quiet']:
+    # Handle direct top-level keys (for simple configs - backward compatibility)
+    for key in ['temperature', 'input_file', 'output_dir', 'quiet', 'calibration_method', 'platt_A', 'platt_B']:
         if key in config_dict:
             flattened[key] = config_dict[key]
     
@@ -235,6 +279,7 @@ def create_prediction_config_from_training_session(session_dir: str) -> tuple[Pr
     # Create prediction config with extracted features
     pred_config = PredictionConfig(features=features)
     pred_config.model_path = model_path
+    pred_config.training_session = session_dir  # Set the training session reference
     
     return pred_config, model_path
 

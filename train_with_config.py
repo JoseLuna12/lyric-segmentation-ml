@@ -339,14 +339,29 @@ Examples:
         print(f"🎓 Starting training...")
         start_time = time.time()
         
-        best_model, best_temperature = trainer.train(train_loader, val_loader)
+        best_model, calibration_info = trainer.train(train_loader, val_loader)
         
         training_time = time.time() - start_time
         print(f"⏱️  Total training time: {training_time/60:.1f} minutes")
         
         # Final evaluation
         print(f"📊 Final evaluation on test set...")
-        test_results = trainer.evaluate(test_loader)
+        
+        # Load calibration if available for final test evaluation
+        calibrator = None
+        if calibration_info:
+            try:
+                from segmodel.train.calibration import load_calibration
+                calibration_path = session_dir / 'calibration.json'
+                if calibration_path.exists():
+                    method, calibrator = load_calibration(calibration_path)
+                    print(f"✅ Using calibration for test evaluation: {method}")
+                else:
+                    print("⚠️  No calibration.json found for test evaluation")
+            except Exception as e:
+                print(f"⚠️  Could not load calibration for test evaluation: {e}")
+        
+        test_results = trainer.evaluate(test_loader, calibrator=calibrator)
         
         # Print final results
         print(f"\n🎯 Final Test Results:")
@@ -355,7 +370,7 @@ Examples:
         print(f"   Chorus F1: {test_results['chorus_f1']:.4f}")
         print(f"   Avg confidence: {test_results['max_prob_mean']:.3f}")
         print(f"   Chorus rate: {test_results['chorus_rate']:.2%}")
-        print(f"   Optimal temperature: {best_temperature:.2f}")
+        print(f"   Calibration: {list(calibration_info.keys()) if calibration_info else 'none'}")
         
         # Save final results
         results_file = session_dir / "final_results.txt"
@@ -436,7 +451,23 @@ Examples:
             f.write(f"  Chorus F1: {test_results['chorus_f1']:.4f}\n")
             f.write(f"  Confidence: {test_results['max_prob_mean']:.3f}\n")
             f.write(f"  Chorus rate: {test_results['chorus_rate']:.2%}\n")
-            f.write(f"  Temperature: {best_temperature:.2f}\n")
+            f.write(f"  Calibration: {list(calibration_info.keys()) if calibration_info else 'none'}\n")
+            
+            # Add calibration details if available
+            if calibration_info:
+                f.write(f"\nCalibration Details:\n")
+                f.write("-" * 20 + "\n")
+                for method, result in calibration_info.items():
+                    if 'ece_before' in result and 'ece_after' in result:
+                        ece_before = result['ece_before']
+                        ece_after = result['ece_after']
+                        improvement = ece_before - ece_after
+                        f.write(f"  {method}: ECE {ece_before:.4f} → {ece_after:.4f} (Δ{improvement:+.4f})\n")
+                        if method == 'temperature' and 'params' in result:
+                            f.write(f"    T = {result['params']['temperature']:.3f}\n")
+                        elif method == 'platt' and 'params' in result:
+                            A = result['params']['A']; B = result['params']['B']
+                            f.write(f"    A = {A:.3f}, B = {B:.3f}\n")
         
         print(f"\n✅ Training completed successfully!")
         print(f"📁 All files saved to: {session_dir}")

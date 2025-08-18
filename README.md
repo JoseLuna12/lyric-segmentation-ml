@@ -127,7 +127,7 @@ python train_with_config.py configs/training/aggressive_config.yaml \
 
 #### Advanced Prediction Options
 ```bash
-python predict_baseline.py [MODEL_OPTIONS] [INPUT_OPTIONS] [CONFIG_OPTIONS] [OTHER_OPTIONS]
+python predict_baseline.py [MODEL_OPTIONS] [INPUT_OPTIONS] [CONFIG_OPTIONS] [CALIBRATION_OPTIONS] [OTHER_OPTIONS]
 
 # Model Options (choose one):
 --session SESSION                Path to training session directory (recommended)
@@ -143,8 +143,13 @@ python predict_baseline.py [MODEL_OPTIONS] [INPUT_OPTIONS] [CONFIG_OPTIONS] [OTH
 --lyrics "MULTI_LINE_STRING"     Multi-line lyrics as single string
 --stdin                          Read lyrics from stdin/pipe
 
+# Calibration Options:
+--calibration-method METHOD      Override calibration method: auto, temperature, platt, none
+--temperature TEMPERATURE        Override temperature scaling value
+--platt-A PLATT_A               Override Platt scaling A parameter
+--platt-B PLATT_B               Override Platt scaling B parameter
+
 # Other Options:
---temperature TEMPERATURE        Override temperature scaling
 --quiet                          Quiet mode (no terminal output)
 ```
 
@@ -167,8 +172,11 @@ python predict_baseline.py --session training_sessions/session_*/ --lines "First
 python predict_baseline.py --session training_sessions/session_*/ --lyrics "Line 1\nLine 2\nLine 3"
 echo "Line 1\nLine 2" | python predict_baseline.py --session training_sessions/session_*/ --stdin
 
-# Override temperature scaling
-python predict_baseline.py --session training_sessions/session_*/ --temperature 2.0
+# Calibration control examples
+python predict_baseline.py --session training_sessions/session_*/ --calibration-method auto
+python predict_baseline.py --session training_sessions/session_*/ --calibration-method temperature --temperature 1.5
+python predict_baseline.py --session training_sessions/session_*/ --calibration-method platt --platt-A 0.5 --platt-B -0.1
+python predict_baseline.py --session training_sessions/session_*/ --calibration-method none
 
 # Silent operation (for scripts)
 python predict_baseline.py --session training_sessions/session_*/ --quiet
@@ -382,7 +390,7 @@ training_sessions/
 - **✅ Advanced LR Scheduling**: Cosine annealing, warm restarts, step decay, plateau
 - **✅ Optimized Training**: 4x larger batch sizes (8→32) with proper LR scaling
 - **✅ Configurable Monitoring**: No more magic numbers - all thresholds configurable
-- **Temperature Calibration**: Post-hoc confidence calibration with configurable grid
+- **Advanced Calibration System**: Automatic calibration selection (temperature/Platt scaling) with ECE-based optimization
 - **Emergency Monitoring**: Real-time training guardrails with full parameter control
 - **YAML Configuration**: Flexible configuration system with command-line overrides and reproducibility snapshots
 
@@ -584,10 +592,16 @@ emergency_monitoring:
   print_batch_every: 10              # Print batch info every N batches
 ```
 
-### ✅ **New: Temperature Calibration Configuration**
+### ✅ **New: Advanced Calibration Configuration**
 
 ```yaml
-# ✅ NEW: Configurable Temperature Calibration
+# ✅ NEW: Advanced Calibration System (for prediction configs)
+calibration_method: auto         # auto, temperature, platt, none
+temperature: 1.5                 # Temperature scaling value
+platt_A: 1.0                    # Platt scaling A parameter  
+platt_B: 0.0                    # Platt scaling B parameter
+
+# ✅ NEW: Training-time calibration setup (for training configs)
 temperature_calibration:
   temperature_grid: [0.8, 1.0, 1.2, 1.5, 1.7, 2.0]  # Grid search values
   default_temperature: 1.0          # Fallback if calibration fails
@@ -635,6 +649,27 @@ experiment:
   name: "improved_training_v2"
   description: "Advanced scheduling + configurable monitoring"
   tags: ["improved", "cosine_scheduling", "larger_batch"]
+```
+
+**Example Prediction Configuration:**
+```yaml
+# Model configuration
+model_path: "training_sessions/session_20250817_024332/best_model.pt"
+config_file: "training_sessions/session_20250817_024332/training_config_snapshot.yaml"
+
+# Input/output configuration
+text_file: "data/predict_lyrics.txt"
+output_dir: "prediction_results/"
+quiet: false
+
+# ✅ NEW: Advanced Calibration Configuration
+calibration_method: auto         # auto, temperature, platt, none
+temperature: 1.5                 # Temperature scaling value (fallback if auto fails)
+platt_A: 1.0                    # Platt scaling A parameter
+platt_B: 0.0                    # Platt scaling B parameter
+
+# Device configuration
+device: "auto"  # auto, cuda, cpu
 ```
 
 ### Command Line Overrides
@@ -1055,7 +1090,7 @@ python -m train.trainer          # Test training components
 - ✅ **NEW**: Advanced learning rate scheduling (cosine, restarts, step, warmup)
 - ✅ **NEW**: Optimized batch size (8→32) with proper LR scaling  
 - ✅ **NEW**: Configurable emergency monitoring (no magic numbers)
-- ✅ **NEW**: Configurable temperature calibration
+- ✅ **NEW**: Advanced calibration system (auto-selection, temperature/Platt scaling, ECE optimization)
 - ✅ **NEW**: Multi-Layer BiLSTM Architecture (Phase 1)
   - ✅ Configurable LSTM depth (1-N layers)
   - ✅ Dual dropout system (layer dropout + output dropout)
@@ -1506,26 +1541,49 @@ python predict_baseline.py --model my_model.pt --config my_config.yaml --lines "
 - Ensure all feature extractors are enabled/disabled correctly
 - Use the training session directory as config source
 
-### Temperature Calibration
+### Calibration System
 
-Adjust confidence calibration with the `--temperature` parameter:
+The model supports automatic and manual calibration for well-calibrated confidence scores:
 
+#### Automatic Calibration (Recommended)
 ```bash
-# Default: T=1.5 (recommended for most cases)
-python predict_baseline.py --model my_model.pt --text lyrics.txt
-
-# Lower temperature: More confident predictions
-python predict_baseline.py --model my_model.pt --text lyrics.txt --temperature 1.0
-
-# Higher temperature: More uncertain, conservative predictions  
-python predict_baseline.py --model my_model.pt --text lyrics.txt --temperature 2.0
+# Use the best calibration method from training (auto-selected by lowest ECE)
+python predict_baseline.py --session training_sessions/session_*/ --calibration-method auto
 ```
 
-**Temperature Effects:**
+#### Manual Calibration Override
+```bash
+# Force temperature scaling with specific value
+python predict_baseline.py --session training_sessions/session_*/ --calibration-method temperature --temperature 1.5
+
+# Force Platt scaling with specific parameters
+python predict_baseline.py --session training_sessions/session_*/ --calibration-method platt --platt-A 0.5 --platt-B -0.1
+
+# No calibration (raw model predictions)
+python predict_baseline.py --session training_sessions/session_*/ --calibration-method none
+```
+
+#### Configuration-Based Calibration
+```yaml
+# In prediction config (configs/prediction/default.yaml)
+calibration_method: auto         # auto, temperature, platt, none
+temperature: 1.5                 # Used if method is temperature or as fallback
+platt_A: 1.0                    # Used if method is platt
+platt_B: 0.0                    # Used if method is platt
+```
+
+**Calibration Methods:**
+- **auto**: Uses the best calibration method from training (lowest ECE score)
+- **temperature**: Temperature scaling with configurable parameter
+- **platt**: Platt scaling with sigmoid transformation
+- **none**: Raw model predictions without calibration
+
+**Calibration Effects:**
 - **T < 1.0**: Sharper, more confident predictions (use cautiously)
-- **T = 1.0**: Raw model predictions (no calibration)
-- **T = 1.5**: Recommended default (good calibration balance)
+- **T = 1.0**: Raw model predictions (no temperature calibration)
+- **T = 1.5**: Common default for good calibration balance
 - **T > 2.0**: More uncertain, conservative predictions
+- **Platt scaling**: Sigmoid-based calibration that can handle complex calibration curves
 
 ### Troubleshooting
 
@@ -1664,6 +1722,12 @@ For comprehensive guides on using, configuring, and maintaining this system:
 - 🛡️ **Anti-Collapse System**: Emergency monitoring and safety configurations
 - 📋 **Complete Example**: Full configuration file with all parameters
 - 🔧 **Command Line Overrides**: Available parameter overrides
+
+**[🎯 Calibration Refactor Summary](CALIBRATION_REFACTOR_SUMMARY.md)** - **CALIBRATION SYSTEM**
+- 🔄 **System Overview**: Advanced calibration with auto-selection and ECE optimization
+- 📊 **Usage Guide**: CLI, config, and auto calibration selection examples
+- 🔧 **Migration Guide**: Updating from legacy temperature-only calibration
+- ✅ **Benefits**: Improved reliability, flexibility, and performance
 
 **[📋 Developer Guide](documentation/DEVELOPER_GUIDE.md)** - **SYSTEM MAINTENANCE**
 - 🧩 **Adding New Features**: Step-by-step guide for feature extractors

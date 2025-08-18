@@ -4,11 +4,17 @@
 # No feature specifications needed - they're loaded from training session!
 
 # Training session directory (contains model + exact config + results)
-training_session: "training_sessions/session_20250818_021703_training_validation_2layer_optimized_v2"
+training_session: "training_sessions/session_20250818_163247_training_validation_segment_composite_2layer_v1"
 
 prediction:
+  # Calibration configuration
+  calibration:
+    method: "auto"          # auto | temperature | platt | none
+    temperature: 1.0        # fallback temperature if no calibration.json
+    platt_A: 1.0           # fallback Platt A if no calibration.json
+    platt_B: 0.0           # fallback Platt B if no calibration.json
+  
   # Core prediction parameters
-  temperature: 1.0
   input_file: "prediction_results/predict_lyric.txt"  # Single default location
   output_dir: "prediction_results"    # Base directory for organized results
   quiet: false                        # Set to true for silent operation (AI-less machines)

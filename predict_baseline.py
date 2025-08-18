@@ -10,7 +10,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple, Optional
 
 # Add segmodel to path
 sys.path.append(str(Path(__file__).parent))
@@ -151,12 +151,147 @@ def create_feature_extractor_from_training_config(config_path: str) -> FeatureEx
     return extractor
 
 
+def load_calibration_from_session(session_dir: str) -> Dict[str, Any]:
+    """
+    Load calibration parameters from training session.
+    
+    Args:
+        session_dir: Path to training session directory
+        
+    Returns:
+        Calibration info dictionary, or None if not found
+    """
+    session_path = Path(session_dir)
+    calibration_file = session_path / "calibration.json"
+    
+    if not calibration_file.exists():
+        print(f"⚠️  No calibration file found: {calibration_file}")
+        return None
+    
+    try:
+        with open(calibration_file, 'r') as f:
+            calibration_data = json.load(f)
+        
+        print(f"📊 Loaded calibration from: {calibration_file}")
+        print(f"   Method: {calibration_data.get('method', 'unknown')}")
+        if 'params' in calibration_data:
+            params = calibration_data['params']
+            if 'temperature' in params:
+                print(f"   Temperature: {params['temperature']:.3f}")
+            if 'A' in params and 'B' in params:
+                print(f"   Platt coefficients: A={params['A']:.3f}, B={params['B']:.3f}")
+        
+        return calibration_data
+        
+    except Exception as e:
+        print(f"⚠️  Error loading calibration: {e}")
+        return None
+
+
+def select_calibration_method(
+    calibration_info=None,
+    config_method="auto", 
+    config_temp=1.0,
+    config_platt_A=1.0, 
+    config_platt_B=0.0,
+    cli_method=None,
+    cli_temp=None,
+    cli_platt_A=None,
+    cli_platt_B=None,
+    quiet=False
+):
+    """
+    Select calibration method and parameters based on priority:
+    1. CLI overrides (highest priority)
+    2. Config settings (medium priority) 
+    3. Auto-selection from calibration_info (lowest priority, but recommended)
+    
+    Returns:
+        method: Selected calibration method ('temperature', 'platt', 'none')
+        params: Dictionary with method-specific parameters
+    """
+    
+    # Priority 1: CLI overrides everything
+    if cli_method is not None:
+        method = cli_method
+        if method == 'temperature':
+            temp = cli_temp if cli_temp is not None else config_temp
+            params = {'temperature': temp}
+            if not quiet:
+                print(f"🔧 Using CLI calibration method: {method} (temperature: {temp:.3f})")
+        elif method == 'platt':
+            A = cli_platt_A if cli_platt_A is not None else config_platt_A
+            B = cli_platt_B if cli_platt_B is not None else config_platt_B
+            params = {'A': A, 'B': B}
+            if not quiet:
+                print(f"🔧 Using CLI calibration method: {method} (A: {A:.3f}, B: {B:.3f})")
+        elif method == 'none':
+            params = {}
+            if not quiet:
+                print(f"🔧 Using CLI calibration method: none (no calibration)")
+        else:
+            # Fall back to auto if invalid CLI method
+            method = 'auto'
+            params = {}
+    else:
+        method = config_method
+        params = {}
+    
+    # Priority 2: Handle auto mode and config fallbacks
+    if method == 'auto':
+        if calibration_info and 'all_results' in calibration_info:
+            # Auto-select best method from calibration.json (lowest ECE_after)
+            all_results = calibration_info['all_results']
+            if all_results:
+                best_result = min(all_results, key=lambda r: r.get('ece_after', float('inf')))
+                auto_method = best_result['method']
+                auto_params = best_result['params']
+                
+                if not quiet:
+                    print(f"📊 Auto-selected calibration method: {auto_method} (ECE: {best_result.get('ece_after', 'N/A'):.4f})")
+                    if auto_method == 'temperature':
+                        print(f"🎯 Using calibrated temperature: {auto_params['temperature']:.3f}")
+                    elif auto_method == 'platt':
+                        print(f"🎯 Using calibrated Platt scaling: A={auto_params['A']:.3f}, B={auto_params['B']:.3f}")
+                
+                return auto_method, auto_params
+        
+        # No calibration info available, fall back to temperature with config values
+        method = 'temperature'
+        params = {'temperature': config_temp}
+        if not quiet:
+            print(f"⚠️  No calibration file found, using config temperature: {config_temp}")
+    
+    elif method == 'temperature':
+        temp = cli_temp if cli_temp is not None else config_temp
+        params = {'temperature': temp}
+        if not quiet and cli_temp is None:
+            print(f"🎯 Using config temperature: {temp:.3f}")
+            
+    elif method == 'platt':
+        A = cli_platt_A if cli_platt_A is not None else config_platt_A
+        B = cli_platt_B if cli_platt_B is not None else config_platt_B
+        params = {'A': A, 'B': B}
+        if not quiet and cli_platt_A is None and cli_platt_B is None:
+            print(f"🎯 Using config Platt scaling: A={A:.3f}, B={B:.3f}")
+    
+    elif method == 'none':
+        params = {}
+        if not quiet:
+            print(f"🎯 No calibration applied")
+    
+    return method, params
+
+
 def predict_lyrics_structure(
     lines: List[str],
     model: BLSTMTagger,
     feature_extractor,
     device: torch.device,
-    temperature: float = 1.5
+    calibration_method: str = "none",
+    temperature: float = 1.0,
+    platt_A: float = 1.0,
+    platt_B: float = 0.0
 ) -> List[Dict[str, Any]]:
     """
     Predict structure labels for a list of lyric lines.
@@ -166,7 +301,10 @@ def predict_lyrics_structure(
         model: Trained model
         feature_extractor: Feature extraction function
         device: Device to run on
-        temperature: Temperature for calibrated predictions
+        calibration_method: Calibration method ('temperature', 'platt', 'none')
+        temperature: Temperature for temperature scaling
+        platt_A: Platt scaling A coefficient
+        platt_B: Platt scaling B coefficient
         
     Returns:
         List of prediction dictionaries
@@ -181,11 +319,29 @@ def predict_lyrics_structure(
     # Create mask (all positions valid for inference)
     mask = torch.ones(1, len(lines), dtype=torch.bool, device=device)
     
-    # Get predictions with temperature scaling
+    # Get raw model predictions
     with torch.no_grad():
-        predictions, confidences = model.predict_with_temperature(
-            features, mask, temperature=temperature
-        )
+        if calibration_method == 'temperature':
+            # Use temperature scaling
+            predictions, confidences = model.predict_with_temperature(
+                features, mask, temperature=temperature
+            )
+        elif calibration_method == 'platt':
+            # Get raw predictions and apply Platt scaling
+            logits = model(features, mask)  # (1, seq_len, num_classes)
+            probs = torch.softmax(logits, dim=-1)
+            max_probs, predictions = torch.max(probs, dim=-1)
+            
+            # Apply Platt scaling: sigmoid(A * confidence + B)
+            calibrated_confidences = torch.sigmoid(platt_A * max_probs + platt_B)
+            
+            predictions = predictions.squeeze(0)  # (seq_len,)
+            confidences = calibrated_confidences.squeeze(0)  # (seq_len,)
+        else:
+            # No calibration, use temperature=1.0
+            predictions, confidences = model.predict_with_temperature(
+                features, mask, temperature=1.0
+            )
     
     # Convert to results
     predictions = predictions.squeeze(0).cpu().numpy()  # (seq_len,)
@@ -344,7 +500,13 @@ Examples:
     parser.add_argument('--session', help='Path to training session directory (contains model + config)')
     parser.add_argument('--prediction-config', help='Path to custom prediction config file')
     parser.add_argument('--train-config-file', help='Path to training config file (legacy)')
-    parser.add_argument('--temperature', type=float, help='Temperature for calibrated predictions (overrides config)')
+    
+    # Calibration arguments
+    parser.add_argument('--calibration-method', choices=['auto', 'temperature', 'platt', 'none'], 
+                       help='Calibration method (overrides config)')
+    parser.add_argument('--temperature', type=float, help='Temperature for temperature scaling (overrides config)')
+    parser.add_argument('--platt-A', type=float, help='Platt scaling A coefficient (overrides config)')
+    parser.add_argument('--platt-B', type=float, help='Platt scaling B coefficient (overrides config)')
     
     # Input arguments (mutually exclusive)
     input_group = parser.add_mutually_exclusive_group(required=False)
@@ -376,10 +538,16 @@ Examples:
     
     # Determine model path
     model_path = None
+    calibration_info = None
+    
     if args.session:
         # Use training session directory (PREFERRED - everything in one place)
         pred_config, model_path = create_prediction_config_from_training_session(args.session)
         feature_extractor = get_feature_extractor_from_config(pred_config)
+        
+        # Load calibration from session
+        calibration_info = load_calibration_from_session(args.session)
+        
         if not args.quiet:
             print(f"🎯 Using training session as complete source: {args.session}")
     elif args.train_config_file:
@@ -398,6 +566,10 @@ Examples:
         else:
             pred_config = config_result
             model_path = args.model
+        
+        # Check if config references a training session for calibration
+        if hasattr(pred_config, 'training_session') and pred_config.training_session:
+            calibration_info = load_calibration_from_session(pred_config.training_session)
         
         feature_extractor = get_feature_extractor_from_config(pred_config)
         if not args.quiet:
@@ -437,9 +609,27 @@ Examples:
         print("❌ Failed to load prediction configuration!")
         return
     
+    # Select calibration method and parameters using the new system
+    calibration_method, calibration_params = select_calibration_method(
+        calibration_info=calibration_info,
+        config_method=getattr(pred_config, 'calibration_method', 'auto'),
+        config_temp=pred_config.temperature,
+        config_platt_A=getattr(pred_config, 'platt_A', 1.0),
+        config_platt_B=getattr(pred_config, 'platt_B', 0.0),
+        cli_method=getattr(args, 'calibration_method', None),
+        cli_temp=args.temperature,
+        cli_platt_A=getattr(args, 'platt_A', None),
+        cli_platt_B=getattr(args, 'platt_B', None),
+        quiet=args.quiet
+    )
+    
+    # Extract calibration parameters
+    final_temperature = calibration_params.get('temperature', 1.0)
+    final_platt_A = calibration_params.get('A', 1.0)
+    final_platt_B = calibration_params.get('B', 0.0)
+
     # Override config with command line arguments
-    if args.temperature is not None:
-        pred_config.temperature = args.temperature
+    
     if args.quiet:
         pred_config.quiet = True
     
@@ -491,7 +681,10 @@ Examples:
         model=model,
         feature_extractor=feature_extractor,
         device=device,
-        temperature=pred_config.temperature
+        calibration_method=calibration_method,
+        temperature=final_temperature,
+        platt_A=final_platt_A,
+        platt_B=final_platt_B
     )
     
     # Print results

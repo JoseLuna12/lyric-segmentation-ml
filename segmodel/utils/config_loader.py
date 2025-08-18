@@ -69,9 +69,9 @@ class TrainingConfig:
     skip_epochs: int = 3
     print_batch_every: int = 10
     
-    # Temperature Calibration
-    temperature_grid: list = None
-    default_temperature: float = 1.0
+    # Calibration Configuration - Clean implementation
+    calibration_enabled: bool = True
+    calibration_methods: list = None
     
     # Validation Strategy (Phase 3) - Simplified
     validation_strategy: str = "line_f1"  # Simple strategy selection
@@ -122,8 +122,8 @@ class TrainingConfig:
     def __post_init__(self):
         if self.experiment_tags is None:
             self.experiment_tags = []
-        if self.temperature_grid is None:
-            self.temperature_grid = [0.8, 1.0, 1.2, 1.5, 1.7, 2.0]
+        if self.calibration_methods is None:
+            self.calibration_methods = ['temperature', 'platt']
 
 
 def load_yaml_config(config_path: str) -> Dict[str, Any]:
@@ -205,7 +205,7 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
     training = config.get('training', {})
     anti_collapse = config.get('anti_collapse', {})
     emergency = config.get('emergency_monitoring', {})
-    temperature_calib = config.get('temperature_calibration', {})
+    calibration = config.get('calibration', {})  # New clean calibration config
     features = config.get('features', {})
     head_ssm = features.get('head_ssm', {})
     tail_ssm = features.get('tail_ssm', {})
@@ -272,9 +272,9 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         skip_epochs=emergency.get('skip_epochs', 3),
         print_batch_every=emergency.get('print_batch_every', 10),
         
-        # ✅ NEW: Temperature Calibration
-        temperature_grid=temperature_calib.get('temperature_grid', [0.6, 0.8, 1.0, 1.2, 1.5, 1.7, 2.0]),
-        default_temperature=temperature_calib.get('default_temperature', 1.0),
+        # Calibration Configuration - Clean implementation
+        calibration_enabled=calibration.get('enabled', True),
+        calibration_methods=calibration.get('methods', ['temperature', 'platt']),
         
         # 🎯 NEW: Validation Strategy (Phase 3) - Simplified
         validation_strategy=config.get('validation_strategy', 'line_f1'),

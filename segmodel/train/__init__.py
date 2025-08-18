@@ -3,13 +3,24 @@
 from .trainer import (
     Trainer,
     TrainingMetrics,
-    EmergencyMonitor,
-    calibrate_temperature
+    EmergencyMonitor
+)
+from .calibration import (
+    TemperatureCalibrator,
+    PlattCalibrator,
+    CalibrationResult,
+    fit_calibration,
+    load_calibration
 )
 
 __all__ = [
     'Trainer',
     'TrainingMetrics', 
     'EmergencyMonitor',
-    'calibrate_temperature'
+    # Clean calibration implementation
+    'TemperatureCalibrator',
+    'PlattCalibrator',
+    'CalibrationResult',
+    'fit_calibration',
+    'load_calibration'
 ]

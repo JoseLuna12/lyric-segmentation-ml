@@ -31,6 +31,7 @@ from ..metrics import (
     compute_segmentation_metrics,
     format_segmentation_metrics_report
 )
+from .calibration import fit_calibration, load_calibration
 
 
 @dataclass
@@ -242,74 +243,6 @@ def create_scheduler(optimizer, config, total_steps: int = None):
         raise ValueError(f"Unknown scheduler: {scheduler_name}")
 
 
-def calibrate_temperature(
-    model: nn.Module,
-    dataloader: DataLoader,
-    device: torch.device,
-    config: Any = None,
-    temperature_grid: List[float] = None
-) -> float:
-    """
-    Calibrate temperature parameter on validation set.
-    
-    Uses grid search to find optimal temperature that minimizes
-    negative log-likelihood on validation set.
-    
-    Args:
-        model: Trained model
-        dataloader: Validation dataloader
-        device: Device to run on
-        temperature_grid: List of temperature values to try
-        
-    Returns:
-        best_temperature: Optimal temperature value
-    """
-    if temperature_grid is None:
-        if config is not None and hasattr(config, 'temperature_grid'):
-            temperature_grid = getattr(config, 'temperature_grid', [0.8, 1.0, 1.2, 1.5, 1.7, 2.0])
-        else:
-            temperature_grid = [0.8, 1.0, 1.2, 1.5, 1.7, 2.0]
-    
-    model.eval()
-    best_temp = 1.0
-    best_nll = float('inf')
-    
-    print(f"🌡️  Calibrating temperature on {len(dataloader)} batches...")
-    
-    for temp in temperature_grid:
-        total_nll = 0.0
-        total_samples = 0
-        
-        with torch.no_grad():
-            for batch in dataloader:
-                features = batch.features.to(device)
-                labels = batch.labels.to(device)  
-                mask = batch.mask.to(device)
-                
-                # Forward pass with temperature
-                logits = model(features, mask) / temp
-                
-                # Compute negative log-likelihood
-                log_probs = torch.log_softmax(logits, dim=-1)
-                nll = -torch.gather(log_probs, 2, labels.unsqueeze(-1)).squeeze(-1)
-                
-                # Apply mask and sum
-                valid_nll = nll * mask.float()
-                total_nll += valid_nll.sum().item()
-                total_samples += mask.sum().item()
-        
-        avg_nll = total_nll / max(total_samples, 1)
-        
-        if avg_nll < best_nll:
-            best_nll = avg_nll
-            best_temp = temp
-        
-        print(f"   T={temp:.1f}: NLL={avg_nll:.4f}")
-    
-    print(f"✅ Best temperature: {best_temp:.1f} (NLL={best_nll:.4f})")
-    return best_temp
-
-
 def compute_validation_score(metrics: TrainingMetrics, config: Any) -> float:
     """
     Compute validation score based on configured strategy.
@@ -382,6 +315,9 @@ class Trainer:
         self.config = config
         self.output_dir = output_dir
         
+        # Initialize calibration info storage
+        self.calibration_info = None
+        
         # Set validation strategy first
         self.validation_strategy = getattr(config, 'validation_strategy', 'line_f1')
         
@@ -428,6 +364,33 @@ class Trainer:
         print(f"   Output dir: {output_dir}")
         print(f"   Max epochs: {config.max_epochs}")
         print(f"   Patience: {config.patience}")
+    
+    def _run_calibration(self, val_loader):
+        """
+        Run model calibration and save results.
+        This method can be called from normal completion or keyboard interrupt.
+        """
+        print(f"\n🌡️ Running model calibration...")
+        
+        # Get calibration methods from config
+        calibration_methods = None
+        if hasattr(self.config, 'calibration') and hasattr(self.config.calibration, 'methods'):
+            calibration_methods = self.config.calibration.methods
+        
+        try:
+            self.calibration_info = fit_calibration(
+                model=self.model,
+                val_loader=val_loader,
+                device=self.device,
+                methods=calibration_methods,
+                output_dir=self.output_dir
+            )
+            print(f"✅ Calibration completed successfully")
+        except Exception as e:
+            print(f"⚠️  Calibration failed: {e}")
+            self.calibration_info = {}
+        
+        return self.calibration_info
     
     def train_epoch(self, train_loader: DataLoader) -> Dict[str, float]:
         """Train for one epoch."""
@@ -494,7 +457,7 @@ class Trainer:
         
         return avg_metrics
     
-    def evaluate(self, val_loader: DataLoader) -> Dict[str, float]:
+    def evaluate(self, val_loader: DataLoader, calibrator=None) -> Dict[str, float]:
         """Evaluate on validation set with boundary-aware metrics."""
         self.model.eval()
         
@@ -519,16 +482,17 @@ class Trainer:
                 # Track loss
                 total_loss += loss.item()
                 
-                # Get predictions
-                predictions = torch.argmax(logits, dim=-1)
+                # Apply calibration if provided
+                probs = (calibrator.apply(logits) if calibrator else torch.softmax(logits, dim=-1))
+                predictions = probs.argmax(dim=-1)
                 
                 # Store for metrics computation
                 all_predictions.append(predictions)
                 all_targets.append(labels)
                 all_masks.append(mask)
                 
-                # Track guardrails
-                guardrails = batch_guardrails(logits, mask)
+                # Track guardrails (use probs for confidence metrics)
+                guardrails = batch_guardrails(torch.log(probs + 1e-8), mask)  # Convert back to logits for guardrails
                 all_guardrails.append(guardrails)
                 
                 # Print validation progress
@@ -641,6 +605,7 @@ class Trainer:
         print(f"🚀 Starting training for {self.config.max_epochs} epochs...")
         
         best_model_state = None
+        best_epoch = 0
         
         try:
             for epoch in range(1, self.config.max_epochs + 1):
@@ -656,16 +621,11 @@ class Trainer:
                     # Validation  
                     val_metrics = self.evaluate(val_loader)
                     
-                    # Learning rate scheduling (different schedulers need different arguments)
-                    if isinstance(self.scheduler, ReduceLROnPlateau):
-                        self.scheduler.step(val_metrics['macro_f1'])
-                    else:
-                        self.scheduler.step()
-                    current_lr = self.optimizer.param_groups[0]['lr']
-                    
-                    # Track metrics
+                    # Learning rate scheduling (use selected validation metric)  
+                    # First, calculate epoch time for metrics
                     epoch_time = time.time() - epoch_start
                     
+                    # Create TrainingMetrics with all required fields
                     metrics = TrainingMetrics(
                         epoch=epoch,
                         train_loss=train_metrics['loss'],
@@ -681,27 +641,35 @@ class Trainer:
                         val_max_prob=val_metrics['max_prob_mean'],
                         val_conf_over_90=val_metrics['confidence_over_90'],
                         val_conf_over_95=val_metrics['confidence_over_95'],
-                        learning_rate=current_lr,
+                        learning_rate=0.0,  # Will be set below
                         epoch_time=epoch_time,
-                        # Boundary-aware metrics (Phase 2)
-                        val_boundary_f1=val_metrics['boundary_f1'],
-                        val_boundary_precision=val_metrics['boundary_precision'],
-                        val_boundary_recall=val_metrics['boundary_recall'],
-                        val_complete_segments=val_metrics['complete_segments'],
-                        val_avg_segment_overlap=val_metrics['avg_segment_overlap'],
-                        val_verse_to_chorus_acc=val_metrics['verse_to_chorus_acc'],
-                        val_chorus_to_verse_acc=val_metrics['chorus_to_verse_acc'],
-                        # Segmentation metrics (Phase 3)
-                        val_window_diff=val_metrics['window_diff'],
-                        val_pk_metric=val_metrics['pk_metric']
+                        val_boundary_f1=val_metrics.get('boundary_f1', 0.0),
+                        val_boundary_precision=val_metrics.get('boundary_precision', 0.0),
+                        val_boundary_recall=val_metrics.get('boundary_recall', 0.0),
+                        val_window_diff=val_metrics.get('window_diff', 1.0),
+                        val_pk_metric=val_metrics.get('pk_metric', 1.0),
+                        val_complete_segments=val_metrics.get('complete_segments', 0.0),
+                        val_avg_segment_overlap=val_metrics.get('avg_segment_overlap', 0.0),
+                        val_verse_to_chorus_acc=val_metrics.get('verse_to_chorus_acc', 0.0),
+                        val_chorus_to_verse_acc=val_metrics.get('chorus_to_verse_acc', 0.0)
                     )
+                    
+                    current_val_score = compute_validation_score(metrics, self.config)
+                    
+                    # Learning rate scheduling (use selected validation metric)
+                    if isinstance(self.scheduler, ReduceLROnPlateau):
+                        self.scheduler.step(current_val_score)
+                    else:
+                        self.scheduler.step()
+                    current_lr = self.optimizer.param_groups[0]['lr']
+                    
+                    # Update learning rate in metrics object
+                    metrics.learning_rate = current_lr
                     
                     self._save_epoch_metrics(metrics)
                     
                     # Print epoch summary with boundary-aware metrics
                     print(f"\n📊 Epoch {epoch} Summary:")
-                    # Calculate validation score for display and early stopping
-                    current_val_score = compute_validation_score(metrics, self.config)
                     
                     print(f"  Train: loss={metrics.train_loss:.4f}, "
                           f"chorus%={metrics.train_chorus_rate:.2f}, "
@@ -737,6 +705,7 @@ class Trainer:
                         self.best_val_score = current_val_score
                         self.patience_counter = 0
                         best_model_state = {k: v.cpu().clone() for k, v in self.model.state_dict().items()}
+                        best_epoch = epoch
                         
                         # Save best model
                         torch.save(best_model_state, self.output_dir / "best_model.pt")
@@ -759,6 +728,23 @@ class Trainer:
         except KeyboardInterrupt:
             print(f"\n⚠️  Training interrupted by user at epoch {epoch}")
             
+            # Load best model if available
+            if best_model_state is not None:
+                print(f"📦 Loading best model state (epoch {best_epoch})")
+                self.model.load_state_dict(best_model_state)
+            
+            # Run calibration even on interruption
+            print(f"🌡️ Running calibration on interrupted training...")
+            self._run_calibration(val_loader)
+            
+            # Save final model and metrics
+            torch.save(self.model.state_dict(), self.output_dir / "final_model.pt")
+            self._save_training_log(final=True)
+            print(f"💾 Saved interrupted training state")
+            
+            # Return what we have so far
+            return self.model, self.calibration_info
+            
         except Exception as e:
             print(f"\n❌ Training failed with exception: {e}")
             # Save metrics even if training failed
@@ -777,9 +763,21 @@ class Trainer:
         if best_model_state is not None:
             self.model.load_state_dict(best_model_state)
         
-        # Calibrate temperature
-        print(f"\n🌡️  Calibrating temperature...")
-        best_temperature = calibrate_temperature(self.model, val_loader, self.device, config=self.config)
+        # Run calibration
+        print(f"\n� Running model calibration...")
+        
+        # Get calibration methods from config
+        calibration_methods = None
+        if hasattr(self.config, 'calibration') and hasattr(self.config.calibration, 'methods'):
+            calibration_methods = self.config.calibration.methods
+        
+        self.calibration_info = fit_calibration(
+            model=self.model,
+            val_loader=val_loader,
+            device=self.device,
+            methods=calibration_methods,
+            output_dir=self.output_dir
+        )
         
         # Save final model and metrics
         torch.save(self.model.state_dict(), self.output_dir / "final_model.pt")
@@ -792,19 +790,6 @@ class Trainer:
         if self.training_metrics:
             print(f"\n📊 Final Boundary-Aware Metrics Report:")
             final_metrics = self.training_metrics[-1]  # Get latest metrics
-            
-            # Compute detailed boundary metrics for final report  
-            final_val_metrics = self.evaluate(val_loader)
-            boundary_metrics = compute_boundary_metrics(
-                # Need to get predictions from final evaluation - will be available in final_val_metrics
-                torch.zeros(1, 1), torch.zeros(1, 1), torch.ones(1, 1, dtype=torch.bool)  # Placeholder 
-            )
-            segment_metrics = compute_segment_metrics(
-                torch.zeros(1, 1), torch.zeros(1, 1), torch.ones(1, 1, dtype=torch.bool)  # Placeholder
-            )
-            transition_metrics = compute_transition_metrics(
-                torch.zeros(1, 1), torch.zeros(1, 1), torch.ones(1, 1, dtype=torch.bool)  # Placeholder
-            )
             
             print(f"   Line-Level Metrics:")
             print(f"      Macro F1: {final_metrics.val_macro_f1:.4f}")  
@@ -826,10 +811,17 @@ class Trainer:
 
         print(f"\n✅ Training completed!")
         print(f"   Best validation score ({self.validation_strategy}): {self.best_val_score:.4f}")
-        print(f"   Calibrated temperature: {best_temperature:.2f}")
+        if self.calibration_info:
+            print(f"   Calibration methods: {', '.join(self.calibration_info.keys())}")
+            for method, info in self.calibration_info.items():
+                if method == 'temperature' and 'params' in info:
+                    print(f"   Temperature: {info['params']['temperature']:.2f}")
+                elif method == 'platt' and 'params' in info:
+                    A = info['params']['A']; B = info['params']['B']
+                    print(f"   Platt: A={A:.3f}, B={B:.3f}")
         print(f"   Models saved to: {self.output_dir}")
         
-        return self.model, best_temperature
+        return self.model, self.calibration_info
     
     def _save_training_log(self, final: bool = False):
         """Save training metrics to file."""
@@ -838,9 +830,32 @@ class Trainer:
         # Convert to serializable format
         metrics_data = [asdict(m) for m in self.training_metrics]
         
+        # Create complete training log with metadata
+        training_log = {
+            "metadata": {
+                "model_info": {
+                    "hidden_dim": getattr(self.model, 'hidden_dim', 128),
+                    "num_layers": getattr(self.model, 'num_layers', 1),
+                    "dropout": getattr(self.model, 'dropout_p', 0.2),
+                    "layer_dropout": getattr(self.model, 'layer_dropout_p', 0.0)
+                },
+                "training_info": {
+                    "batch_size": getattr(self.config, 'batch_size', 16),
+                    "learning_rate": getattr(self.config, 'learning_rate', 0.001),
+                    "scheduler": getattr(self.config, 'scheduler', 'plateau'),
+                    "label_smoothing": getattr(self.config, 'label_smoothing', 0.0),
+                    "weighted_sampling": getattr(self.config, 'weighted_sampling', False),
+                    "total_epochs": len(self.training_metrics),
+                    "validation_strategy": self.validation_strategy
+                },
+                "calibration_info": self.calibration_info
+            },
+            "metrics": metrics_data
+        }
+        
         try:
             with open(metrics_file, 'w') as f:
-                json.dump(metrics_data, f, indent=2)
+                json.dump(training_log, f, indent=2)
             
             if final:
                 print(f"📝 Final training log saved to: {metrics_file}")

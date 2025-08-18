@@ -58,9 +58,9 @@ emergency_monitoring:
   print_batch_every: 10
 
 # Temperature Calibration
-temperature_calibration:
-  temperature_grid: [0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 1.8, 2.2, 2.5]
-  default_temperature: 0.8
+calibration:
+  methods: ['temperature', 'platt']  # Available: temperature, platt
+  enabled: true
 
 # Validation Strategy - Focus on structural boundaries
 validation_strategy: "boundary_f1"  # ⬅️ Changed from "composite" to focus on transitions
@@ -123,7 +123,7 @@ system:
 
 # Experiment Metadata
 experiment:
-  name: "training_validation_2layer_optimized_v2"
+  name: "training_validation_2layer_optimized_new_calibration_v1"
   description: "Fine-tuned 2-layer BiLSTM targeting 0.87+ F1, optimized based on 0.85 F1 baseline"
   tags: ["2-layer-bilstm", "optimized", "chorus-focused", "boundary-validation", "production-ready"]
   notes: "Configuration fine-tuned for 2-layer architecture with focus on improving chorus detection (target: chorus F1 > 0.82). Enhanced regularization, adjusted feature sensitivity, and boundary-focused validation."

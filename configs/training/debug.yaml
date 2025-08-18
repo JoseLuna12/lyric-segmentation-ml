@@ -10,7 +10,7 @@ data:
 # Model Architecture - Robust configuration based on working training_config.yaml
 model:
   hidden_dim: 256  # Keep proven capacity from working config
-  num_layers: 2
+  num_layers: 1
   layer_dropout: 0.3
   num_classes: 2
   dropout: 0.2     # Slightly higher than working config (0.2) for more robustness
@@ -20,7 +20,7 @@ training:
   batch_size: 24           # Smaller than working (32) but not extreme for stability
   learning_rate: 0.0008    # Slightly lower than working (0.001) for stability
   weight_decay: 0.008      # Slightly higher than working (0.005) for regularization
-  max_epochs: 100          # Slightly shorter than working (120) to prevent overtraining
+  max_epochs: 1          # Slightly shorter than working (120) to prevent overtraining
   patience: 12             # Slightly less than working (25) for earlier stopping
   gradient_clip_norm: 0.4  # Slightly tighter than working (0.5)
   
@@ -37,7 +37,7 @@ anti_collapse:
 
 # Emergency Monitoring - Enhanced vigilance (more robust than working config)
 emergency_monitoring:
-  enabled: true
+  enabled: false
   
   # Batch-level - More vigilant than working config
   max_confidence_threshold: 0.90    # More strict than working (0.95)
@@ -57,10 +57,10 @@ emergency_monitoring:
   skip_epochs: 3          # Earlier than working (5) 
   print_batch_every: 10   # More frequent than working (20)
 
-# Temperature Calibration - Based on working config with extended range
-temperature_calibration:
-  temperature_grid: [0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 1.8, 2.2, 2.5]  # Based on working config, slightly extended
-  default_temperature: 0.6  # Same as working config
+# Calibration Configuration - Clean implementation
+calibration:
+  methods: ['temperature', 'platt']  # Available: temperature, platt
+  enabled: true
 
 validation_strategy: "composite"
 
