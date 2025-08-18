@@ -20,7 +20,7 @@ training:
   batch_size: 24           # Smaller than working (32) but not extreme for stability
   learning_rate: 0.0008    # Slightly lower than working (0.001) for stability
   weight_decay: 0.008      # Slightly higher than working (0.005) for regularization
-  max_epochs: 1          # Slightly shorter than working (120) to prevent overtraining
+  max_epochs: 3          # Slightly shorter than working (120) to prevent overtraining
   patience: 12             # Slightly less than working (25) for earlier stopping
   gradient_clip_norm: 0.4  # Slightly tighter than working (0.5)
   
@@ -59,7 +59,7 @@ emergency_monitoring:
 
 # Calibration Configuration - Clean implementation
 calibration:
-  methods: ['temperature', 'platt']  # Available: temperature, platt
+  methods: ['temperature', 'platt', 'isotonic']  # Available: temperature, platt, isotonic
   enabled: true
 
 validation_strategy: "composite"

@@ -468,6 +468,9 @@ Examples:
                         elif method == 'platt' and 'params' in result:
                             A = result['params']['A']; B = result['params']['B']
                             f.write(f"    A = {A:.3f}, B = {B:.3f}\n")
+                        elif method == 'isotonic' and 'params' in result:
+                            knots = result['params']['knots']
+                            f.write(f"    Knots = {knots}\n")
         
         print(f"\n✅ Training completed successfully!")
         print(f"📁 All files saved to: {session_dir}")

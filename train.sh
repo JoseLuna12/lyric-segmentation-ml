@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 # Configuration file path
-CONFIG_FILE="configs/training/training.yaml"
+CONFIG_FILE="configs/training/better_2layer_training.yaml"
 
 echo "Starting BLSTM Training with $(basename $CONFIG_FILE)..."
 echo "=================================================="

@@ -194,10 +194,12 @@ def select_calibration_method(
     config_temp=1.0,
     config_platt_A=1.0, 
     config_platt_B=0.0,
+    config_isotonic_knots=0,
     cli_method=None,
     cli_temp=None,
     cli_platt_A=None,
     cli_platt_B=None,
+    cli_isotonic_knots=None,
     quiet=False
 ):
     """
@@ -207,7 +209,7 @@ def select_calibration_method(
     3. Auto-selection from calibration_info (lowest priority, but recommended)
     
     Returns:
-        method: Selected calibration method ('temperature', 'platt', 'none')
+        method: Selected calibration method ('temperature', 'platt', 'isotonic', 'none')
         params: Dictionary with method-specific parameters
     """
     
@@ -225,6 +227,11 @@ def select_calibration_method(
             params = {'A': A, 'B': B}
             if not quiet:
                 print(f"🔧 Using CLI calibration method: {method} (A: {A:.3f}, B: {B:.3f})")
+        elif method == 'isotonic':
+            knots = cli_isotonic_knots if cli_isotonic_knots is not None else config_isotonic_knots
+            params = {'knots': knots}
+            if not quiet:
+                print(f"🔧 Using CLI calibration method: {method} (knots: {knots})")
         elif method == 'none':
             params = {}
             if not quiet:
@@ -239,28 +246,29 @@ def select_calibration_method(
     
     # Priority 2: Handle auto mode and config fallbacks
     if method == 'auto':
-        if calibration_info and 'all_results' in calibration_info:
-            # Auto-select best method from calibration.json (lowest ECE_after)
-            all_results = calibration_info['all_results']
-            if all_results:
-                best_result = min(all_results, key=lambda r: r.get('ece_after', float('inf')))
-                auto_method = best_result['method']
-                auto_params = best_result['params']
-                
-                if not quiet:
-                    print(f"📊 Auto-selected calibration method: {auto_method} (ECE: {best_result.get('ece_after', 'N/A'):.4f})")
-                    if auto_method == 'temperature':
-                        print(f"🎯 Using calibrated temperature: {auto_params['temperature']:.3f}")
-                    elif auto_method == 'platt':
-                        print(f"🎯 Using calibrated Platt scaling: A={auto_params['A']:.3f}, B={auto_params['B']:.3f}")
-                
-                return auto_method, auto_params
+        if calibration_info and 'method' in calibration_info:
+            # Use the pre-selected best method from calibration.json (already excludes isotonic)
+            auto_method = calibration_info['method']
+            auto_params = calibration_info['params']
+            
+            if not quiet:
+                ece_after = calibration_info.get('ece_after', 'N/A')
+                print(f"📊 Auto-selected calibration method: {auto_method} (ECE: {ece_after:.4f})")
+                if auto_method == 'temperature':
+                    print(f"🎯 Using calibrated temperature: {auto_params['temperature']:.3f}")
+                elif auto_method == 'platt':
+                    print(f"🎯 Using calibrated Platt scaling: A={auto_params['A']:.3f}, B={auto_params['B']:.3f}")
+                elif auto_method == 'isotonic':
+                    print(f"🎯 Using isotonic calibration: knots={auto_params.get('knots', 0)}")
+            
+            return auto_method, auto_params
         
-        # No calibration info available, fall back to temperature with config values
-        method = 'temperature'
-        params = {'temperature': config_temp}
+        # No calibration info available for auto-selection
         if not quiet:
-            print(f"⚠️  No calibration file found, using config temperature: {config_temp}")
+            print(f"⚠️  'auto' method requires calibration.json but none found")
+            print(f"    Falling back to 'none' (no calibration applied)")
+        method = 'none'
+        params = {}
     
     elif method == 'temperature':
         temp = cli_temp if cli_temp is not None else config_temp
@@ -274,6 +282,12 @@ def select_calibration_method(
         params = {'A': A, 'B': B}
         if not quiet and cli_platt_A is None and cli_platt_B is None:
             print(f"🎯 Using config Platt scaling: A={A:.3f}, B={B:.3f}")
+    
+    elif method == 'isotonic':
+        knots = cli_isotonic_knots if cli_isotonic_knots is not None else config_isotonic_knots
+        params = {'knots': knots}
+        if not quiet and cli_isotonic_knots is None:
+            print(f"🎯 Using config isotonic calibration: knots={knots}")
     
     elif method == 'none':
         params = {}
@@ -291,7 +305,8 @@ def predict_lyrics_structure(
     calibration_method: str = "none",
     temperature: float = 1.0,
     platt_A: float = 1.0,
-    platt_B: float = 0.0
+    platt_B: float = 0.0,
+    isotonic_knots: int = 0
 ) -> List[Dict[str, Any]]:
     """
     Predict structure labels for a list of lyric lines.
@@ -301,10 +316,11 @@ def predict_lyrics_structure(
         model: Trained model
         feature_extractor: Feature extraction function
         device: Device to run on
-        calibration_method: Calibration method ('temperature', 'platt', 'none')
+        calibration_method: Calibration method ('temperature', 'platt', 'isotonic', 'none')
         temperature: Temperature for temperature scaling
         platt_A: Platt scaling A coefficient
         platt_B: Platt scaling B coefficient
+        isotonic_knots: Number of knots for isotonic calibration (informational)
         
     Returns:
         List of prediction dictionaries
@@ -337,6 +353,14 @@ def predict_lyrics_structure(
             
             predictions = predictions.squeeze(0)  # (seq_len,)
             confidences = calibrated_confidences.squeeze(0)  # (seq_len,)
+        elif calibration_method == 'isotonic':
+            # For isotonic, we can't apply the calibration without the fitted model
+            # Fall back to temperature=1.0 and warn user
+            print("⚠️ Isotonic calibration requires fitted model (not available in inference)")
+            print("   Falling back to uncalibrated predictions")
+            predictions, confidences = model.predict_with_temperature(
+                features, mask, temperature=1.0
+            )
         else:
             # No calibration, use temperature=1.0
             predictions, confidences = model.predict_with_temperature(
@@ -502,11 +526,12 @@ Examples:
     parser.add_argument('--train-config-file', help='Path to training config file (legacy)')
     
     # Calibration arguments
-    parser.add_argument('--calibration-method', choices=['auto', 'temperature', 'platt', 'none'], 
+    parser.add_argument('--calibration-method', choices=['auto', 'temperature', 'platt', 'isotonic', 'none'], 
                        help='Calibration method (overrides config)')
     parser.add_argument('--temperature', type=float, help='Temperature for temperature scaling (overrides config)')
     parser.add_argument('--platt-A', type=float, help='Platt scaling A coefficient (overrides config)')
     parser.add_argument('--platt-B', type=float, help='Platt scaling B coefficient (overrides config)')
+    parser.add_argument('--isotonic-knots', type=int, help='Isotonic calibration knots (informational, overrides config)')
     
     # Input arguments (mutually exclusive)
     input_group = parser.add_mutually_exclusive_group(required=False)
@@ -616,10 +641,12 @@ Examples:
         config_temp=pred_config.temperature,
         config_platt_A=getattr(pred_config, 'platt_A', 1.0),
         config_platt_B=getattr(pred_config, 'platt_B', 0.0),
+        config_isotonic_knots=getattr(pred_config, 'isotonic_knots', 0),
         cli_method=getattr(args, 'calibration_method', None),
         cli_temp=args.temperature,
         cli_platt_A=getattr(args, 'platt_A', None),
         cli_platt_B=getattr(args, 'platt_B', None),
+        cli_isotonic_knots=getattr(args, 'isotonic_knots', None),
         quiet=args.quiet
     )
     
@@ -627,6 +654,7 @@ Examples:
     final_temperature = calibration_params.get('temperature', 1.0)
     final_platt_A = calibration_params.get('A', 1.0)
     final_platt_B = calibration_params.get('B', 0.0)
+    final_isotonic_knots = calibration_params.get('knots', 0)
 
     # Override config with command line arguments
     
@@ -684,7 +712,8 @@ Examples:
         calibration_method=calibration_method,
         temperature=final_temperature,
         platt_A=final_platt_A,
-        platt_B=final_platt_B
+        platt_B=final_platt_B,
+        isotonic_knots=final_isotonic_knots
     )
     
     # Print results

@@ -15,7 +15,8 @@ Configuration files use YAML format with the following main sections:
 - `training` - Training process parameters  
 - `anti_collapse` - Anti-collapse system settings
 - `emergency_monitoring` - Real-time monitoring thresholds
-- `temperature_calibration` - Post-training calibration settings
+- `temperature_calibration` - Post-training calibration settings (deprecated)
+- `calibration` - Modern calibration system with multiple methods
 - `features` - Feature extractor configurations
 - `output` - Output and saving settings
 - `system` - Runtime and platform settings
@@ -183,17 +184,35 @@ emergency_monitoring:
 
 ---
 
-## 🌡️ **Temperature Calibration**
+## 🌡️ **Calibration System**
 
+### Modern Calibration (Recommended)
+```yaml
+calibration:
+  methods: ['temperature', 'platt', 'isotonic']  # List of methods to try
+  enabled: true                                  # Enable calibration fitting
+```
+
+**Parameters:**
+- `methods` - List of calibration methods to evaluate (array of strings)
+  - `'temperature'` - Single temperature parameter scaling
+  - `'platt'` - Sigmoid-based Platt scaling (2 parameters)
+  - `'isotonic'` - Non-parametric isotonic regression 
+- `enabled` - Whether to fit calibration on validation data (boolean)
+
+**Behavior:**
+- All specified methods are fitted on validation data
+- Best method (lowest ECE) is automatically selected
+- Results saved to `calibration.json` in session directory
+
+### Legacy Temperature Calibration (Deprecated)
 ```yaml
 temperature_calibration:
   temperature_grid: [0.6, 0.8, 1.0, 1.2, 1.5, 1.8, 2.2]
   default_temperature: 1.0
 ```
 
-**Parameters:**
-- `temperature_grid` - Array of temperature values for grid search (array of floats)
-- `default_temperature` - Fallback temperature if calibration fails (float)
+**Note:** Use the modern `calibration` system instead.
 
 ---
 

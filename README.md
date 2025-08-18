@@ -144,7 +144,7 @@ python predict_baseline.py [MODEL_OPTIONS] [INPUT_OPTIONS] [CONFIG_OPTIONS] [CAL
 --stdin                          Read lyrics from stdin/pipe
 
 # Calibration Options:
---calibration-method METHOD      Override calibration method: auto, temperature, platt, none
+--calibration-method METHOD      Override calibration method: auto, temperature, platt, isotonic, none
 --temperature TEMPERATURE        Override temperature scaling value
 --platt-A PLATT_A               Override Platt scaling A parameter
 --platt-B PLATT_B               Override Platt scaling B parameter
@@ -176,7 +176,33 @@ echo "Line 1\nLine 2" | python predict_baseline.py --session training_sessions/s
 python predict_baseline.py --session training_sessions/session_*/ --calibration-method auto
 python predict_baseline.py --session training_sessions/session_*/ --calibration-method temperature --temperature 1.5
 python predict_baseline.py --session training_sessions/session_*/ --calibration-method platt --platt-A 0.5 --platt-B -0.1
+python predict_baseline.py --session training_sessions/session_*/ --calibration-method isotonic
 python predict_baseline.py --session training_sessions/session_*/ --calibration-method none
+
+# Note: 'auto' requires calibration.json from training session
+# If no calibration.json found, 'auto' falls back to 'none' (no calibration)
+
+### 🌡️ **Calibration Methods Explained**
+
+**`auto`** (Recommended): Uses the best calibration method from training
+- ✅ Requires `calibration.json` from training session  
+- ✅ Automatically selects method with lowest ECE
+- ⚠️ Falls back to `none` if no calibration file found
+
+**`temperature`**: Single-parameter temperature scaling  
+- Divides logits by temperature before softmax
+- T > 1.0 = more conservative, T < 1.0 = more confident
+
+**`platt`**: Two-parameter sigmoid scaling
+- Uses confidence margins between top-2 predictions  
+- More flexible than temperature for complex miscalibration
+
+**`isotonic`**: Non-parametric isotonic regression
+- Learns arbitrary monotone confidence → accuracy mapping
+- Most flexible but requires sufficient training data
+
+**`none`**: No calibration applied
+- Uses raw model predictions with temperature=1.0
 
 # Silent operation (for scripts)
 python predict_baseline.py --session training_sessions/session_*/ --quiet
@@ -390,7 +416,7 @@ training_sessions/
 - **✅ Advanced LR Scheduling**: Cosine annealing, warm restarts, step decay, plateau
 - **✅ Optimized Training**: 4x larger batch sizes (8→32) with proper LR scaling
 - **✅ Configurable Monitoring**: No more magic numbers - all thresholds configurable
-- **Advanced Calibration System**: Automatic calibration selection (temperature/Platt scaling) with ECE-based optimization
+- **Advanced Calibration System**: Automatic calibration selection (temperature/Platt/isotonic scaling) with ECE-based optimization
 - **Emergency Monitoring**: Real-time training guardrails with full parameter control
 - **YAML Configuration**: Flexible configuration system with command-line overrides and reproducibility snapshots
 
@@ -596,7 +622,7 @@ emergency_monitoring:
 
 ```yaml
 # ✅ NEW: Advanced Calibration System (for prediction configs)
-calibration_method: auto         # auto, temperature, platt, none
+calibration_method: auto         # auto, temperature, platt, isotonic, none
 temperature: 1.5                 # Temperature scaling value
 platt_A: 1.0                    # Platt scaling A parameter  
 platt_B: 0.0                    # Platt scaling B parameter
@@ -663,7 +689,7 @@ output_dir: "prediction_results/"
 quiet: false
 
 # ✅ NEW: Advanced Calibration Configuration
-calibration_method: auto         # auto, temperature, platt, none
+calibration_method: auto         # auto, temperature, platt, isotonic, none
 temperature: 1.5                 # Temperature scaling value (fallback if auto fails)
 platt_A: 1.0                    # Platt scaling A parameter
 platt_B: 0.0                    # Platt scaling B parameter

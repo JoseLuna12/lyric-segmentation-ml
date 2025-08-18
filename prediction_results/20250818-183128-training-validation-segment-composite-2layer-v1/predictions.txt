@@ -1,0 +1,9 @@
+Lyrics Structure Prediction
+==================================================
+
+VERSE   (0.601) | Walking down the street
+CHORUS  (0.502) | Thinking of you
+CHORUS  (0.575) | Dancing tonight
+CHORUS  (0.636) | Under the moonlight
+CHORUS  (0.662) | This is our story
+CHORUS  (0.684) | Never ending

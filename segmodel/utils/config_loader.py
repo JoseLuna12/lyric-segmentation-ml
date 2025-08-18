@@ -123,7 +123,7 @@ class TrainingConfig:
         if self.experiment_tags is None:
             self.experiment_tags = []
         if self.calibration_methods is None:
-            self.calibration_methods = ['temperature', 'platt']
+            self.calibration_methods = ['temperature', 'platt', 'isotonic']
 
 
 def load_yaml_config(config_path: str) -> Dict[str, Any]:
@@ -274,7 +274,7 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         
         # Calibration Configuration - Clean implementation
         calibration_enabled=calibration.get('enabled', True),
-        calibration_methods=calibration.get('methods', ['temperature', 'platt']),
+        calibration_methods=calibration.get('methods', ['temperature', 'platt', 'isotonic']),
         
         # 🎯 NEW: Validation Strategy (Phase 3) - Simplified
         validation_strategy=config.get('validation_strategy', 'line_f1'),
@@ -364,6 +364,7 @@ def load_training_config(config_path: str) -> TrainingConfig:
     print(f"   ✅ Scheduler: {training_config.scheduler} (min_lr={training_config.min_lr})")
     print(f"   Anti-collapse: smoothing={training_config.label_smoothing}, entropy_λ={training_config.entropy_lambda}")
     print(f"   ✅ Emergency monitoring: {len([x for x in [training_config.max_confidence_threshold, training_config.val_overconf_threshold] if x])} thresholds")
+    print(f"   🎯 Calibration: {', '.join(training_config.calibration_methods) if training_config.calibration_enabled else 'disabled'}")
     
     # Feature summary
     enabled_features = []

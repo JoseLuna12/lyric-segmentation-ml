@@ -17,11 +17,11 @@ model:
 
 # Training Parameters - Optimized for 2-layer stability and performance
 training:
-  batch_size: 28           # ⬆️ Increased from 24 → 28 for better GPU utilization
+  batch_size: 32           # ⬆️ Increased from 24 → 28 for better GPU utilization
   learning_rate: 0.0007    # ⬇️ Reduced from 0.0008 → 0.0007 for deeper model stability
   weight_decay: 0.010      # ⬆️ Increased from 0.008 → 0.010 for stronger regularization
   max_epochs: 100          # Keep proven epoch budget
-  patience: 15             # ⬆️ Increased from 12 → 15 for deeper model convergence
+  patience: 10             # ⬆️ Increased from 12 → 15 for deeper model convergence
   gradient_clip_norm: 0.45 # ⬆️ Slightly increased from 0.4 → 0.45
   
   # Learning rate scheduling - Keep proven cosine
@@ -59,7 +59,7 @@ emergency_monitoring:
 
 # Temperature Calibration
 calibration:
-  methods: ['temperature', 'platt']  # Available: temperature, platt
+  methods: ['temperature', 'platt', 'isotonic']  # Available: temperature, platt, isotonic
   enabled: true
 
 # Validation Strategy - Focus on structural boundaries

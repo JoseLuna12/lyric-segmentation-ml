@@ -21,10 +21,11 @@ class PredictionConfig:
     training_session: str = ""
     
     # Calibration configuration
-    calibration_method: str = "auto"  # auto, temperature, platt, none
+    calibration_method: str = "auto"  # auto, temperature, platt, isotonic, none
     temperature: float = 1.0          # Temperature scaling parameter
     platt_A: float = 1.0             # Platt scaling A coefficient  
     platt_B: float = 0.0             # Platt scaling B coefficient
+    isotonic_knots: int = 0          # Isotonic calibration knots (informational)
     
     # Input/Output parameters  
     input_file: str = "prediction_results/predict_lyric.txt"  # Single default location
@@ -96,6 +97,8 @@ def load_prediction_config(config_path: str) -> tuple[PredictionConfig, str]:
                 flattened['platt_A'] = calib_config['platt_A']
             if 'platt_B' in calib_config:
                 flattened['platt_B'] = calib_config['platt_B']
+            if 'isotonic_knots' in calib_config:
+                flattened['isotonic_knots'] = calib_config['isotonic_knots']
         
         # Handle other prediction parameters
         for key in ['input_file', 'output_dir', 'quiet']:
@@ -136,6 +139,8 @@ def load_prediction_config(config_path: str) -> tuple[PredictionConfig, str]:
                     session_config.platt_A = calib_config['platt_A']
                 if calib_config.get('platt_B') is not None:
                     session_config.platt_B = calib_config['platt_B']
+                if calib_config.get('isotonic_knots') is not None:
+                    session_config.isotonic_knots = calib_config['isotonic_knots']
             
             # Handle legacy temperature field (backward compatibility)
             if prediction_params.get('temperature') is not None:
@@ -157,7 +162,7 @@ def load_prediction_config(config_path: str) -> tuple[PredictionConfig, str]:
             raise FileNotFoundError(f"Training session directory not found: {training_session_dir}")
     
     # Handle direct top-level keys (for simple configs - backward compatibility)
-    for key in ['temperature', 'input_file', 'output_dir', 'quiet', 'calibration_method', 'platt_A', 'platt_B']:
+    for key in ['temperature', 'input_file', 'output_dir', 'quiet', 'calibration_method', 'platt_A', 'platt_B', 'isotonic_knots']:
         if key in config_dict:
             flattened[key] = config_dict[key]
     

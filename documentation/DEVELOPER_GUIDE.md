@@ -773,6 +773,167 @@ python predict_baseline.py --help > current_predict_help.txt
 - Users report confusion about parameter usage
 - New features added but not documented
 
+---
+
+## 🌡️ **Calibration System Development**
+
+### Adding New Calibration Methods
+
+The calibration system supports multiple calibration methods that can be applied post-training to improve model confidence estimation.
+
+**Current Methods:**
+- `TemperatureCalibrator` - Single parameter temperature scaling
+- `PlattCalibrator` - Two-parameter sigmoid scaling  
+- `IsotonicCalibrator` - Non-parametric isotonic regression
+
+### Step 1: Implement New Calibrator
+
+**File to create/modify:** `segmodel/train/calibration.py`
+
+```python
+class YourCalibrator:
+    """
+    Your custom calibration method.
+    
+    All calibrators should implement:
+    - __init__(self, **kwargs) - Initialize with hyperparameters
+    - fit(self, logits, labels) -> float - Fit on validation data, return ECE
+    - apply(self, logits) -> torch.Tensor - Apply calibration to new logits  
+    - get_params(self) -> Dict[str, float] - Return fitted parameters
+    """
+    
+    def __init__(self, your_param: float = 1.0):
+        self.your_param = your_param
+        self.is_fitted = False
+        self._fitted_params = {}
+    
+    def fit(self, logits: torch.Tensor, labels: torch.Tensor) -> float:
+        """Fit calibrator and return ECE after calibration."""
+        # Your fitting logic here
+        # Example: optimize parameters to minimize ECE
+        self.is_fitted = True
+        
+        # Calculate ECE after calibration
+        with torch.no_grad():
+            calibrated = self.apply(logits)
+            ece_after = ece(calibrated, labels, mask=None)
+        return float(ece_after)
+    
+    def apply(self, logits: torch.Tensor) -> torch.Tensor:
+        """Apply calibration to logits, return calibrated probabilities."""
+        if not self.is_fitted:
+            return torch.softmax(logits, dim=-1)
+        
+        # Your calibration logic here
+        # Must return probabilities that sum to 1
+        return calibrated_probs
+    
+    def get_params(self) -> Dict[str, float]:
+        """Return fitted parameters for logging/serialization."""
+        return {"your_param": self.your_param}
+```
+
+### Step 2: Register New Method
+
+**File to modify:** `segmodel/train/calibration.py` in `fit_calibration()`
+
+```python
+def fit_calibration(model, val_loader, device, methods=None, output_dir=None):
+    # ... existing code ...
+    
+    for method in methods:
+        if method == 'temperature':
+            calibrator = TemperatureCalibrator()
+        elif method == 'platt':
+            calibrator = PlattCalibrator()
+        elif method == 'isotonic':
+            calibrator = IsotonicCalibrator()
+        elif method == 'your_method':  # Add your method
+            calibrator = YourCalibrator(your_param=2.0)
+        else:
+            print(f"❌ Unknown method: {method}")
+            continue
+```
+
+### Step 3: Update Configuration Support
+
+**Files to modify:**
+1. `configs/training/debug.yaml` - Add to methods list
+2. `predict_baseline.py` - Add CLI argument support
+3. `segmodel/utils/prediction_config.py` - Add config parameter
+4. `configs/prediction/default.yaml` - Add fallback parameter
+
+**Training Config:**
+```yaml
+calibration:
+  methods: ['temperature', 'platt', 'isotonic', 'your_method']
+  enabled: true
+```
+
+**Prediction CLI:**
+```python
+parser.add_argument('--your-method-param', type=float, 
+                   help='Your method parameter (overrides config)')
+```
+
+### Step 4: Update Training Logging
+
+**File to modify:** `train_with_config.py`
+
+```python
+# In the calibration details section
+elif method == 'your_method' and 'params' in result:
+    param = result['params']['your_param']
+    f.write(f"    Your Param = {param:.3f}\n")
+```
+
+### ✅ **Calibration Development Checklist**
+
+- [ ] **Calibrator implements required interface** (fit, apply, get_params)
+- [ ] **Probabilities sum to 1** after calibration
+- [ ] **ECE calculation works** in fit() method
+- [ ] **Method registered** in fit_calibration()
+- [ ] **Training config updated** with new method name
+- [ ] **Prediction config supports** new parameters
+- [ ] **CLI arguments added** for override capability
+- [ ] **Training logging includes** new method parameters
+- [ ] **Method tested** on validation data
+- [ ] **Documentation updated** with new method description
+
+### Calibration Best Practices
+
+**Method Selection Logic:**
+- `auto`: Requires `calibration.json` from training. Falls back to `none` if not found.
+- `temperature`/`platt`/`isotonic`: Use configured parameters even without calibration file.
+- `none`: Always applies no calibration (identity transformation).
+
+**When to Use Each Method:**
+- `auto`: Recommended for production (uses training-optimized method)
+- `temperature`: Simple overconfidence fix, single parameter
+- `platt`: Complex miscalibration patterns, two parameters  
+- `isotonic`: Non-linear miscalibration, needs sufficient validation data
+- `none`: Debugging, baseline comparisons, or well-calibrated models
+
+**Testing Your Calibrator:**
+```python
+# Test on synthetic data
+logits = torch.randn(1000, 2)
+labels = torch.randint(0, 2, (1000,))
+
+calibrator = YourCalibrator()
+ece_after = calibrator.fit(logits, labels)
+calibrated = calibrator.apply(logits)
+
+# Verify constraints
+assert torch.allclose(calibrated.sum(dim=1), torch.ones(1000))
+assert calibrated.min() >= 0.0 and calibrated.max() <= 1.0
+```
+
+**Serialization Considerations:**
+- Simple parametric methods (like temperature/Platt) can save parameters to JSON
+- Complex methods (like isotonic) may need special handling or re-fitting
+- Consider backward compatibility when changing parameter formats
+
 This developer guide should help you safely extend and maintain the BiLSTM system! 🚀
 
 **Remember: Good documentation is as important as good code!**

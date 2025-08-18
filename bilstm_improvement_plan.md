@@ -261,19 +261,19 @@ validation_strategy: "boundary_f1"  # Optimizes for section boundary detection
 ### Phase 6: Confidence Calibration System
 **Priority: MEDIUM-HIGH** | **Estimated Time: 2-3 hours**
 
-- [ ] **Task 6.1: Implement Advanced Temperature Calibration**
+- [x] **Task 6.1: Implement Advanced Temperature Calibration**
   - Extend current temperature calibration
   - Add Platt scaling option
   - Implement isotonic regression calibration
   - *Files to modify: `segmodel/train/trainer.py`*
 
-- [ ] **Task 6.2: Add Confidence Monitoring Dashboard**
+- [x] **Task 6.2: Add Confidence Monitoring Dashboard**
   - Create confidence distribution plots
   - Add reliability diagrams (calibration curves)
   - Implement Expected Calibration Error (ECE)
   - *Files to create: `segmodel/metrics/calibration_metrics.py`*
 
-- [ ] **Task 6.3: Confidence-Based Training Adjustments**
+- [NO] **Task 6.3: Confidence-Based Training Adjustments**
   - Implement confidence penalty in loss function
   - Add uncertainty regularization
   - Create confidence-aware early stopping

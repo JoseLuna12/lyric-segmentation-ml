@@ -1,0 +1,5 @@
+Lyrics Structure Prediction
+==================================================
+
+CHORUS  (0.642) | Walking down the street tonight
+CHORUS  (0.633) | This is the chorus everyone sings

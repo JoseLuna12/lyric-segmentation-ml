@@ -1,0 +1,52 @@
+BLSTM Training Results - training_validation_2layer_optimized_new_calibration_v1
+==================================================
+
+Configuration: configs/training/better_2layer_training.yaml
+Training time: 53.8 minutes
+Feature dimension: 60
+
+Feature Configuration:
+-------------------------
+  Head-SSM: Enabled (12D)
+    Head words: 2
+  Tail-SSM: Enabled (12D)
+    Tail words: 2
+  Phonetic-SSM: Enabled (12D)
+    Mode: rhyme
+    Similarity: binary
+    Normalize: False
+    High sim threshold: 0.32
+  POS-SSM: Enabled (12D)
+    Tagset: simplified
+    Similarity: combined
+    High sim threshold: 0.28
+
+Model Architecture:
+------------------
+  Input dimension: 60D
+  Hidden dimension: 256D
+  LSTM layers: 2
+  ✅ Multi-layer BiLSTM architecture
+      Inter-layer dropout: 0.35
+      Total parameters: 2,229,250
+  Output dropout: 0.18
+  Batch size: 28
+  Learning rate: 0.0007
+  Label smoothing: 0.16
+  Weighted sampling: True
+
+Test Results:
+-------------
+  Macro F1: 0.7840
+  Verse F1: 0.8740
+  Chorus F1: 0.6941
+  Confidence: 0.835
+  Chorus rate: 30.48%
+  Calibration: ['temperature', 'platt']
+
+Calibration Details:
+--------------------
+  temperature: ECE 0.0265 → 0.0192 (Δ+0.0073)
+    T = 0.917
+  platt: ECE 0.0265 → 0.0224 (Δ+0.0041)
+    A = 1.072, B = 0.000

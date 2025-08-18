@@ -236,6 +236,100 @@ class PlattCalibrator:
         return {"A": self.A, "B": self.B}
 
 
+class IsotonicCalibrator:
+    """
+    Isotonic regression calibrator for top-1 probabilities.
+    Learns g(p_top) ~ P(correct | p_top). Applies g to top-1 prob and
+    rescales non-top probs proportionally (shape-preserving).
+    """
+    
+    def __init__(self, out_of_bounds: str = "clip", min_samples: int = 100):
+        # out_of_bounds: 'clip' replicates sklearn>=1.0 behavior for extrapolation
+        self.out_of_bounds = out_of_bounds
+        self.min_samples = min_samples
+        self.is_fitted = False
+        self._iso = None
+
+    def fit(self, logits: torch.Tensor, labels: torch.Tensor) -> float:
+        """
+        Args:
+            logits: (N, C)
+            labels: (N,)
+        Returns:
+            ece_after (float)
+        """
+        with torch.no_grad():
+            base = torch.softmax(logits, dim=-1)      # (N,C)
+            preds = base.argmax(dim=1)                # (N,)
+            correct = (preds == labels).float()       # (N,)
+            p_top = base.gather(1, preds.unsqueeze(1)).squeeze(1)  # (N,)
+
+        # Need enough distinct points for isotonic to be meaningful
+        p_np = p_top.detach().cpu().numpy()
+        y_np = correct.detach().cpu().numpy()
+
+        print(f"    Isotonic calibration: {len(p_np)} samples, {np.unique(p_np).size} unique confidences")
+        
+        # Fallback: if too few samples or degenerate p's, skip training
+        # More adaptive thresholds for different dataset sizes
+        min_unique_values = max(3, min(10, len(np.unique(p_np)) // 3))  # At least 3, aim for 1/3 of unique values
+        if len(p_np) < self.min_samples or np.unique(p_np).size < min_unique_values:
+            print(f"    Insufficient data for isotonic regression (need {self.min_samples}+ samples, {min_unique_values}+ unique values)")
+            print(f"    Got {len(p_np)} samples, {np.unique(p_np).size} unique values")
+            print(f"    Using identity mapping as fallback")
+            from sklearn.isotonic import IsotonicRegression
+            iso = IsotonicRegression(y_min=0.0, y_max=1.0, increasing=True, out_of_bounds=self.out_of_bounds)
+            # Fit a trivial mapping 0..1 -> 0..1 to keep code paths unified
+            iso.fit([0.0, 1.0], [0.0, 1.0])
+            self._iso = iso
+            self.is_fitted = True
+        else:
+            from sklearn.isotonic import IsotonicRegression
+            iso = IsotonicRegression(y_min=0.0, y_max=1.0, increasing=True, out_of_bounds=self.out_of_bounds)
+            # Fit on (p_top, correctness)
+            print(f"    Fitting isotonic regression on confidence range [{p_np.min():.3f}, {p_np.max():.3f}]")
+            iso.fit(p_np, y_np)
+            self._iso = iso
+            self.is_fitted = True
+            print(f"    Fitted with {getattr(iso, 'X_thresholds_', np.array([])).size} knots")
+
+        # ECE after calibration
+        with torch.no_grad():
+            calibrated = self.apply(logits)  # (N, C)
+            ece_after = ece(calibrated, labels, mask=None)
+        return float(ece_after)
+
+    def apply(self, logits: torch.Tensor) -> torch.Tensor:
+        """Apply isotonic mapping to top-1 prob and preserve non-top shape."""
+        with torch.no_grad():
+            base = torch.softmax(logits, dim=-1)  # (N,C)
+            if not self.is_fitted or self._iso is None:
+                return base
+
+            N, C = base.shape
+            preds = base.argmax(dim=1)  # (N,)
+            base_top = base.gather(1, preds.unsqueeze(1)).squeeze(1)  # (N,)
+
+            p_top_np = base_top.detach().cpu().numpy()
+            p_top_cal_np = self._iso.predict(p_top_np)
+            p_top_cal = torch.from_numpy(np.clip(p_top_cal_np, 0.0, 1.0)).to(base.device).to(base.dtype)  # (N,)
+
+            # Shape-preserving rescale of non-top classes
+            denom = (1.0 - base_top).clamp_min(1e-12)        # (N,)
+            scale = (1.0 - p_top_cal) / denom                # (N,)
+
+            out = base * scale.unsqueeze(1)                  # shrink all
+            out[torch.arange(N), preds] = p_top_cal          # then set top class
+            # Numerical guard
+            out = torch.clamp(out, 0.0, 1.0)
+            out = out / out.sum(dim=1, keepdim=True).clamp_min(1e-12)
+            return out
+
+    def get_params(self) -> Dict[str, float]:
+        return {"knots": int(getattr(self._iso, "X_thresholds_", np.array([])).size)
+                        if self._iso is not None else 0}
+
+
 def collect_validation_data(model, val_loader, device):
     """
     Collect logits and labels from validation set.
@@ -289,7 +383,7 @@ def fit_calibration(model, val_loader, device, methods=None, output_dir=None):
         model: Trained model
         val_loader: Validation data loader  
         device: Device to run on
-        methods: List of methods to try ['temperature', 'platt']
+        methods: List of methods to try ['temperature', 'platt', 'isotonic']
         output_dir: Directory to save results
         
     Returns:
@@ -333,6 +427,12 @@ def fit_calibration(model, val_loader, device, methods=None, output_dir=None):
                 calibrator = TemperatureCalibrator()
             elif method == 'platt':
                 calibrator = PlattCalibrator()
+            elif method == 'isotonic':
+                # Adaptive min_samples based on dataset size
+                # More aggressive adaptation for larger datasets
+                adaptive_min_samples = max(20, min(50, len(logits) // 10))  # 10% of data, min 20, max 50
+                print(f"    Using adaptive min_samples={adaptive_min_samples} for dataset size {len(logits)}")
+                calibrator = IsotonicCalibrator(out_of_bounds="clip", min_samples=adaptive_min_samples)
             else:
                 print(f"❌ Unknown method: {method}")
                 continue
@@ -361,11 +461,30 @@ def fit_calibration(model, val_loader, device, methods=None, output_dir=None):
         return {}
     
     # Select best method (lowest ECE after calibration)
-    best_result = min(results, key=lambda r: r.ece_after)
-    best_method = best_result.method
-    best_calibrator = calibrators[best_method]
-    
-    print(f"🏆 Best method: {best_method} (ECE: {best_result.ece_after:.4f})")
+    # Exclude isotonic from being the "best" method since it's not available for inference
+    available_results = [r for r in results if r.method in ['temperature', 'platt']]
+    if available_results:
+        best_result = min(available_results, key=lambda r: r.ece_after)
+        best_method = best_result.method
+        best_calibrator = calibrators[best_method]
+        
+        # Check if isotonic was actually better
+        isotonic_results = [r for r in results if r.method == 'isotonic']
+        if isotonic_results:
+            isotonic_result = isotonic_results[0]
+            if isotonic_result.ece_after < best_result.ece_after:
+                print(f"🏆 Best method: isotonic (ECE: {isotonic_result.ece_after:.4f}) - not available for inference")
+                print(f"🏆 Best available method: {best_method} (ECE: {best_result.ece_after:.4f})")
+            else:
+                print(f"🏆 Best method: {best_method} (ECE: {best_result.ece_after:.4f})")
+        else:
+            print(f"🏆 Best method: {best_method} (ECE: {best_result.ece_after:.4f})")
+    else:
+        # Fallback to overall best if no temperature/platt available
+        best_result = min(results, key=lambda r: r.ece_after)
+        best_method = best_result.method
+        best_calibrator = calibrators[best_method]
+        print(f"🏆 Best method: {best_method} (ECE: {best_result.ece_after:.4f})")
     
     # Save results if output directory provided
     if output_dir:
@@ -428,6 +547,14 @@ def load_calibration(calibration_path):
             calibrator.A = params['A']
             calibrator.B = params['B']
             calibrator.is_fitted = True
+        elif method == 'isotonic':
+            # Note: Full isotonic model serialization would require saving the fitted sklearn model
+            # For now, we'll indicate that isotonic needs to be re-fitted
+            print("⚠️ Isotonic calibration models cannot be fully serialized - using identity mapping")
+            calibrator = IsotonicCalibrator()
+            # Mark as fitted but with empty model (will behave as identity)
+            calibrator.is_fitted = True
+            calibrator._iso = None  # Force identity behavior
         else:
             return 'none', None
         
