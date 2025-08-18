@@ -24,7 +24,8 @@ class BLSTMTagger(nn.Module):
         hidden_dim: int = 128,
         num_layers: int = 1,
         num_classes: int = 2,
-        dropout: float = 0.4
+        dropout: float = 0.4,
+        layer_dropout: float = 0.0
     ):
         """
         Initialize the BiLSTM tagger.
@@ -34,7 +35,8 @@ class BLSTMTagger(nn.Module):
             hidden_dim: LSTM hidden dimension
             num_layers: Number of LSTM layers
             num_classes: Number of output classes (2 for verse/chorus)
-            dropout: Dropout probability
+            dropout: Dropout probability for output layer
+            layer_dropout: Inter-layer dropout for LSTM (only applied if num_layers > 1)
         """
         super().__init__()
         
@@ -43,6 +45,7 @@ class BLSTMTagger(nn.Module):
         self.num_layers = num_layers
         self.num_classes = num_classes
         self.dropout_p = dropout
+        self.layer_dropout_p = layer_dropout
         
         # Bidirectional LSTM
         self.lstm = nn.LSTM(
@@ -51,7 +54,7 @@ class BLSTMTagger(nn.Module):
             num_layers=num_layers,
             bidirectional=True,
             batch_first=True,
-            dropout=dropout if num_layers > 1 else 0.0  # Only apply LSTM dropout if multi-layer
+            dropout=layer_dropout if num_layers > 1 else 0.0  # Inter-layer dropout
         )
         
         # Dropout for regularization
@@ -177,6 +180,7 @@ class BLSTMTagger(nn.Module):
             'num_layers': self.num_layers,
             'num_classes': self.num_classes,
             'dropout': self.dropout_p,
+            'layer_dropout': self.layer_dropout_p,
             'bidirectional': True,
             'total_params': total_params,
             'trainable_params': trainable_params,
@@ -189,6 +193,8 @@ class BLSTMTagger(nn.Module):
         print(f"   Input dimension: {info['feature_dim']}")
         print(f"   Hidden dimension: {info['hidden_dim']}")
         print(f"   LSTM layers: {info['num_layers']}")
+        if info['num_layers'] > 1 and info['layer_dropout'] > 0:
+            print(f"   ✅ Multi-layer with inter-layer dropout: {info['layer_dropout']}")
         print(f"   Output classes: {info['num_classes']}")
         print(f"   Dropout: {info['dropout']}")
         print(f"   Bidirectional: {info['bidirectional']}")
@@ -211,7 +217,8 @@ def create_model(config) -> BLSTMTagger:
         hidden_dim=config.hidden_dim,
         num_layers=config.num_layers,
         num_classes=config.num_classes,
-        dropout=config.dropout
+        dropout=config.dropout,
+        layer_dropout=config.layer_dropout
     )
     
     model.print_model_info()

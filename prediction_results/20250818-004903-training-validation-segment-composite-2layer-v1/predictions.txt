@@ -1,0 +1,41 @@
+Lyrics Structure Prediction
+==================================================
+
+VERSE   (0.871) | When you were here before
+VERSE   (0.887) | Couldn't look you in the eye
+VERSE   (0.902) | You're just like an angel
+VERSE   (0.906) | Your skin makes me cry
+VERSE   (0.895) | You float like a feather
+VERSE   (0.872) | In a beautiful world
+CHORUS  (0.626) | I wish I was special
+CHORUS  (0.757) | You're so fuckin' special
+CHORUS  (0.830) | But I'm a creep
+CHORUS  (0.850) | I'm a weirdo
+CHORUS  (0.854) | What the hell am I doin' here?
+CHORUS  (0.857) | I don't belong here
+CHORUS  (0.564) | I don't care if it hurts
+VERSE   (0.771) | I wanna have control
+VERSE   (0.840) | I want a perfect body
+VERSE   (0.856) | I want a perfect soul
+VERSE   (0.824) | I want you to notice
+VERSE   (0.793) | When I'm not around
+CHORUS  (0.537) | You're so fuckin' special
+CHORUS  (0.837) | I wish I was special
+CHORUS  (0.867) | But I'm a creep
+CHORUS  (0.873) | I'm a weirdo
+CHORUS  (0.867) | What the hell am I doin' here?
+CHORUS  (0.827) | I don't belong here
+VERSE   (0.754) | Oh, oh
+VERSE   (0.816) | She's runnin' out the door
+VERSE   (0.852) | She's runnin' out
+VERSE   (0.862) | She run, run, run, run
+VERSE   (0.860) | Run
+VERSE   (0.809) | Whatever makes you happy
+VERSE   (0.650) | Whatever you want
+CHORUS  (0.754) | You're so fuckin' special
+CHORUS  (0.841) | I wish I was special
+CHORUS  (0.864) | But I'm a creep
+CHORUS  (0.876) | I'm a weirdo
+CHORUS  (0.872) | What the hell am I doin' here?
+CHORUS  (0.850) | I don't belong here
+CHORUS  (0.798) | I don't belong here

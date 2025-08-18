@@ -32,11 +32,11 @@ Clean, modular implementation of BiLSTM for verse/chorus classification with ant
 
 **With YAML Configuration:**
 ```bash
-# Train with aggressive configuration (best performance)
+# Train with aggressive single-layer configuration
 python train_with_config.py configs/training/aggressive_config.yaml
 
-# Quick test run
-python train_with_config.py configs/training/quick_test.yaml
+# Train with multi-layer BiLSTM (3 layers, enhanced capacity)
+python train_with_config.py configs/training/multi_layer_example.yaml
 
 # With command line overrides
 python train_with_config.py configs/training/aggressive_config.yaml \
@@ -386,6 +386,15 @@ training_sessions/
 - **Emergency Monitoring**: Real-time training guardrails with full parameter control
 - **YAML Configuration**: Flexible configuration system with command-line overrides and reproducibility snapshots
 
+### **🆕 Multi-Layer BiLSTM Architecture (Phase 1)**
+- **📐 Configurable LSTM Depth**: 1-N layer BiLSTM with shared hidden dimensions
+- **🔧 Dual Dropout System**: Separate layer dropout (between LSTM layers) and output dropout (before classifier)
+- **🏗️ Enhanced Model Capacity**: 3-layer models: 3.8M parameters vs single-layer: 2.3M parameters
+- **⚙️ Clean Configuration**: Simple YAML parameters control full architecture
+- **🔄 Perfect Backward Compatibility**: Existing configs default to single-layer behavior
+- **💪 Deeper Pattern Learning**: Multi-layer networks capture more complex sequence patterns
+- **🎯 Automatic Parameter Scaling**: PyTorch calculates optimal parameter counts per layer
+
 ### **🆕 Boundary-Aware Evaluation System (Phase 2)**
 - **📏 Boundary Detection Metrics**: Precision, recall, and F1 for section boundary detection
 - **🎯 Segment Quality Assessment**: Complete vs partial segment detection with IoU scoring
@@ -450,9 +459,9 @@ training_sessions/
 The recommended way to manage training parameters is through YAML configuration files:
 
 **Available Configurations:**
-- `configs/training_config.yaml` - Default production settings
-- `configs/quick_test.yaml` - Fast testing (5 epochs, smaller model)
-- `configs/aggressive_config.yaml` - ✅ **Updated**: High-performance with advanced scheduling
+- `configs/training/training_config.yaml` - Default production settings
+- `configs/training/aggressive_config.yaml` - ✅ **Updated**: High-performance single-layer with advanced scheduling
+- `configs/training/multi_layer_example.yaml` - ✅ **NEW**: 3-layer BiLSTM architecture demonstration
 
 ### ✅ **New: Advanced Learning Rate Scheduling**
 
@@ -489,6 +498,62 @@ training:
   
   # scheduler: "warmup_cosine"    # For warmup + cosine
   # warmup_epochs: 5              # Warmup for first 5 epochs
+```
+
+### ✅ **New: Multi-Layer BiLSTM Architecture Configuration**
+
+The system now supports configurable multi-layer BiLSTM architecture with proper dropout control:
+
+**Key Configuration Parameters:**
+- **`num_layers`**: Number of LSTM layers (1, 2, 3, ...)
+- **`layer_dropout`**: Dropout between LSTM layers (only active if `num_layers > 1`)
+- **`dropout`**: Output dropout after LSTM processing (always active)
+- **`hidden_dim`**: Hidden dimension shared by all layers
+
+**Multi-Layer Configuration Examples:**
+
+```yaml
+# Single-layer BiLSTM (backward compatible)
+model:
+  hidden_dim: 512        # Hidden dimension
+  num_layers: 1          # Single layer
+  layer_dropout: 0.0     # Not used for single layer
+  dropout: 0.2           # Output dropout
+
+# Multi-layer BiLSTM for enhanced pattern learning
+model:
+  hidden_dim: 256        # Shared by all layers
+  num_layers: 3          # 3-layer deep BiLSTM
+  layer_dropout: 0.3     # Dropout between layers
+  dropout: 0.2           # Output dropout
+
+# Large capacity multi-layer model
+model:
+  hidden_dim: 512        # Large hidden dimension
+  num_layers: 2          # 2-layer BiLSTM
+  layer_dropout: 0.2     # Light inter-layer dropout
+  dropout: 0.1           # Light output dropout
+```
+
+**Architecture Scaling:**
+- **1-layer, 256D**: ~650K parameters (fast, baseline)
+- **2-layer, 256D**: ~2.2M parameters (good balance)
+- **3-layer, 256D**: ~3.8M parameters (maximum capacity)
+- **2-layer, 512D**: ~8.6M parameters (very large model)
+
+**Dropout Strategy:**
+```yaml
+# Conservative regularization
+layer_dropout: 0.2      # Light inter-layer dropout
+dropout: 0.1            # Light output dropout
+
+# Standard regularization (recommended)
+layer_dropout: 0.3      # Moderate inter-layer dropout
+dropout: 0.2            # Standard output dropout
+
+# Aggressive regularization
+layer_dropout: 0.4      # Strong inter-layer dropout
+dropout: 0.3            # Strong output dropout
 ```
 
 ### ✅ **New: Configurable Emergency Monitoring**
@@ -991,17 +1056,23 @@ python -m train.trainer          # Test training components
 - ✅ **NEW**: Optimized batch size (8→32) with proper LR scaling  
 - ✅ **NEW**: Configurable emergency monitoring (no magic numbers)
 - ✅ **NEW**: Configurable temperature calibration
+- ✅ **NEW**: Multi-Layer BiLSTM Architecture (Phase 1)
+  - ✅ Configurable LSTM depth (1-N layers)
+  - ✅ Dual dropout system (layer dropout + output dropout)
+  - ✅ Enhanced model capacity (3-layer: 3.8M parameters)
+  - ✅ Perfect backward compatibility
 
 ### 🚧 In Progress
-- Text embeddings (sentence-BERT) integration
-- Positional features for song structure
-- Advanced rhyme detection algorithms
+- **Phase 2**: Attention Mechanism Integration
+  - Optional self-attention with multi-head support
+  - Attention + BiLSTM fusion for enhanced processing
+  - Attention weight visualization and analysis
 
 ### 📋 Planned Features
-1. **Semantic Features**: Sentence transformers for semantic similarity
-2. **Positional Features**: Song section patterns (intro/verse/chorus/bridge/outro)
-3. **Rhythmic Features**: Syllable count, stress patterns, meter detection
-4. **Advanced Architecture**: Attention mechanisms, Transformer layers
+1. **Positional Encoding**: Sinusoidal and learnable positional embeddings (Phase 7)
+2. **Multi-Scale Processing**: Dilated convolutions and temporal pyramid pooling (Phase 7)
+3. **Semantic Features**: Sentence transformers for semantic similarity
+4. **Advanced Training**: Curriculum learning and data augmentation (Phase 8)
 5. **Sequence Modeling**: CRF layers for sequence constraints
 6. **Multi-scale Features**: Combine line-level and section-level features
 

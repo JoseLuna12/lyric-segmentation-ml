@@ -23,7 +23,7 @@ echo "📋 Using config: $CONFIG"
 echo
 
 # Run prediction with the config (input file specified in YAML)
-python predict_baseline.py --prediction-config "$CONFIG" --temperature 0.6
+python predict_baseline.py --prediction-config "$CONFIG"
 
 echo
 echo "✅ Prediction completed!"

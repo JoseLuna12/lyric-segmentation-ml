@@ -1,58 +1,41 @@
 Lyrics Structure Prediction
 ==================================================
 
-VERSE   (0.987) | Oh, woah
-VERSE   (0.988) | Oh, woah
-VERSE   (0.975) | Oh, woah
-VERSE   (0.945) | You know you love me (Yo), I know you care (Uh-huh)
-VERSE   (0.931) | Just shout whenever (Yo), and I'll be there (Uh-huh)
-VERSE   (0.915) | You are my love (Yo), you are my heart (Uh-huh)
-VERSE   (0.912) | And we will never, ever, ever be apart (Yo, uh-huh)
-VERSE   (0.939) | Are we an item? (Yo) Girl, quit playin' (Uh-huh)
-VERSE   (0.945) | "We're just friends" (Yo), what are you sayin'? (Uh-huh)
-VERSE   (0.919) | Said, "There's another" (Yo), and looked right in my eyes (Uh-huh)
-VERSE   (0.733) | My first love broke my heart for the first time (Yo), and I was like (Uh-huh)
-CHORUS  (0.925) | Baby, baby, baby, oh
-CHORUS  (0.967) | Like baby, baby, baby, no
-CHORUS  (0.979) | Like baby, baby, baby, oh
-CHORUS  (0.953) | I thought you'd always be mine, mine
-CHORUS  (0.960) | Baby, baby, baby, oh
-CHORUS  (0.940) | Like baby, baby, baby, no
-CHORUS  (0.921) | Like baby, baby, baby, oh
-CHORUS  (0.558) | I thought you'd always be mine, mine
-VERSE   (0.932) | Oh, for you, I would've done whatever (Uh-huh)
-VERSE   (0.969) | And I just can't believe we ain't together (Yo, uh-huh)
-VERSE   (0.975) | And I wanna play it cool (Yo), but I'm losin' you (Uh-huh)
-VERSE   (0.975) | I'll buy you anything (Yo), I'll buy you any ring (Uh-huh)
-VERSE   (0.965) | And I'm in pieces (Yo), baby, fix me (Uh-huh)
-VERSE   (0.948) | And just shake me 'til you wake me from this bad dream (Yo, uh-huh)
-VERSE   (0.934) | I'm goin' down (Yo), down, down, down (Uh-huh)
-VERSE   (0.874) | And I just can't believe my first love won't be around, and I'm like
-CHORUS  (0.863) | Baby, baby, baby, oh
-CHORUS  (0.952) | Like baby, baby, baby, no
-CHORUS  (0.978) | Like baby, baby, baby, oh
-CHORUS  (0.966) | I thought you'd always be mine, mine
-CHORUS  (0.973) | Baby, baby, baby, oh
-CHORUS  (0.959) | Like baby, baby, baby, no
-CHORUS  (0.943) | Like baby, baby, baby, oh
-CHORUS  (0.587) | I thought you'd always be mine, mine (Luda)
-VERSE   (0.844) | When I was thirteen, I had my first love
-VERSE   (0.933) | There was nobody that compared to my baby, and nobody came between us nor could ever come above
-VERSE   (0.965) | She had me goin' crazy, oh, I was starstruck
-VERSE   (0.978) | She woke me up daily, don't need no Starbucks (Woo)
-VERSE   (0.986) | She made my heart pound, and skip a beat when I see her in the street and
-VERSE   (0.992) | At school on the playground, but I really wanna see her on the weekend
-VERSE   (0.993) | She knows she got me dazin', 'cause she was so amazin'
-VERSE   (0.973) | And now my heart is breakin', but I just keep on sayin'
-CHORUS  (0.734) | Baby, baby, baby, oh
-CHORUS  (0.930) | Like baby, baby, baby, no
-CHORUS  (0.974) | Like baby, baby, baby, oh
-CHORUS  (0.977) | I thought you'd always be mine, mine
-CHORUS  (0.983) | Baby, baby, baby, oh
-CHORUS  (0.976) | Like baby, baby, baby, no
-CHORUS  (0.967) | Like baby, baby, baby, oh
-CHORUS  (0.909) | I thought you'd always be mine, mine
-VERSE   (0.553) | I'm gone (Yeah-yeah-yeah, yeah-yeah-yeah)
-VERSE   (0.853) | Now I'm all gone (Yeah-yeah-yeah, yeah-yeah-yeah)
-VERSE   (0.919) | Now I'm all gone (Yeah-yeah-yeah, yeah-yeah-yeah)
-VERSE   (0.935) | Now I'm all gone (Gone, gone, gone, gone), I'm gone
+VERSE   (0.979) | When you were here before
+VERSE   (0.984) | Couldn't look you in the eye
+VERSE   (0.990) | You're just like an angel
+VERSE   (0.990) | Your skin makes me cry
+VERSE   (0.980) | You float like a feather
+VERSE   (0.943) | In a beautiful world
+VERSE   (0.544) | I wish I was special
+CHORUS  (0.787) | You're so fuckin' special
+CHORUS  (0.895) | But I'm a creep
+CHORUS  (0.878) | I'm a weirdo
+CHORUS  (0.834) | What the hell am I doin' here?
+CHORUS  (0.815) | I don't belong here
+VERSE   (0.672) | I don't care if it hurts
+VERSE   (0.963) | I wanna have control
+VERSE   (0.983) | I want a perfect body
+VERSE   (0.982) | I want a perfect soul
+VERSE   (0.967) | I want you to notice
+VERSE   (0.918) | When I'm not around
+CHORUS  (0.559) | You're so fuckin' special
+CHORUS  (0.879) | I wish I was special
+CHORUS  (0.949) | But I'm a creep
+CHORUS  (0.953) | I'm a weirdo
+CHORUS  (0.935) | What the hell am I doin' here?
+CHORUS  (0.911) | I don't belong here
+VERSE   (0.835) | Oh, oh
+VERSE   (0.969) | She's runnin' out the door
+VERSE   (0.985) | She's runnin' out
+VERSE   (0.982) | She run, run, run, run
+VERSE   (0.970) | Run
+VERSE   (0.923) | Whatever makes you happy
+VERSE   (0.816) | Whatever you want
+CHORUS  (0.666) | You're so fuckin' special
+CHORUS  (0.889) | I wish I was special
+CHORUS  (0.946) | But I'm a creep
+CHORUS  (0.939) | I'm a weirdo
+CHORUS  (0.886) | What the hell am I doin' here?
+CHORUS  (0.790) | I don't belong here
+CHORUS  (0.815) | I don't belong here

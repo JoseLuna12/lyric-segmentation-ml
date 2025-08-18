@@ -9,7 +9,6 @@ and supports command line overrides for key parameters.
 import argparse
 import torch
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 from pathlib import Path
 import time
 from datetime import datetime
@@ -79,15 +78,32 @@ def setup_model_and_training(config: TrainingConfig, train_dataset: SongsDataset
     model = BLSTMTagger(
         feat_dim=feature_dim,
         hidden_dim=config.hidden_dim,
+        num_layers=config.num_layers,
         num_classes=config.num_classes,
-        dropout=config.dropout
+        dropout=config.dropout,
+        layer_dropout=config.layer_dropout
     ).to(device)
     
-    print(f"🤖 Model Architecture:")
-    print(f"   Input dimension: {feature_dim}")
-    print(f"   Hidden dimension: {config.hidden_dim}")
+    # Print detailed model information
+    print(f"\n🤖 Model Architecture Details:")
+    model.print_model_info()
+    
+    print(f"\n📊 Architecture Summary:")
+    print(f"   Input features: {feature_dim}D")
+    print(f"   Hidden dimension: {config.hidden_dim}D (shared across all layers)")
+    print(f"   LSTM layers: {config.num_layers}")
+    if config.num_layers > 1:
+        print(f"   ✅ Multi-layer BiLSTM: {config.num_layers} layers")
+        if config.layer_dropout > 0:
+            print(f"      Inter-layer dropout: {config.layer_dropout}")
+        else:
+            print(f"      No inter-layer dropout")
+        total_params = sum(p.numel() for p in model.parameters())
+        print(f"      Total parameters: {total_params:,}")
+    else:
+        print(f"   Single-layer BiLSTM (backward compatible)")
+    print(f"   Output dropout: {config.dropout}")
     print(f"   Output classes: {config.num_classes}")
-    print(f"   Dropout: {config.dropout}")
     
     # Create loss function
     print(f"🎯 Setting up loss function...")
@@ -111,20 +127,14 @@ def setup_model_and_training(config: TrainingConfig, train_dataset: SongsDataset
         weight_decay=config.weight_decay
     )
     
-    # Create scheduler
-    scheduler = ReduceLROnPlateau(
-        optimizer,
-        mode='max',
-        factor=0.5,
-        patience=config.patience // 2
-    )
+    # Note: Scheduler is created by Trainer from config, not here
     
     print(f"⚙️  Training setup:")
     print(f"   Optimizer: AdamW (lr={config.learning_rate}, wd={config.weight_decay})")
-    print(f"   Scheduler: ReduceLROnPlateau")
+    print(f"   Scheduler: {getattr(config, 'scheduler', 'plateau')} (configured in YAML)")
     print(f"   Gradient clipping: {config.gradient_clip_norm}")
     
-    return model, loss_function, optimizer, scheduler
+    return model, loss_function, optimizer
 
 
 def create_session_directory(config: TrainingConfig) -> Path:
@@ -309,7 +319,7 @@ Examples:
         train_loader, val_loader, test_loader, train_dataset = setup_data_loaders(config, feature_extractor)
         
         # Setup model and training components
-        model, loss_function, optimizer, scheduler = setup_model_and_training(
+        model, loss_function, optimizer = setup_model_and_training(
             config, train_dataset, config.device, feature_dim
         )
         
@@ -398,8 +408,22 @@ Examples:
             
             f.write(f"\nModel Architecture:\n")
             f.write("-" * 18 + "\n")
-            f.write(f"  Hidden dimension: {config.hidden_dim}\n")
-            f.write(f"  Dropout: {config.dropout}\n")
+            f.write(f"  Input dimension: {feature_dim}D\n")
+            f.write(f"  Hidden dimension: {config.hidden_dim}D\n")
+            f.write(f"  LSTM layers: {config.num_layers}\n")
+            if config.num_layers > 1:
+                f.write(f"  ✅ Multi-layer BiLSTM architecture\n")
+                if config.layer_dropout > 0:
+                    f.write(f"      Inter-layer dropout: {config.layer_dropout}\n")
+                else:
+                    f.write(f"      No inter-layer dropout\n")
+                total_params = sum(p.numel() for p in model.parameters())
+                f.write(f"      Total parameters: {total_params:,}\n")
+            else:
+                f.write(f"  Single-layer BiLSTM (backward compatible)\n")
+                total_params = sum(p.numel() for p in model.parameters())
+                f.write(f"      Total parameters: {total_params:,}\n")
+            f.write(f"  Output dropout: {config.dropout}\n")
             f.write(f"  Batch size: {config.batch_size}\n")
             f.write(f"  Learning rate: {config.learning_rate}\n")
             f.write(f"  Label smoothing: {config.label_smoothing}\n")

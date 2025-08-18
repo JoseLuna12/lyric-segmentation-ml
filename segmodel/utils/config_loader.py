@@ -21,6 +21,8 @@ class TrainingConfig:
     
     # Model architecture
     hidden_dim: int = 128
+    num_layers: int = 1              # NEW: Number of LSTM layers
+    layer_dropout: float = 0.0       # NEW: Inter-layer dropout
     num_classes: int = 2
     dropout: float = 0.4
     
@@ -222,6 +224,8 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         
         # Model
         hidden_dim=model.get('hidden_dim', 128),
+        num_layers=model.get('num_layers', 1),
+        layer_dropout=model.get('layer_dropout', 0.0),
         num_classes=model.get('num_classes', 2),
         dropout=model.get('dropout', 0.4),
         
@@ -353,7 +357,9 @@ def load_training_config(config_path: str) -> TrainingConfig:
     
     print(f"📋 Configuration Summary:")
     print(f"   Experiment: {training_config.experiment_name}")
-    print(f"   Model: hidden_dim={training_config.hidden_dim}, dropout={training_config.dropout}")
+    print(f"   Model: hidden_dim={training_config.hidden_dim}, layers={training_config.num_layers}, dropout={training_config.dropout}")
+    if training_config.num_layers > 1:
+        print(f"   ✅ Multi-layer LSTM: {training_config.num_layers} layers, layer_dropout={training_config.layer_dropout}")
     print(f"   Training: batch_size={training_config.batch_size}, lr={training_config.learning_rate}, epochs={training_config.max_epochs}")
     print(f"   ✅ Scheduler: {training_config.scheduler} (min_lr={training_config.min_lr})")
     print(f"   Anti-collapse: smoothing={training_config.label_smoothing}, entropy_λ={training_config.entropy_lambda}")

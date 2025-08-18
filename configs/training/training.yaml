@@ -10,6 +10,8 @@ data:
 # Model Architecture - Robust configuration based on working training_config.yaml
 model:
   hidden_dim: 256  # Keep proven capacity from working config
+  num_layers: 2
+  layer_dropout: 0.3
   num_classes: 2
   dropout: 0.2     # Slightly higher than working config (0.2) for more robustness
 
@@ -60,7 +62,7 @@ temperature_calibration:
   temperature_grid: [0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 1.8, 2.2, 2.5]  # Based on working config, slightly extended
   default_temperature: 0.6  # Same as working config
 
-validation_strategy: "segment_iou"
+validation_strategy: "composite"
 
 # Feature Configuration - Balanced feature extraction
 features:
@@ -120,7 +122,7 @@ system:
 
 # Experiment Metadata
 experiment:
-  name: "training_validation_segment_iou_v1"
-  description: "Training configuration with segment_iou validation strategy"
-  tags: ["validation-focused", "segmentation-metrics", "enhanced-monitoring", "production-ready"]
-  notes: "Training configuration with segment_iou validation strategy. Uses Segment IoU for complete segment quality evaluation. Enhanced monitoring of segment-level performance and transition accuracy. Optimized for structural coherence in predictions."
+  name: "training_validation_segment_composite_2layer_v1"
+  description: "Training configuration with composite validation strategy"
+  tags: ["validation-focused", "segmentation-metrics", "enhanced-monitoring", "production-ready", "2-layer-bilstm"]
+  notes: "Training configuration with composite validation strategy. Uses WindowDiff and Pk metrics for text segmentation evaluation. Enhanced monitoring of segment-level performance and transition accuracy. Optimized for structural coherence in predictions."

@@ -47,17 +47,23 @@ def load_model(model_path: str, device: torch.device) -> BLSTMTagger:
     lstm_4h = lstm_weight.shape[0]  # 4 * hidden_size
     hidden_size = lstm_4h // 4      # Extract hidden_size
     num_classes = classifier_weight.shape[0]
+    # Count LSTM layers by looking for weight keys
+    forward_layer_keys = [key for key in state_dict.keys() 
+                         if key.startswith('lstm.weight_ih_l') and '_reverse' not in key]
+    num_layers = len(forward_layer_keys)
     
     print(f"🔧 Detected model architecture:")
     print(f"   Input size: {input_size}")
     print(f"   Hidden size: {hidden_size}")
     print(f"   Classes: {num_classes}")
+    print(f"   Layers: {num_layers}")
     
-    # Create model
+    # Create model (num_layers defaults to 1 in BLSTMTagger)
     model = BLSTMTagger(
         feat_dim=input_size,
         hidden_dim=hidden_size,
         num_classes=num_classes,
+        num_layers=num_layers,
         dropout=0.0  # No dropout during inference
     )
     

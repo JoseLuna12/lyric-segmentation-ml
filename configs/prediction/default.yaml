@@ -4,7 +4,7 @@
 # No feature specifications needed - they're loaded from training session!
 
 # Training session directory (contains model + exact config + results)
-training_session: "training_sessions/session_20250817_222018_training_validation_segment_iou_v1"
+training_session: "training_sessions/session_20250817_203021_training_robust_enhanced_boundary_f1_v1"
 
 prediction:
   # Core prediction parameters
