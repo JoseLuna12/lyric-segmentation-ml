@@ -169,7 +169,7 @@ system:
 
 # Experiment Metadata
 experiment:
-  name: "attention_embeddings_all_features"
+  name: "all_features_active_training"
   description: "Reduced dimensions BiLSTM with attention mechanism"
   tags: ["attention", "reduced", "efficient"]
-  notes: "experimetn to check if a summary of embedings will perform better"
+  notes: "Experiment to check if active features with attention and embeddings perform better"

@@ -252,6 +252,28 @@ def create_feature_extractor_from_training_config(config_path: str) -> FeatureEx
             'similarity_method': config.string_ssm_similarity_method
         }
     
+    # NEW: Syllable SSM features
+    if config.syllable_pattern_ssm_enabled:
+        feature_config['syllable_pattern_ssm'] = {
+            'enabled': True,
+            'dimension': config.syllable_pattern_ssm_dimension,
+            'similarity_method': config.syllable_pattern_ssm_similarity_method,
+            'levenshtein_weight': config.syllable_pattern_ssm_levenshtein_weight,
+            'cosine_weight': config.syllable_pattern_ssm_cosine_weight,
+            'normalize': config.syllable_pattern_ssm_normalize,
+            'normalize_method': config.syllable_pattern_ssm_normalize_method
+        }
+    
+    if config.line_syllable_ssm_enabled:
+        feature_config['line_syllable_ssm'] = {
+            'enabled': True,
+            'dimension': config.line_syllable_ssm_dimension,
+            'similarity_method': config.line_syllable_ssm_similarity_method,
+            'ratio_threshold': config.line_syllable_ssm_ratio_threshold,
+            'normalize': config.line_syllable_ssm_normalize,
+            'normalize_method': config.line_syllable_ssm_normalize_method
+        }
+    
     if not feature_config:
         raise ValueError(f"No features enabled in training config: {config_path}")
     

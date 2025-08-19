@@ -10,6 +10,8 @@ from .tail_ssm import TailSSMExtractor
 from .phonetic_ssm import PhoneticSSMExtractor
 from .pos_ssm import POSSSMExtractor
 from .string_ssm import StringSSMExtractor
+from .syllable_pattern_ssm import SyllablePatternSSMExtractor
+from .line_syllable_ssm import LineSyllableSSMExtractor
 
 
 class FeatureExtractor:
@@ -134,6 +136,52 @@ class FeatureExtractor:
                 desc_parts.append(f"th={similarity_threshold}")
             enabled_features.append(",".join(desc_parts))
         
+        # Syllable Pattern SSM features (syllable sequence similarity)
+        if self.feature_config.get('syllable_pattern_ssm', {}).get('enabled', False):
+            syllable_pattern_config = self.feature_config['syllable_pattern_ssm']
+            similarity_method = syllable_pattern_config.get('similarity_method', 'levenshtein')
+            levenshtein_weight = syllable_pattern_config.get('levenshtein_weight', 0.7)
+            cosine_weight = syllable_pattern_config.get('cosine_weight', 0.3)
+            normalize = syllable_pattern_config.get('normalize', False)
+            normalize_method = syllable_pattern_config.get('normalize_method', 'zscore')
+            output_dim = syllable_pattern_config.get('dimension', 12)
+            
+            self.extractors['syllable_pattern_ssm'] = SyllablePatternSSMExtractor(
+                similarity_method=similarity_method,
+                levenshtein_weight=levenshtein_weight,
+                cosine_weight=cosine_weight,
+                normalize=normalize,
+                normalize_method=normalize_method,
+                dimension=output_dim
+            )
+            self.total_dim += output_dim
+            norm_desc = f",norm({normalize_method})" if normalize else ""
+            if similarity_method == 'combined':
+                weight_desc = f",lev={levenshtein_weight},cos={cosine_weight}"
+            else:
+                weight_desc = ""
+            enabled_features.append(f"syllable_pattern_ssm({output_dim}D,{similarity_method}{weight_desc}{norm_desc})")
+        
+        # Line Syllable SSM features (line-level syllable count rhythm)
+        if self.feature_config.get('line_syllable_ssm', {}).get('enabled', False):
+            line_syllable_config = self.feature_config['line_syllable_ssm']
+            similarity_method = line_syllable_config.get('similarity_method', 'cosine')
+            ratio_threshold = line_syllable_config.get('ratio_threshold', 0.1)
+            normalize = line_syllable_config.get('normalize', False)
+            normalize_method = line_syllable_config.get('normalize_method', 'minmax')
+            output_dim = line_syllable_config.get('dimension', 12)
+            
+            self.extractors['line_syllable_ssm'] = LineSyllableSSMExtractor(
+                similarity_method=similarity_method,
+                ratio_threshold=ratio_threshold,
+                normalize=normalize,
+                normalize_method=normalize_method,
+                dimension=output_dim
+            )
+            self.total_dim += output_dim
+            norm_desc = f",norm({normalize_method})" if normalize else ""
+            enabled_features.append(f"line_syllable_ssm({output_dim}D,{similarity_method},ratio={ratio_threshold}{norm_desc})")
+
         # Word2Vec embeddings
         if self.feature_config.get('word2vec_enabled', False):
             from .word2vec_embeddings import Word2VecEmbeddingsExtractor

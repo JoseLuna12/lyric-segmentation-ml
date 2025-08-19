@@ -114,6 +114,22 @@ class TrainingConfig:
     string_ssm_similarity_threshold: float = 0.0
     string_ssm_similarity_method: str = "word_overlap"
     
+    # NEW: Syllable SSM features
+    syllable_pattern_ssm_enabled: bool = False
+    syllable_pattern_ssm_dimension: int = 12
+    syllable_pattern_ssm_similarity_method: str = "levenshtein"
+    syllable_pattern_ssm_levenshtein_weight: float = 0.7
+    syllable_pattern_ssm_cosine_weight: float = 0.3
+    syllable_pattern_ssm_normalize: bool = False
+    syllable_pattern_ssm_normalize_method: str = "zscore"
+    
+    line_syllable_ssm_enabled: bool = False
+    line_syllable_ssm_dimension: int = 12
+    line_syllable_ssm_similarity_method: str = "cosine"
+    line_syllable_ssm_ratio_threshold: float = 0.1
+    line_syllable_ssm_normalize: bool = False
+    line_syllable_ssm_normalize_method: str = "minmax"
+    
     # Embedding features
     word2vec_enabled: bool = False
     word2vec_model: str = "word2vec-google-news-300"
@@ -239,6 +255,9 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
     phonetic_ssm = features.get('phonetic_ssm', {})
     pos_ssm = features.get('pos_ssm', {})
     string_ssm = features.get('string_ssm', {})
+    # NEW: Syllable SSM features
+    syllable_pattern_ssm = features.get('syllable_pattern_ssm', {})
+    line_syllable_ssm = features.get('line_syllable_ssm', {})
     # New embedding features
     embeddings = config.get('embeddings', {})
     word2vec = embeddings.get('word2vec', {})
@@ -323,29 +342,45 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         
         # Features
         head_ssm_enabled=head_ssm.get('enabled', True),
-        head_ssm_dimension=head_ssm.get('output_dim', 12),
+        head_ssm_dimension=head_ssm.get('dimension', 12),
         head_ssm_words=head_ssm.get('head_words', 2),
         tail_ssm_enabled=tail_ssm.get('enabled', True),
-        tail_ssm_dimension=tail_ssm.get('output_dim', 12),
+        tail_ssm_dimension=tail_ssm.get('dimension', 12),
         tail_ssm_words=tail_ssm.get('tail_words', 2),
         phonetic_ssm_enabled=phonetic_ssm.get('enabled', True),
-        phonetic_ssm_dimension=phonetic_ssm.get('output_dim', 12),
+        phonetic_ssm_dimension=phonetic_ssm.get('dimension', 12),
         phonetic_ssm_mode=phonetic_ssm.get('mode', 'rhyme'),
         phonetic_ssm_similarity_method=phonetic_ssm.get('similarity_method', 'binary'),
         phonetic_ssm_normalize=phonetic_ssm.get('normalize', False),
         phonetic_ssm_normalize_method=phonetic_ssm.get('normalize_method', 'zscore'),
         phonetic_ssm_high_sim_threshold=phonetic_ssm.get('high_sim_threshold', 0.8),
         pos_ssm_enabled=pos_ssm.get('enabled', False),
-        pos_ssm_dimension=pos_ssm.get('output_dim', 12),
+        pos_ssm_dimension=pos_ssm.get('dimension', 12),
         pos_ssm_tagset=pos_ssm.get('tagset', 'simplified'),
         pos_ssm_similarity_method=pos_ssm.get('similarity_method', 'combined'),
         pos_ssm_high_sim_threshold=pos_ssm.get('high_sim_threshold', 0.7),
         string_ssm_enabled=string_ssm.get('enabled', True),
-        string_ssm_dimension=string_ssm.get('output_dim', 12),
+        string_ssm_dimension=string_ssm.get('dimension', 12),
         string_ssm_case_sensitive=string_ssm.get('case_sensitive', False),
         string_ssm_remove_punctuation=string_ssm.get('remove_punctuation', True),
         string_ssm_similarity_threshold=string_ssm.get('similarity_threshold', 0.0),
         string_ssm_similarity_method=string_ssm.get('similarity_method', 'word_overlap'),
+        
+        # NEW: Syllable SSM features
+        syllable_pattern_ssm_enabled=syllable_pattern_ssm.get('enabled', False),
+        syllable_pattern_ssm_dimension=syllable_pattern_ssm.get('dimension', 12),
+        syllable_pattern_ssm_similarity_method=syllable_pattern_ssm.get('similarity_method', 'levenshtein'),
+        syllable_pattern_ssm_levenshtein_weight=syllable_pattern_ssm.get('levenshtein_weight', 0.7),
+        syllable_pattern_ssm_cosine_weight=syllable_pattern_ssm.get('cosine_weight', 0.3),
+        syllable_pattern_ssm_normalize=syllable_pattern_ssm.get('normalize', False),
+        syllable_pattern_ssm_normalize_method=syllable_pattern_ssm.get('normalize_method', 'zscore'),
+        
+        line_syllable_ssm_enabled=line_syllable_ssm.get('enabled', False),
+        line_syllable_ssm_dimension=line_syllable_ssm.get('dimension', 12),
+        line_syllable_ssm_similarity_method=line_syllable_ssm.get('similarity_method', 'cosine'),
+        line_syllable_ssm_ratio_threshold=line_syllable_ssm.get('ratio_threshold', 0.1),
+        line_syllable_ssm_normalize=line_syllable_ssm.get('normalize', False),
+        line_syllable_ssm_normalize_method=line_syllable_ssm.get('normalize_method', 'minmax'),
         
         # Embedding features
         word2vec_enabled=word2vec.get('enabled', False),
@@ -471,6 +506,23 @@ def load_training_config(config_path: str) -> TrainingConfig:
         string_desc += ")"
         enabled_features.append(string_desc)
         total_dim += training_config.string_ssm_dimension
+    
+    # NEW: Syllable SSM features
+    if training_config.syllable_pattern_ssm_enabled:
+        syl_desc = f"SyllablePattern-SSM({training_config.syllable_pattern_ssm_dimension}D,{training_config.syllable_pattern_ssm_similarity_method}"
+        if training_config.syllable_pattern_ssm_normalize:
+            syl_desc += f",norm={training_config.syllable_pattern_ssm_normalize_method}"
+        syl_desc += ")"
+        enabled_features.append(syl_desc)
+        total_dim += training_config.syllable_pattern_ssm_dimension
+        
+    if training_config.line_syllable_ssm_enabled:
+        line_syl_desc = f"LineSyllable-SSM({training_config.line_syllable_ssm_dimension}D,{training_config.line_syllable_ssm_similarity_method}"
+        if training_config.line_syllable_ssm_normalize:
+            line_syl_desc += f",norm={training_config.line_syllable_ssm_normalize_method}"
+        line_syl_desc += f",ratio={training_config.line_syllable_ssm_ratio_threshold})"
+        enabled_features.append(line_syl_desc)
+        total_dim += training_config.line_syllable_ssm_dimension
     
     # NEW: Add embedding features to summary
     if training_config.word2vec_enabled:

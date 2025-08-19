@@ -48,37 +48,49 @@ data:
 
 ```yaml
 model:
-  hidden_dim: 512
+  hidden_dim: 256
+  num_layers: 2
   num_classes: 2
   dropout: 0.2
+  layer_dropout: 0.3
   
   # Attention Mechanism (Optional)
-  attention_enabled: false
+  attention_enabled: true
   attention_type: "self"  # "self", "localized", "boundary_aware"
   attention_heads: 8
-  attention_dropout: 0.1
-  attention_dim: null  # If null, uses BiLSTM output dimension
+  attention_dropout: 0.15
+  attention_dim: 256  # If null, uses BiLSTM output dimension
   positional_encoding: true
   max_seq_length: 1000
   window_size: 7  # For localized attention
   boundary_temperature: 2.0  # For boundary-aware attention
 ```
 
-**Parameter Details:**
-- `hidden_dim` - BiLSTM hidden state dimension (integer)
+**Core Parameters:**
+- `hidden_dim` - BiLSTM hidden state dimension (integer, recommended: 128-512)
+- `num_layers` - Number of BiLSTM layers (integer, 1-3, default: 2)
 - `num_classes` - Number of output classes (integer, fixed at 2 for verse/chorus)
-- `dropout` - Dropout probability for regularization (float 0.0-1.0)
+- `dropout` - Output dropout probability for regularization (float 0.0-1.0)
+- `layer_dropout` - Inter-layer dropout for multi-layer models (float 0.0-1.0)
 
 **Attention Parameters (Optional):**
 - `attention_enabled` - Whether to use attention mechanism (boolean)
-- `attention_type` - Type of attention: `"self"`, `"localized"`, `"boundary_aware"`
-- `attention_heads` - Number of attention heads (integer)
-- `attention_dropout` - Attention dropout probability (float)
+- `attention_type` - Type of attention mechanism:
+  - `"self"` - Standard self-attention (global context)
+  - `"localized"` - Window-based local attention (efficient for long sequences)
+  - `"boundary_aware"` - Temperature-scaled attention for boundary detection
+- `attention_heads` - Number of attention heads (integer, 1-16, default: 8)
+- `attention_dropout` - Attention dropout probability (float 0.0-1.0)
 - `attention_dim` - Attention dimension (integer, if null uses BiLSTM output dimension)
-- `positional_encoding` - Whether to use positional encoding (boolean)
-- `max_seq_length` - Maximum sequence length for positional encoding (integer)
-- `window_size` - Window size for localized attention (integer, default: 7)
-- `boundary_temperature` - Temperature for boundary-aware attention (float, default: 2.0)
+- `positional_encoding` - Whether to use positional encoding (boolean, recommended: true)
+- `max_seq_length` - Maximum sequence length for positional encoding (integer, 500-2000)
+- `window_size` - Window size for localized attention (integer, 3-15, default: 7)
+- `boundary_temperature` - Temperature for boundary-aware attention (float, 1.0-5.0, default: 2.0)
+
+**Architecture Notes:**
+- Multi-layer BiLSTM (num_layers > 1) improves capacity but increases parameters
+- Attention mechanism adds ~10-15% parameters but often improves performance
+- Positional encoding helps with long sequences and structure detection
 
 ---
 
@@ -263,7 +275,17 @@ validation_strategy: "boundary_f1"
 
 ## 🧩 **Feature System**
 
-The system supports 5 feature extractors. All feature extractors output 12-dimensional vectors by default.
+The system supports 9 feature extractors with configurable dimensions and parameters:
+
+1. **Head-SSM** - Analyzes line beginnings
+2. **Tail-SSM** - Analyzes line endings
+3. **Phonetic-SSM** - Phonetic similarity patterns
+4. **POS-SSM** - Part-of-speech patterns
+5. **String-SSM** - String similarity patterns
+6. **SyllablePattern-SSM** - Syllable pattern similarity (NEW)
+7. **LineSyllable-SSM** - Line-level syllable analysis (NEW)
+8. **Word2Vec Embeddings** - Pre-trained word embeddings
+9. **Contextual Embeddings** - Contextual sentence embeddings
 
 ### 1. Head-SSM Features
 
@@ -278,7 +300,7 @@ features:
 **Parameters:**
 - `enabled` - Enable/disable feature extractor (boolean)
 - `dimension` - Output feature dimensions (integer)
-- `head_words` - Number of words from line start to analyze (integer)
+- `head_words` - Number of words from line start to analyze (integer, 1-5)
 
 ### 2. Tail-SSM Features
 
@@ -293,7 +315,7 @@ features:
 **Parameters:**
 - `enabled` - Enable/disable feature extractor (boolean)
 - `dimension` - Output feature dimensions (integer)
-- `tail_words` - Number of words from line end to analyze (integer)
+- `tail_words` - Number of words from line end to analyze (integer, 1-5)
 
 ### 3. Phonetic-SSM Features
 
@@ -316,7 +338,7 @@ features:
 - `similarity_method` - Computation method: `"binary"` or `"weighted"`
 - `normalize` - Enable feature normalization (boolean)
 - `normalize_method` - Normalization method: `"zscore"` or `"minmax"`
-- `high_sim_threshold` - Threshold for high similarity classification (float)
+- `high_sim_threshold` - Threshold for high similarity classification (float, 0.0-1.0)
 
 ### 4. POS-SSM Features
 
@@ -335,7 +357,7 @@ features:
 - `dimension` - Output feature dimensions (integer)
 - `tagset` - POS tagset type: `"simplified"` or `"full"`
 - `similarity_method` - Similarity computation: `"exact"`, `"similarity"`, or `"combined"`
-- `high_sim_threshold` - Threshold for high similarity classification (float)
+- `high_sim_threshold` - Threshold for high similarity classification (float, 0.0-1.0)
 
 ### 5. String-SSM Features
 
@@ -355,8 +377,122 @@ features:
 - `dimension` - Output feature dimensions (integer)
 - `case_sensitive` - Enable case-sensitive comparison (boolean)
 - `remove_punctuation` - Remove punctuation before comparison (boolean)
-- `similarity_threshold` - Minimum similarity threshold (float)
+- `similarity_threshold` - Minimum similarity threshold (float, 0.0-1.0)
 - `similarity_method` - Computation method: `"word_overlap"`, `"jaccard"`, or `"levenshtein"`
+
+### 6. SyllablePattern-SSM Features (NEW)
+
+```yaml
+features:
+  syllable_pattern_ssm:
+    enabled: true
+    dimension: 12
+    similarity_method: "cosine"
+    levenshtein_weight: 0.7
+    cosine_weight: 0.3
+    normalize: false
+    normalize_method: "zscore"
+```
+
+**Parameters:**
+- `enabled` - Enable/disable feature extractor (boolean)
+- `dimension` - Output feature dimensions (integer)
+- `similarity_method` - Method: `"levenshtein"`, `"cosine"`, or `"combined"`
+- `levenshtein_weight` - Weight for Levenshtein distance in combined method (float, 0.0-1.0)
+- `cosine_weight` - Weight for cosine similarity in combined method (float, 0.0-1.0)
+- `normalize` - Enable feature normalization (boolean)
+- `normalize_method` - Normalization method: `"zscore"` or `"minmax"`
+
+**Description:** Analyzes syllable pattern similarity between lines using phonetic syllable counts and stress patterns.
+
+### 7. LineSyllable-SSM Features (NEW)
+
+```yaml
+features:
+  line_syllable_ssm:
+    enabled: true
+    dimension: 12
+    similarity_method: "cosine"
+    ratio_threshold: 0.1
+    normalize: false
+    normalize_method: "zscore"
+```
+
+**Parameters:**
+- `enabled` - Enable/disable feature extractor (boolean)
+- `dimension` - Output feature dimensions (integer)
+- `similarity_method` - Method: `"ratio"`, `"cosine"`, or `"combined"`
+- `ratio_threshold` - Threshold for syllable count ratio similarity (float, 0.0-1.0)
+- `normalize` - Enable feature normalization (boolean)
+- `normalize_method` - Normalization method: `"zscore"` or `"minmax"`
+
+**Description:** Analyzes line-level syllable count patterns and relationships for verse/chorus structure detection.
+
+### 8. Word2Vec Embeddings
+
+```yaml
+features:
+  word2vec:
+    enabled: true
+    model: "word2vec-google-news-300"
+    mode: "complete"
+    normalize: true
+    similarity_metric: "cosine"
+    high_sim_threshold: 0.8
+```
+
+**Parameters:**
+- `enabled` - Enable/disable feature extractor (boolean)
+- `model` - Model name: `"word2vec-google-news-300"` (300D vectors)
+- `mode` - Output mode: `"complete"` (300D) or `"summary"` (12D statistical features)
+- `normalize` - Normalize embeddings before processing (boolean)
+- `similarity_metric` - Similarity computation: `"cosine"` or `"euclidean"`
+- `high_sim_threshold` - Threshold for high similarity detection (float, 0.0-1.0)
+
+**Output Dimensions:**
+- `complete` mode: 300D (full word2vec embeddings)
+- `summary` mode: 12D (statistical summary features)
+
+### 9. Contextual Embeddings
+
+```yaml
+features:
+  contextual:
+    enabled: true
+    model: "all-MiniLM-L6-v2"
+    mode: "complete"
+    normalize: true
+    similarity_metric: "cosine"
+    high_sim_threshold: 0.7
+```
+
+**Parameters:**
+- `enabled` - Enable/disable feature extractor (boolean)
+- `model` - SentenceTransformer model: `"all-MiniLM-L6-v2"` (384D) or `"all-mpnet-base-v2"` (768D)
+- `mode` - Output mode: `"complete"` (full embeddings) or `"summary"` (12D statistical features)
+- `normalize` - Normalize embeddings before processing (boolean)
+- `similarity_metric` - Similarity computation: `"cosine"` or `"euclidean"`
+- `high_sim_threshold` - Threshold for high similarity detection (float, 0.0-1.0)
+
+**Output Dimensions:**
+- `complete` mode: 384D (all-MiniLM-L6-v2) or 768D (all-mpnet-base-v2)
+- `summary` mode: 12D (statistical summary features)
+
+**Supported Models:**
+- `"all-MiniLM-L6-v2"` - Lightweight, fast (384D)
+- `"all-mpnet-base-v2"` - Higher quality, slower (768D)
+
+### Feature Dimension Calculation
+
+The total feature dimension is the sum of all enabled features:
+
+```
+Total = Head-SSM + Tail-SSM + Phonetic-SSM + POS-SSM + String-SSM + 
+        SyllablePattern-SSM + LineSyllable-SSM + Word2Vec + Contextual
+
+Example (all features enabled):
+12 + 12 + 12 + 12 + 12 + 12 + 12 + 300 + 384 = 768D
+```
 
 ---
 
@@ -551,6 +687,35 @@ features:
     remove_punctuation: true
     similarity_threshold: 0.1
     similarity_method: "word_overlap"
+  syllable_pattern_ssm:
+    enabled: true
+    dimension: 12
+    similarity_method: "cosine"
+    levenshtein_weight: 0.7
+    cosine_weight: 0.3
+    normalize: false
+    normalize_method: "zscore"
+  line_syllable_ssm:
+    enabled: true
+    dimension: 12
+    similarity_method: "cosine"
+    ratio_threshold: 0.1
+    normalize: false
+    normalize_method: "zscore"
+  word2vec:
+    enabled: true
+    model: "word2vec-google-news-300"
+    mode: "complete"
+    normalize: true
+    similarity_metric: "cosine"
+    high_sim_threshold: 0.8
+  contextual:
+    enabled: true
+    model: "all-MiniLM-L6-v2"
+    mode: "complete"
+    normalize: true
+    similarity_metric: "cosine"
+    high_sim_threshold: 0.7
 
 # Output Configuration
 output:

@@ -301,6 +301,24 @@ Examples:
                 'similarity_method': config.string_ssm_similarity_method,
                 'output_dim': config.string_ssm_dimension
             },
+            # NEW: Syllable SSM features
+            'syllable_pattern_ssm': {
+                'enabled': config.syllable_pattern_ssm_enabled,
+                'similarity_method': config.syllable_pattern_ssm_similarity_method,
+                'levenshtein_weight': config.syllable_pattern_ssm_levenshtein_weight,
+                'cosine_weight': config.syllable_pattern_ssm_cosine_weight,
+                'normalize': config.syllable_pattern_ssm_normalize,
+                'normalize_method': config.syllable_pattern_ssm_normalize_method,
+                'dimension': config.syllable_pattern_ssm_dimension
+            },
+            'line_syllable_ssm': {
+                'enabled': config.line_syllable_ssm_enabled,
+                'similarity_method': config.line_syllable_ssm_similarity_method,
+                'ratio_threshold': config.line_syllable_ssm_ratio_threshold,
+                'normalize': config.line_syllable_ssm_normalize,
+                'normalize_method': config.line_syllable_ssm_normalize_method,
+                'dimension': config.line_syllable_ssm_dimension
+            },
             # NEW: Embedding features in flattened format expected by FeatureExtractor
             'word2vec_enabled': config.word2vec_enabled,
             'word2vec_model': config.word2vec_model,
@@ -346,6 +364,23 @@ Examples:
             string_desc += ")"
             enabled_features.append(string_desc)
         
+        # NEW: Syllable SSM features
+        if config.syllable_pattern_ssm_enabled:
+            syl_desc = f"SyllablePattern-SSM({config.syllable_pattern_ssm_dimension}D,{config.syllable_pattern_ssm_similarity_method}"
+            if config.syllable_pattern_ssm_similarity_method == "combined":
+                syl_desc += f",lev={config.syllable_pattern_ssm_levenshtein_weight},cos={config.syllable_pattern_ssm_cosine_weight}"
+            if config.syllable_pattern_ssm_normalize:
+                syl_desc += f",norm-{config.syllable_pattern_ssm_normalize_method}"
+            syl_desc += ")"
+            enabled_features.append(syl_desc)
+        
+        if config.line_syllable_ssm_enabled:
+            line_syl_desc = f"LineSyllable-SSM({config.line_syllable_ssm_dimension}D,{config.line_syllable_ssm_similarity_method}"
+            if config.line_syllable_ssm_normalize:
+                line_syl_desc += f",norm-{config.line_syllable_ssm_normalize_method}"
+            line_syl_desc += f",ratio={config.line_syllable_ssm_ratio_threshold})"
+            enabled_features.append(line_syl_desc)
+        
         # NEW: Embedding features
         if config.word2vec_enabled:
             w2v_dim = 12 if config.word2vec_mode == "summary" else 300
@@ -377,6 +412,14 @@ Examples:
             print(f"   🔤 Word2Vec config: {config.word2vec_model}, mode={config.word2vec_mode}, normalize={config.word2vec_normalize}, {config.word2vec_similarity_metric}, threshold={config.word2vec_high_sim_threshold}")
         if config.contextual_enabled:
             print(f"   🤖 Contextual config: {config.contextual_model}, mode={config.contextual_mode}, normalize={config.contextual_normalize}, {config.contextual_similarity_metric}, threshold={config.contextual_high_sim_threshold}")
+        
+        # NEW: Syllable SSM details
+        if config.syllable_pattern_ssm_enabled:
+            print(f"   🎵 SyllablePattern-SSM config: method={config.syllable_pattern_ssm_similarity_method}, normalize={config.syllable_pattern_ssm_normalize}")
+            if config.syllable_pattern_ssm_similarity_method == "combined":
+                print(f"      Combined weights: Levenshtein={config.syllable_pattern_ssm_levenshtein_weight}, Cosine={config.syllable_pattern_ssm_cosine_weight}")
+        if config.line_syllable_ssm_enabled:
+            print(f"   🎼 LineSyllable-SSM config: method={config.line_syllable_ssm_similarity_method}, ratio_threshold={config.line_syllable_ssm_ratio_threshold}, normalize={config.line_syllable_ssm_normalize}")
         
         # Setup data loaders
         train_loader, val_loader, test_loader, train_dataset = setup_data_loaders(config, feature_extractor)
@@ -494,6 +537,33 @@ Examples:
             else:
                 f.write(f"  String-SSM: Disabled\n")
             
+            # NEW: Syllable SSM Features
+            # Syllable Pattern SSM
+            if config.syllable_pattern_ssm_enabled:
+                f.write(f"  SyllablePattern-SSM: Enabled ({config.syllable_pattern_ssm_dimension}D)\n")
+                f.write(f"    Similarity method: {config.syllable_pattern_ssm_similarity_method}\n")
+                if config.syllable_pattern_ssm_similarity_method == "combined":
+                    f.write(f"    Levenshtein weight: {config.syllable_pattern_ssm_levenshtein_weight}\n")
+                    f.write(f"    Cosine weight: {config.syllable_pattern_ssm_cosine_weight}\n")
+                f.write(f"    Normalize: {config.syllable_pattern_ssm_normalize}")
+                if config.syllable_pattern_ssm_normalize:
+                    f.write(f" ({config.syllable_pattern_ssm_normalize_method})")
+                f.write("\n")
+            else:
+                f.write(f"  SyllablePattern-SSM: Disabled\n")
+            
+            # Line Syllable SSM
+            if config.line_syllable_ssm_enabled:
+                f.write(f"  LineSyllable-SSM: Enabled ({config.line_syllable_ssm_dimension}D)\n")
+                f.write(f"    Similarity method: {config.line_syllable_ssm_similarity_method}\n")
+                f.write(f"    Ratio threshold: {config.line_syllable_ssm_ratio_threshold}\n")
+                f.write(f"    Normalize: {config.line_syllable_ssm_normalize}")
+                if config.line_syllable_ssm_normalize:
+                    f.write(f" ({config.line_syllable_ssm_normalize_method})")
+                f.write("\n")
+            else:
+                f.write(f"  LineSyllable-SSM: Disabled\n")
+            
             # NEW: Embedding Features
             f.write(f"\n")
             
@@ -534,6 +604,10 @@ Examples:
                 enabled_feature_dims.append(f"POS-SSM: {config.pos_ssm_dimension}D")
             if config.string_ssm_enabled:
                 enabled_feature_dims.append(f"String-SSM: {config.string_ssm_dimension}D")
+            if config.syllable_pattern_ssm_enabled:
+                enabled_feature_dims.append(f"SyllablePattern-SSM: {config.syllable_pattern_ssm_dimension}D")
+            if config.line_syllable_ssm_enabled:
+                enabled_feature_dims.append(f"LineSyllable-SSM: {config.line_syllable_ssm_dimension}D")
             if config.word2vec_enabled:
                 w2v_dim = 12 if config.word2vec_mode == "summary" else 300
                 enabled_feature_dims.append(f"Word2Vec: {w2v_dim}D")

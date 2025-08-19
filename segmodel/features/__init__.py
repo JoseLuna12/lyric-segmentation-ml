@@ -37,6 +37,24 @@ from .string_ssm import (
     normalized_levenshtein_similarity,
     normalize_string
 )
+from .syllable_pattern_ssm import (
+    SyllablePatternSSMExtractor,
+    extract_syllable_pattern_ssm_features,
+    compute_syllable_pattern_ssm
+)
+from .line_syllable_ssm import (
+    LineSyllableSSMExtractor,
+    extract_line_syllable_ssm_features,
+    compute_line_syllable_ssm
+)
+from .syllable_utils import (
+    count_syllables_in_word,
+    count_syllables_in_line,
+    extract_syllable_pattern,
+    normalize_syllable_counts,
+    normalized_levenshtein_similarity_lists,
+    compute_levenshtein_distance_lists
+)
 from .word2vec_embeddings import (
     Word2VecEmbeddingsExtractor,
     get_word2vec_model,
@@ -85,6 +103,18 @@ __all__ = [
     'compute_string_ssm',
     'normalized_levenshtein_similarity',
     'normalize_string',
+    'SyllablePatternSSMExtractor',
+    'extract_syllable_pattern_ssm_features',
+    'compute_syllable_pattern_ssm',
+    'LineSyllableSSMExtractor',
+    'extract_line_syllable_ssm_features',
+    'compute_line_syllable_ssm',
+    'count_syllables_in_word',
+    'count_syllables_in_line',
+    'extract_syllable_pattern',
+    'normalize_syllable_counts',
+    'normalized_levenshtein_similarity_lists',
+    'compute_levenshtein_distance_lists',
     'Word2VecEmbeddingsExtractor',
     'get_word2vec_model',
     'text_to_word2vec_embedding',

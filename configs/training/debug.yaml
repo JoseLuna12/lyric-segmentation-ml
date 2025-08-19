@@ -68,7 +68,7 @@ features:
 
   phonetic_ssm:
     enabled: true
-    dimension: 4     # Downscaled
+    dimension: 12    # Fixed at 12D as per PhoneticSSMExtractor
     mode: "rhyme"
     similarity_method: "binary"
     normalize: false
@@ -82,11 +82,30 @@ features:
   
   string_ssm:
     enabled: true
-    dimension: 4
+    dimension: 12    # Keep at 12D for consistency  
     case_sensitive: false
     remove_punctuation: true
     similarity_threshold: 0.1
     similarity_method: "word_overlap"
+
+  # NEW: Syllable Pattern SSM (syllable sequence similarity)
+  syllable_pattern_ssm:
+    enabled: true          # Enable for testing
+    dimension: 12
+    similarity_method: "combined"  # Test combined method
+    levenshtein_weight: 0.7
+    cosine_weight: 0.3
+    normalize: false       # z-score normalize similarities
+    normalize_method: "zscore"
+
+  # NEW: Line Syllable SSM (line-level syllable count rhythm)
+  line_syllable_ssm:
+    enabled: true          # Enable for testing
+    dimension: 12
+    similarity_method: "cosine"
+    ratio_threshold: 0.1
+    normalize: false
+    normalize_method: "minmax"
 
 # Embeddings (summary only)
 embeddings:
