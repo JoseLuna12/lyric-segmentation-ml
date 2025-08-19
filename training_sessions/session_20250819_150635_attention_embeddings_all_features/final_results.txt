@@ -1,0 +1,75 @@
+BLSTM Training Results - attention_embeddings_all_features
+==================================================
+
+Configuration: configs/training/attention_training_v1.yaml
+Training time: 31.1 minutes
+Feature dimension: 744
+
+Feature Configuration:
+-------------------------
+  Head-SSM: Enabled (12D)
+    Head words: 2
+  Tail-SSM: Enabled (12D)
+    Tail words: 2
+  Phonetic-SSM: Enabled (12D)
+    Mode: rhyme
+    Similarity: binary
+    Normalize: False
+    High sim threshold: 0.32
+  POS-SSM: Enabled (12D)
+    Tagset: simplified
+    Similarity: combined
+    High sim threshold: 0.28
+  String-SSM: Enabled (12D)
+    Case sensitive: False
+    Remove punctuation: True
+    Similarity threshold: 0.06
+    Similarity method: word_overlap
+
+  Word2Vec Embeddings: Enabled (300D)
+    Model: word2vec-google-news-300
+    Mode: complete (300D full embeddings)
+    Normalize: True
+    Similarity metric: cosine
+    High similarity threshold: 0.8
+  Contextual Embeddings: Enabled (384D)
+    Model: all-MiniLM-L6-v2
+    Mode: complete (384D full embeddings)
+    Normalize: True
+    Similarity metric: cosine
+    High similarity threshold: 0.7
+
+  Total Feature Dimension: 744D (Head-SSM: 12D + Tail-SSM: 12D + Phonetic-SSM: 12D + POS-SSM: 12D + String-SSM: 12D + Word2Vec: 300D + Contextual: 384D)
+
+Model Architecture:
+------------------
+  Input dimension: 744D
+  Hidden dimension: 128D
+  LSTM layers: 2
+  ✅ Multi-layer BiLSTM architecture
+      Inter-layer dropout: 0.35
+      Total parameters: 1,554,434
+  Attention type: self
+  Positional encoding: True
+    PE max length: 1000
+  Output dropout: 0.18
+  Batch size: 32
+  Learning rate: 0.0005
+  Label smoothing: 0.1
+  Weighted sampling: True
+
+Test Results:
+-------------
+  Macro F1: 0.7176
+  Verse F1: 0.8504
+  Chorus F1: 0.5849
+  Confidence: 0.805
+  Chorus rate: 25.37%
+  Calibration: ['temperature', 'platt']
+
+Calibration Details:
+--------------------
+  temperature: ECE 0.0255 → 0.0269 (Δ-0.0014)
+    T = 1.027
+  platt: ECE 0.0255 → 0.0195 (Δ+0.0060)
+    A = 1.000, B = -0.162

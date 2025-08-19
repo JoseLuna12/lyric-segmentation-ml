@@ -134,6 +134,40 @@ class FeatureExtractor:
                 desc_parts.append(f"th={similarity_threshold}")
             enabled_features.append(",".join(desc_parts))
         
+        # Word2Vec embeddings
+        if self.feature_config.get('word2vec_enabled', False):
+            from .word2vec_embeddings import Word2VecEmbeddingsExtractor
+            
+            word2vec_config = {
+                'model': self.feature_config.get('word2vec_model', 'word2vec-google-news-300'),
+                'mode': self.feature_config.get('word2vec_mode', 'summary'),
+                'normalize': self.feature_config.get('word2vec_normalize', True),
+                'similarity_metric': self.feature_config.get('word2vec_similarity_metric', 'cosine'),
+                'high_sim_threshold': self.feature_config.get('word2vec_high_sim_threshold', 0.8)
+            }
+            
+            self.extractors['word2vec'] = Word2VecEmbeddingsExtractor(**word2vec_config)
+            output_dim = self.extractors['word2vec'].dimension
+            self.total_dim += output_dim
+            enabled_features.append(f"word2vec({output_dim}D,{word2vec_config['mode']},{word2vec_config['similarity_metric']})")
+        
+        # Contextual embeddings
+        if self.feature_config.get('contextual_enabled', False):
+            from .contextual_embeddings import ContextualEmbeddingsExtractor
+            
+            contextual_config = {
+                'model': self.feature_config.get('contextual_model', 'all-MiniLM-L6-v2'),
+                'mode': self.feature_config.get('contextual_mode', 'summary'),
+                'normalize': self.feature_config.get('contextual_normalize', True),
+                'similarity_metric': self.feature_config.get('contextual_similarity_metric', 'cosine'),
+                'high_sim_threshold': self.feature_config.get('contextual_high_sim_threshold', 0.7)
+            }
+            
+            self.extractors['contextual'] = ContextualEmbeddingsExtractor(**contextual_config)
+            output_dim = self.extractors['contextual'].dimension
+            self.total_dim += output_dim
+            enabled_features.append(f"contextual({output_dim}D,{contextual_config['mode']},{contextual_config['similarity_metric']})")
+        
         # Text embeddings (placeholder for future)
         if self.feature_config.get('text_embeddings', {}).get('enabled', False):
             print("⚠️  Text embeddings not implemented yet, skipping...")

@@ -38,7 +38,10 @@ class PredictionConfig:
         'tail_ssm': {'dim': 12, 'enabled': True}, 
         'phonetic_ssm': {'dim': 12, 'enabled': True, 'mode': 'rhyme', 'binary': True},
         'pos_ssm': {'dim': 12, 'enabled': True, 'mode': 'simplified', 'combined': True, 'threshold': 0.3},
-        'string_ssm': {'dim': 12, 'enabled': True, 'threshold': 0.1}
+        'string_ssm': {'dim': 12, 'enabled': True, 'threshold': 0.1},
+        # NEW: Embedding features
+        'word2vec_embeddings': {'enabled': False, 'model': 'word2vec-google-news-300', 'mode': 'summary', 'normalize': True, 'similarity_metric': 'cosine', 'high_sim_threshold': 0.8},
+        'contextual_embeddings': {'enabled': False, 'model': 'all-MiniLM-L6-v2', 'mode': 'summary', 'normalize': True, 'similarity_metric': 'cosine', 'high_sim_threshold': 0.7}
     })
     
     # Device configuration
@@ -281,6 +284,27 @@ def create_prediction_config_from_training_session(session_dir: str) -> tuple[Pr
             'threshold': train_config_dict.get('string_ssm_similarity_threshold', 0.0)
         }
     
+    # NEW: Extract embedding feature configurations from training session
+    if train_config_dict.get('word2vec_enabled', False):
+        features['word2vec_embeddings'] = {
+            'enabled': True,
+            'model': train_config_dict.get('word2vec_model', 'word2vec-google-news-300'),
+            'mode': train_config_dict.get('word2vec_mode', 'summary'),
+            'normalize': train_config_dict.get('word2vec_normalize', True),
+            'similarity_metric': train_config_dict.get('word2vec_similarity_metric', 'cosine'),
+            'high_sim_threshold': train_config_dict.get('word2vec_high_sim_threshold', 0.8)
+        }
+        
+    if train_config_dict.get('contextual_enabled', False):
+        features['contextual_embeddings'] = {
+            'enabled': True,
+            'model': train_config_dict.get('contextual_model', 'all-MiniLM-L6-v2'),
+            'mode': train_config_dict.get('contextual_mode', 'summary'),
+            'normalize': train_config_dict.get('contextual_normalize', True),
+            'similarity_metric': train_config_dict.get('contextual_similarity_metric', 'cosine'),
+            'high_sim_threshold': train_config_dict.get('contextual_high_sim_threshold', 0.7)
+        }
+    
     # Create prediction config with extracted features
     pred_config = PredictionConfig(features=features)
     pred_config.model_path = model_path
@@ -348,6 +372,27 @@ def create_prediction_config_from_training_config(training_config_path: str) -> 
             'dim': train_config.string_ssm_dimension,
             'enabled': True,
             'threshold': train_config.string_ssm_similarity_threshold
+        }
+    
+    # NEW: Extract embedding feature configurations
+    if train_config.word2vec_enabled:
+        features['word2vec_embeddings'] = {
+            'enabled': True,
+            'model': train_config.word2vec_model,
+            'mode': train_config.word2vec_mode,
+            'normalize': train_config.word2vec_normalize,
+            'similarity_metric': train_config.word2vec_similarity_metric,
+            'high_sim_threshold': train_config.word2vec_high_sim_threshold
+        }
+        
+    if train_config.contextual_enabled:
+        features['contextual_embeddings'] = {
+            'enabled': True,
+            'model': train_config.contextual_model,
+            'mode': train_config.contextual_mode,
+            'normalize': train_config.contextual_normalize,
+            'similarity_metric': train_config.contextual_similarity_metric,
+            'high_sim_threshold': train_config.contextual_high_sim_threshold
         }
     
     # Create prediction config with extracted features
@@ -418,8 +463,34 @@ def get_feature_extractor_from_config(config: PredictionConfig):
     from segmodel.features.extractor import FeatureExtractor
     
     # Convert prediction config features to extractor format
-    # The FeatureExtractor expects the 'enabled' key to be present!
-    feature_config = {k: v for k, v in config.features.items() if v.get('enabled', False)}
+    # The FeatureExtractor expects a flattened config structure
+    feature_config = {}
+    
+    for feature_name, feature_data in config.features.items():
+        if not feature_data.get('enabled', False):
+            continue
+            
+        if feature_name == 'word2vec_embeddings':
+            # Convert to flattened structure expected by FeatureExtractor
+            feature_config['word2vec_enabled'] = True
+            feature_config['word2vec_model'] = feature_data.get('model', 'word2vec-google-news-300')
+            feature_config['word2vec_mode'] = feature_data.get('mode', 'summary')
+            feature_config['word2vec_normalize'] = feature_data.get('normalize', True)
+            feature_config['word2vec_similarity_metric'] = feature_data.get('similarity_metric', 'cosine')
+            feature_config['word2vec_high_sim_threshold'] = feature_data.get('high_sim_threshold', 0.8)
+            
+        elif feature_name == 'contextual_embeddings':
+            # Convert to flattened structure expected by FeatureExtractor
+            feature_config['contextual_enabled'] = True
+            feature_config['contextual_model'] = feature_data.get('model', 'all-MiniLM-L6-v2')
+            feature_config['contextual_mode'] = feature_data.get('mode', 'summary')
+            feature_config['contextual_normalize'] = feature_data.get('normalize', True)
+            feature_config['contextual_similarity_metric'] = feature_data.get('similarity_metric', 'cosine')
+            feature_config['contextual_high_sim_threshold'] = feature_data.get('high_sim_threshold', 0.7)
+            
+        else:
+            # Handle traditional features (they already have the right structure)
+            feature_config[feature_name] = feature_data
     
     return FeatureExtractor(feature_config=feature_config)
 

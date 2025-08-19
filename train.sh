@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 # Configuration file path
-CONFIG_FILE="configs/training/bilstm_boundary_aware_attention.yaml"
+CONFIG_FILE="configs/training/attention_training_v1.yaml"
 
 echo "Starting BLSTM Training with $(basename $CONFIG_FILE)..."
 echo "=================================================="

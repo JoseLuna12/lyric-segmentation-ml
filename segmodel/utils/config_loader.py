@@ -114,6 +114,21 @@ class TrainingConfig:
     string_ssm_similarity_threshold: float = 0.0
     string_ssm_similarity_method: str = "word_overlap"
     
+    # Embedding features
+    word2vec_enabled: bool = False
+    word2vec_model: str = "word2vec-google-news-300"
+    word2vec_mode: str = "summary"  # "summary" (12D) or "complete" (300D)
+    word2vec_normalize: bool = True
+    word2vec_similarity_metric: str = "cosine"
+    word2vec_high_sim_threshold: float = 0.8
+    
+    contextual_enabled: bool = False
+    contextual_model: str = "all-MiniLM-L6-v2"
+    contextual_mode: str = "summary"  # "summary" (12D) or "complete" (384D)
+    contextual_normalize: bool = True
+    contextual_similarity_metric: str = "cosine"
+    contextual_high_sim_threshold: float = 0.7
+    
     # Output settings
     output_base_dir: str = "training_sessions"
     save_best_model: bool = True
@@ -224,6 +239,10 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
     phonetic_ssm = features.get('phonetic_ssm', {})
     pos_ssm = features.get('pos_ssm', {})
     string_ssm = features.get('string_ssm', {})
+    # New embedding features
+    embeddings = config.get('embeddings', {})
+    word2vec = embeddings.get('word2vec', {})
+    contextual = embeddings.get('contextual', {})
     output = config.get('output', {})
     system = config.get('system', {})
     experiment = config.get('experiment', {})
@@ -327,6 +346,21 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         string_ssm_remove_punctuation=string_ssm.get('remove_punctuation', True),
         string_ssm_similarity_threshold=string_ssm.get('similarity_threshold', 0.0),
         string_ssm_similarity_method=string_ssm.get('similarity_method', 'word_overlap'),
+        
+        # Embedding features
+        word2vec_enabled=word2vec.get('enabled', False),
+        word2vec_model=word2vec.get('model', 'word2vec-google-news-300'),
+        word2vec_mode=word2vec.get('mode', 'summary'),
+        word2vec_normalize=word2vec.get('normalize', True),
+        word2vec_similarity_metric=word2vec.get('similarity_metric', 'cosine'),
+        word2vec_high_sim_threshold=word2vec.get('high_sim_threshold', 0.8),
+        
+        contextual_enabled=contextual.get('enabled', False),
+        contextual_model=contextual.get('model', 'all-MiniLM-L6-v2'),
+        contextual_mode=contextual.get('mode', 'summary'),
+        contextual_normalize=contextual.get('normalize', True),
+        contextual_similarity_metric=contextual.get('similarity_metric', 'cosine'),
+        contextual_high_sim_threshold=contextual.get('high_sim_threshold', 0.7),
         
         # Output
         output_base_dir=output.get('base_dir', 'training_sessions'),
@@ -437,6 +471,25 @@ def load_training_config(config_path: str) -> TrainingConfig:
         string_desc += ")"
         enabled_features.append(string_desc)
         total_dim += training_config.string_ssm_dimension
+    
+    # NEW: Add embedding features to summary
+    if training_config.word2vec_enabled:
+        w2v_dim = 12 if training_config.word2vec_mode == "summary" else 300
+        w2v_desc = f"Word2Vec({w2v_dim}D,{training_config.word2vec_model},{training_config.word2vec_mode}"
+        if training_config.word2vec_normalize:
+            w2v_desc += ",norm"
+        w2v_desc += f",{training_config.word2vec_similarity_metric},th={training_config.word2vec_high_sim_threshold})"
+        enabled_features.append(w2v_desc)
+        total_dim += w2v_dim
+        
+    if training_config.contextual_enabled:
+        ctx_dim = 12 if training_config.contextual_mode == "summary" else 384
+        ctx_desc = f"Contextual({ctx_dim}D,{training_config.contextual_model},{training_config.contextual_mode}"
+        if training_config.contextual_normalize:
+            ctx_desc += ",norm"
+        ctx_desc += f",{training_config.contextual_similarity_metric},th={training_config.contextual_high_sim_threshold})"
+        enabled_features.append(ctx_desc)
+        total_dim += ctx_dim
     
     if enabled_features:
         print(f"   Features: {', '.join(enabled_features)} = {total_dim}D total")

@@ -9,39 +9,39 @@ data:
 
 # Model Architecture - Reduced dimensions while maintaining attention constraints
 model:
-  hidden_dim: 128      # ⬇️ Reduced from 256 → 128 (BiLSTM output will be 256)
+  hidden_dim: 192      # ⬇️ Reduced from 256 → 128 (BiLSTM output will be 256)
   num_layers: 2        # 2-layer architecture
   layer_dropout: 0.35  # ⬆️ Increased from 0.3 → 0.35 for better inter-layer regularization
   num_classes: 2
-  dropout: 0.18        # ⬇️ Reduced from 0.2 → 0.18 (balance with layer_dropout)
+  dropout: 0.22        # ⬇️ Reduced from 0.2 → 0.18 (balance with layer_dropout)
 
     # Attention Configuration - Dimensionally compatible with reduced hidden_dim
   attention_enabled: true
-  attention_heads: 4   
-  attention_dropout: 0.15
-  attention_dim: 256
-  positional_encoding: true  # ⬇️ Disabled for efficiency
+  attention_heads: 6   
+  attention_dropout: 0.18
+  attention_dim: 384
+  positional_encoding: true  
   max_seq_length: 1000
 
 # Training Parameters - Adjusted for reduced model size
 training:
   batch_size: 32           # ⬆️ Increased from 24 → 32 (smaller model, can fit larger batches)
-  learning_rate: 0.0005    # ⬆️ Slightly increased from 0.0004 → 0.0005 (smaller model can handle higher LR)
-  weight_decay: 0.02      # ⬆️ Increased from 0.008 → 0.010 for stronger regularization
-  max_epochs: 150          # Keep proven epoch budget
-  patience: 20             # ⬆️ Increased from 12 → 15 for deeper model convergence
-  gradient_clip_norm: 0.8 # ⬆️ Slightly increased from 0.4 → 0.45
+  learning_rate: 0.0004    # ⬆️ Slightly increased from 0.0004 → 0.0005 (smaller model can handle higher LR)
+  weight_decay: 0.015      # ⬆️ Increased from 0.008 → 0.010 for stronger regularization
+  max_epochs: 40          # Keep proven epoch budget
+  patience: 10             # ⬆️ Increased from 12 → 15 for deeper model convergence
+  gradient_clip_norm: 0.6 # ⬆️ Slightly increased from 0.4 → 0.45
   
   # Learning rate scheduling - Keep proven cosine
   scheduler: "cosine"
   min_lr: 1e-6
-  cosine_t_max: 150
+  cosine_t_max: 40
 
 # Anti-Collapse System - Enhanced for chorus detection improvement
 anti_collapse:
-  label_smoothing: 0.1    # ⬇️ Reduced from 0.2 → 0.16 (less smoothing, more precision)
+  label_smoothing: 0.12    # ⬇️ Reduced from 0.2 → 0.16 (less smoothing, more precision)
   weighted_sampling: true  # Keep essential balanced sampling
-  entropy_lambda: 0.08     # ⬆️ Increased from 0.05 → 0.08 (encourage prediction diversity)
+  entropy_lambda: 0.07     # ⬆️ Increased from 0.05 → 0.08 (encourage prediction diversity)
 
 # Emergency Monitoring - Adjusted for 2-layer behavior
 emergency_monitoring:
@@ -61,7 +61,7 @@ emergency_monitoring:
   emergency_f1_threshold: 0.05       # ⬆️ Increased from 0.03 (higher bar)
   
   # Monitoring timing
-  skip_batches: 30
+  skip_batches:
   skip_epochs: 3
   print_batch_every: 10
 
@@ -114,6 +114,25 @@ features:
     similarity_threshold: 0.06  # ⬇️ Reduced from 0.08 → 0.06 (catch more repetitions)
     similarity_method: "word_overlap"
 
+embeddings:
+  # Word2Vec embeddings using Google News 300D vectors
+  word2vec:
+    enabled: true
+    model: "word2vec-google-news-300"
+    mode: "summary"        # options: "summary" (12D), "complete" (300D)
+    normalize: true
+    similarity_metric: "cosine"  # options: "cosine", "dot"
+    high_sim_threshold: 0.8
+
+  # Contextual embeddings using SentenceTransformer
+  contextual:
+    enabled: true
+    model: "all-MiniLM-L6-v2"
+    mode: "summary"        # options: "summary" (12D), "complete" (384D)
+    normalize: true
+    similarity_metric: "cosine"  # options: "cosine", "dot"
+    high_sim_threshold: 0.7
+
 # Output Configuration
 output:
   base_dir: "training_sessions"
@@ -131,7 +150,7 @@ system:
 
 # Experiment Metadata
 experiment:
-  name: "attention_reduced_bilstm"
+  name: "attention_embeddings_all_features"
   description: "Reduced dimensions BiLSTM with attention mechanism"
   tags: ["attention", "reduced", "efficient"]
-  notes: "Hidden=128, Attention=128, maintaining divisibility constraints for 8 heads"
+  notes: "experimetn to check if a summary of embedings will perform better"

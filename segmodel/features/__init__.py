@@ -37,6 +37,20 @@ from .string_ssm import (
     normalized_levenshtein_similarity,
     normalize_string
 )
+from .word2vec_embeddings import (
+    Word2VecEmbeddingsExtractor,
+    get_word2vec_model,
+    text_to_word2vec_embedding,
+    compute_word2vec_ssm,
+    extract_word2vec_summary_features
+)
+from .contextual_embeddings import (
+    ContextualEmbeddingsExtractor,
+    get_sentence_transformer_model,
+    text_to_contextual_embedding,
+    compute_contextual_ssm,
+    extract_contextual_summary_features
+)
 from .extractor import (
     FeatureExtractor,
     create_feature_extractor,
@@ -71,6 +85,16 @@ __all__ = [
     'compute_string_ssm',
     'normalized_levenshtein_similarity',
     'normalize_string',
+    'Word2VecEmbeddingsExtractor',
+    'get_word2vec_model',
+    'text_to_word2vec_embedding',
+    'compute_word2vec_ssm',
+    'extract_word2vec_summary_features',
+    'ContextualEmbeddingsExtractor',
+    'get_sentence_transformer_model',
+    'text_to_contextual_embedding',
+    'compute_contextual_ssm',
+    'extract_contextual_summary_features',
     'FeatureExtractor',
     'create_feature_extractor',
     'validate_feature_config'

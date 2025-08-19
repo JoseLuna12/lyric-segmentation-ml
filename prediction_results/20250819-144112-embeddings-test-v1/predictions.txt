@@ -1,0 +1,27 @@
+Lyrics Structure Prediction
+==================================================
+
+VERSE   (0.824) | When you were here before, couldn't look you in the eye
+VERSE   (0.832) | You're just like an angel, your skin makes me cry
+VERSE   (0.833) | You float like a feather in a beautiful world
+VERSE   (0.818) | I wish I was special, you're so fuckin' special
+VERSE   (0.771) | But I'm a creep, I'm a weirdo
+VERSE   (0.733) | What the hell am I doin' here?
+VERSE   (0.639) | I don't belong here
+VERSE   (0.670) | I don't care if it hurts, I wanna have control
+VERSE   (0.758) | I want a perfect body, I want a perfect soul
+VERSE   (0.758) | I want you to notice when I'm not around
+VERSE   (0.765) | So fuckin' special, I wish I was special
+VERSE   (0.719) | But I'm a creep, I'm a weirdo
+VERSE   (0.693) | What the hell am I doin' here?
+VERSE   (0.632) | I don't belong here, oh-oh, oh-oh
+VERSE   (0.721) | She's running out the door
+VERSE   (0.734) | She's running out
+VERSE   (0.754) | She run, run, run, run
+VERSE   (0.753) | Run
+VERSE   (0.746) | Whatever makes you happy, whatever you want
+VERSE   (0.708) | You're so fuckin' special, I wish I was special
+VERSE   (0.633) | But I'm a creep, I'm a weirdo
+VERSE   (0.577) | What the hell am I doin' here?
+CHORUS  (0.541) | I don't belong here
+CHORUS  (0.559) | I don't belong here

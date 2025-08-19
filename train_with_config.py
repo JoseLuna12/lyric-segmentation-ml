@@ -300,7 +300,20 @@ Examples:
                 'similarity_threshold': config.string_ssm_similarity_threshold,
                 'similarity_method': config.string_ssm_similarity_method,
                 'output_dim': config.string_ssm_dimension
-            }
+            },
+            # NEW: Embedding features in flattened format expected by FeatureExtractor
+            'word2vec_enabled': config.word2vec_enabled,
+            'word2vec_model': config.word2vec_model,
+            'word2vec_mode': config.word2vec_mode,
+            'word2vec_normalize': config.word2vec_normalize,
+            'word2vec_similarity_metric': config.word2vec_similarity_metric,
+            'word2vec_high_sim_threshold': config.word2vec_high_sim_threshold,
+            'contextual_enabled': config.contextual_enabled,
+            'contextual_model': config.contextual_model,
+            'contextual_mode': config.contextual_mode,
+            'contextual_normalize': config.contextual_normalize,
+            'contextual_similarity_metric': config.contextual_similarity_metric,
+            'contextual_high_sim_threshold': config.contextual_high_sim_threshold
         }
         feature_extractor = FeatureExtractor(feature_config)
         feature_dim = feature_extractor.get_feature_dimension()
@@ -333,6 +346,23 @@ Examples:
             string_desc += ")"
             enabled_features.append(string_desc)
         
+        # NEW: Embedding features
+        if config.word2vec_enabled:
+            w2v_dim = 12 if config.word2vec_mode == "summary" else 300
+            w2v_desc = f"Word2Vec({w2v_dim}D,{config.word2vec_model},{config.word2vec_mode}"
+            if config.word2vec_normalize:
+                w2v_desc += ",norm"
+            w2v_desc += f",{config.word2vec_similarity_metric},th={config.word2vec_high_sim_threshold})"
+            enabled_features.append(w2v_desc)
+        
+        if config.contextual_enabled:
+            ctx_dim = 12 if config.contextual_mode == "summary" else 384
+            ctx_desc = f"Contextual({ctx_dim}D,{config.contextual_model},{config.contextual_mode}"
+            if config.contextual_normalize:
+                ctx_desc += ",norm"
+            ctx_desc += f",{config.contextual_similarity_metric},th={config.contextual_high_sim_threshold})"
+            enabled_features.append(ctx_desc)
+        
         if enabled_features:
             print(f"   Active features: {', '.join(enabled_features)}")
         else:
@@ -342,6 +372,11 @@ Examples:
             print(f"   🧩 POS-SSM config: {config.pos_ssm_tagset} tags, {config.pos_ssm_similarity_method} similarity, threshold={config.pos_ssm_high_sim_threshold}")
         if config.string_ssm_enabled:
             print(f"   🧩 String-SSM config: case_sensitive={config.string_ssm_case_sensitive}, remove_punctuation={config.string_ssm_remove_punctuation}, threshold={config.string_ssm_similarity_threshold}")
+        # NEW: Show embedding details
+        if config.word2vec_enabled:
+            print(f"   🔤 Word2Vec config: {config.word2vec_model}, mode={config.word2vec_mode}, normalize={config.word2vec_normalize}, {config.word2vec_similarity_metric}, threshold={config.word2vec_high_sim_threshold}")
+        if config.contextual_enabled:
+            print(f"   🤖 Contextual config: {config.contextual_model}, mode={config.contextual_mode}, normalize={config.contextual_normalize}, {config.contextual_similarity_metric}, threshold={config.contextual_high_sim_threshold}")
         
         # Setup data loaders
         train_loader, val_loader, test_loader, train_dataset = setup_data_loaders(config, feature_extractor)
@@ -448,6 +483,66 @@ Examples:
                 f.write(f"    High sim threshold: {config.pos_ssm_high_sim_threshold}\n")
             else:
                 f.write(f"  POS-SSM: Disabled\n")
+            
+            # String-SSM
+            if config.string_ssm_enabled:
+                f.write(f"  String-SSM: Enabled ({config.string_ssm_dimension}D)\n")
+                f.write(f"    Case sensitive: {config.string_ssm_case_sensitive}\n")
+                f.write(f"    Remove punctuation: {config.string_ssm_remove_punctuation}\n")
+                f.write(f"    Similarity threshold: {config.string_ssm_similarity_threshold}\n")
+                f.write(f"    Similarity method: {config.string_ssm_similarity_method}\n")
+            else:
+                f.write(f"  String-SSM: Disabled\n")
+            
+            # NEW: Embedding Features
+            f.write(f"\n")
+            
+            # Word2Vec Embeddings
+            if config.word2vec_enabled:
+                w2v_dim = 12 if config.word2vec_mode == "summary" else 300
+                f.write(f"  Word2Vec Embeddings: Enabled ({w2v_dim}D)\n")
+                f.write(f"    Model: {config.word2vec_model}\n")
+                f.write(f"    Mode: {config.word2vec_mode} ({w2v_dim}D {'statistical features' if config.word2vec_mode == 'summary' else 'full embeddings'})\n")
+                f.write(f"    Normalize: {config.word2vec_normalize}\n")
+                f.write(f"    Similarity metric: {config.word2vec_similarity_metric}\n")
+                f.write(f"    High similarity threshold: {config.word2vec_high_sim_threshold}\n")
+            else:
+                f.write(f"  Word2Vec Embeddings: Disabled\n")
+            
+            # Contextual Embeddings
+            if config.contextual_enabled:
+                ctx_dim = 12 if config.contextual_mode == "summary" else 384
+                f.write(f"  Contextual Embeddings: Enabled ({ctx_dim}D)\n")
+                f.write(f"    Model: {config.contextual_model}\n")
+                f.write(f"    Mode: {config.contextual_mode} ({ctx_dim}D {'statistical features' if config.contextual_mode == 'summary' else 'full embeddings'})\n")
+                f.write(f"    Normalize: {config.contextual_normalize}\n")
+                f.write(f"    Similarity metric: {config.contextual_similarity_metric}\n")
+                f.write(f"    High similarity threshold: {config.contextual_high_sim_threshold}\n")
+            else:
+                f.write(f"  Contextual Embeddings: Disabled\n")
+            
+            # Feature dimension breakdown
+            f.write(f"\n")
+            enabled_feature_dims = []
+            if config.head_ssm_enabled:
+                enabled_feature_dims.append(f"Head-SSM: {config.head_ssm_dimension}D")
+            if config.tail_ssm_enabled:
+                enabled_feature_dims.append(f"Tail-SSM: {config.tail_ssm_dimension}D")
+            if config.phonetic_ssm_enabled:
+                enabled_feature_dims.append(f"Phonetic-SSM: {config.phonetic_ssm_dimension}D")
+            if config.pos_ssm_enabled:
+                enabled_feature_dims.append(f"POS-SSM: {config.pos_ssm_dimension}D")
+            if config.string_ssm_enabled:
+                enabled_feature_dims.append(f"String-SSM: {config.string_ssm_dimension}D")
+            if config.word2vec_enabled:
+                w2v_dim = 12 if config.word2vec_mode == "summary" else 300
+                enabled_feature_dims.append(f"Word2Vec: {w2v_dim}D")
+            if config.contextual_enabled:
+                ctx_dim = 12 if config.contextual_mode == "summary" else 384
+                enabled_feature_dims.append(f"Contextual: {ctx_dim}D")
+            
+            if enabled_feature_dims:
+                f.write(f"  Total Feature Dimension: {feature_dim}D ({' + '.join(enabled_feature_dims)})\n")
             
             f.write(f"\nModel Architecture:\n")
             f.write("-" * 18 + "\n")

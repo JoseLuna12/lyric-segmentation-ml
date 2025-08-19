@@ -1,0 +1,34 @@
+prediction:
+  # Model and session
+  training_session: "training_sessions/session_20250819_143054_embeddings_test_v1"
+  
+  # Calibration
+  calibration:
+    method: "auto"  # Use training session calibration
+  
+  # Input/Output
+  input_file: "prediction_results/predict_lyric.txt"
+  output_dir: "prediction_results"
+  
+  # Features (will be auto-detected from training session)
+  features:
+    head_ssm:
+      enabled: true
+      dim: 12
+    word2vec_embeddings:
+      enabled: true
+      model: "word2vec-google-news-300"
+      mode: "summary"
+      normalize: true
+      similarity_metric: "cosine"
+      high_sim_threshold: 0.8
+    contextual_embeddings:
+      enabled: true
+      model: "all-MiniLM-L6-v2"
+      mode: "summary"
+      normalize: true
+      similarity_metric: "cosine"
+      high_sim_threshold: 0.7
+  
+  # Device
+  device: "auto"
