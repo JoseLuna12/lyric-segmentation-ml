@@ -1,0 +1,52 @@
+BLSTM Training Results - attention_reduced_bilstm
+==================================================
+
+Configuration: configs/training/attention_training_v1.yaml
+Training time: 57.7 minutes
+Feature dimension: 60
+
+Feature Configuration:
+-------------------------
+  Head-SSM: Enabled (12D)
+    Head words: 2
+  Tail-SSM: Enabled (12D)
+    Tail words: 2
+  Phonetic-SSM: Enabled (12D)
+    Mode: rhyme
+    Similarity: binary
+    Normalize: False
+    High sim threshold: 0.32
+  POS-SSM: Enabled (12D)
+    Tagset: simplified
+    Similarity: combined
+    High sim threshold: 0.28
+
+Model Architecture:
+------------------
+  Input dimension: 60D
+  Hidden dimension: 128D
+  LSTM layers: 2
+  ✅ Multi-layer BiLSTM architecture
+      Inter-layer dropout: 0.35
+      Total parameters: 854,018
+  Output dropout: 0.18
+  Batch size: 32
+  Learning rate: 0.0005
+  Label smoothing: 0.1
+  Weighted sampling: True
+
+Test Results:
+-------------
+  Macro F1: 0.7570
+  Verse F1: 0.8802
+  Chorus F1: 0.6338
+  Confidence: 0.819
+  Chorus rate: 21.72%
+  Calibration: ['temperature', 'platt']
+
+Calibration Details:
+--------------------
+  temperature: ECE 0.0180 → 0.0197 (Δ-0.0018)
+    T = 0.948
+  platt: ECE 0.0180 → 0.0179 (Δ+0.0001)
+    A = 1.017, B = 0.000

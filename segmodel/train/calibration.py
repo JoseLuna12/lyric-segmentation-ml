@@ -194,22 +194,31 @@ class PlattCalibrator:
             return torch.softmax(logits, dim=-1)
 
         with torch.no_grad():
+            # Handle both 2D (N, C) and 3D (B, S, C) logits
+            original_shape = logits.shape
+            if len(original_shape) == 3:
+                # Flatten 3D to 2D for calibration, then reshape back
+                batch_size, seq_len, num_classes = original_shape
+                logits_flat = logits.view(-1, num_classes)  # (B*S, C)
+            else:
+                logits_flat = logits
+            
             # base probs for non-top classes will share leftover mass
-            preds = logits.argmax(dim=1)              # (N,)
-            top2 = torch.topk(logits, k=2, dim=1).values
+            preds = logits_flat.argmax(dim=1)              # (N,)
+            top2 = torch.topk(logits_flat, k=2, dim=1).values
             margins = top2[:, 0] - top2[:, 1]         # (N,)
             z = self.A * margins + self.B
             p_top = torch.sigmoid(z)                  # calibrated top1 prob, (N,)
 
-            N, C = logits.shape
-            out = torch.zeros_like(logits)
+            N, C = logits_flat.shape
+            out = torch.zeros_like(logits_flat)
 
             # scatter top1 prob
             out[torch.arange(N), preds] = p_top
 
             # distribute remaining mass proportionally (shape-preserving)
             if C > 1:
-                orig_probs = torch.softmax(logits, dim=-1)  # original shape
+                orig_probs = torch.softmax(logits_flat, dim=-1)  # Use flattened logits
                 # scale non-top probabilities to fit in remaining mass
                 non_top_orig = orig_probs.clone()
                 non_top_orig[torch.arange(N), preds] = 0  # zero out top class
@@ -229,6 +238,11 @@ class PlattCalibrator:
                 
                 # reassign calibrated top probability
                 out[torch.arange(N), preds] = p_top
+            
+            # Reshape back to original shape if needed
+            if len(original_shape) == 3:
+                out = out.view(original_shape)
+            
             return out
     
     def get_params(self) -> Dict[str, float]:
@@ -302,8 +316,19 @@ class IsotonicCalibrator:
     def apply(self, logits: torch.Tensor) -> torch.Tensor:
         """Apply isotonic mapping to top-1 prob and preserve non-top shape."""
         with torch.no_grad():
-            base = torch.softmax(logits, dim=-1)  # (N,C)
+            # Handle both 2D (N, C) and 3D (B, S, C) logits
+            original_shape = logits.shape
+            if len(original_shape) == 3:
+                # Flatten 3D to 2D for calibration, then reshape back
+                batch_size, seq_len, num_classes = original_shape
+                logits_flat = logits.view(-1, num_classes)  # (B*S, C)
+            else:
+                logits_flat = logits
+            
+            base = torch.softmax(logits_flat, dim=-1)  # (N,C)
             if not self.is_fitted or self._iso is None:
+                if len(original_shape) == 3:
+                    base = base.view(original_shape)
                 return base
 
             N, C = base.shape
@@ -323,6 +348,11 @@ class IsotonicCalibrator:
             # Numerical guard
             out = torch.clamp(out, 0.0, 1.0)
             out = out / out.sum(dim=1, keepdim=True).clamp_min(1e-12)
+            
+            # Reshape back to original shape if needed
+            if len(original_shape) == 3:
+                out = out.view(original_shape)
+            
             return out
 
     def get_params(self) -> Dict[str, float]:

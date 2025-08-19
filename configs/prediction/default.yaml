@@ -4,7 +4,7 @@
 # No feature specifications needed - they're loaded from training session!
 
 # Training session directory (contains model + exact config + results)
-training_session: "training_sessions/session_20250818_194333_training_validation_2layer_optimized_new_calibration_v1"
+training_session: "training_sessions/session_20250818_230500_attention_test_bilstm"
 
 prediction:
   # Calibration configuration

@@ -29,7 +29,7 @@ from segmodel.utils.prediction_config import (
 
 
 
-def load_model(model_path: str, device: torch.device) -> BLSTMTagger:
+def load_model(model_path: str, device: torch.device, training_config_path: str = None) -> BLSTMTagger:
     """Load trained model from file."""
     print(f"📦 Loading model from {model_path}...")
     
@@ -52,27 +52,126 @@ def load_model(model_path: str, device: torch.device) -> BLSTMTagger:
                          if key.startswith('lstm.weight_ih_l') and '_reverse' not in key]
     num_layers = len(forward_layer_keys)
     
+    # NEW: Detect attention parameters from state dict and training config
+    attention_enabled = any(key.startswith('attention.') for key in state_dict.keys())
+    attention_heads = 8  # Default, will be overridden by config
+    attention_dropout = 0.1  # Default, will be overridden by config
+    positional_encoding = False  # Default, will be overridden by config
+    attention_dim = None  # Will be determined from training config or saved weights
+    
+    # Flag to track if config was successfully loaded
+    config_loaded = False
+    
+    # Try to read attention config from training config file first
+    if training_config_path and os.path.exists(training_config_path):
+        try:
+            print(f"📋 Loading attention config from training config: {training_config_path}")
+            
+            # Load YAML directly since snapshot has flattened structure
+            import yaml
+            with open(training_config_path, 'r') as f:
+                config_dict = yaml.safe_load(f)
+            
+            # Handle both flattened (snapshot) and nested (original config) structures
+            def get_config_value(key, config_dict):
+                # Check flattened structure first (training snapshots)
+                if key in config_dict:
+                    return config_dict[key]
+                # Check nested structure (original training configs)
+                if 'model' in config_dict and key in config_dict['model']:
+                    return config_dict['model'][key]
+                return None
+            
+            # Extract attention parameters from config (handle both structures)
+            val = get_config_value('attention_enabled', config_dict)
+            if val is not None:
+                attention_enabled = val
+            val = get_config_value('attention_heads', config_dict)
+            if val is not None:
+                attention_heads = val
+            val = get_config_value('attention_dropout', config_dict)
+            if val is not None:
+                attention_dropout = val
+            val = get_config_value('attention_dim', config_dict)
+            if val is not None:
+                attention_dim = val
+            val = get_config_value('positional_encoding', config_dict)
+            if val is not None:
+                positional_encoding = val
+                
+            config_loaded = True
+            print(f"🎯 Loaded attention config from training config:")
+            print(f"   Attention enabled: {attention_enabled}")
+            print(f"   Attention heads: {attention_heads}")
+            print(f"   Attention dimension: {attention_dim}")
+            print(f"   Attention dropout: {attention_dropout}")
+            print(f"   Positional encoding: {positional_encoding}")
+            
+        except Exception as e:
+            print(f"⚠️  Could not load training config, falling back to state dict detection: {e}")
+    
+    # Fallback: detect from state dict if training config not available or failed
+    if not config_loaded and attention_dim is None and attention_enabled:
+        # Try to infer attention configuration from state dict
+        try:
+            # Detect attention dimension from the saved weights
+            if 'attention.attention.w_q.weight' in state_dict:
+                saved_attention_dim = state_dict['attention.attention.w_q.weight'].shape[0]
+                attention_dim = saved_attention_dim
+                
+                # NOTE: Can't reliably infer attention_heads from weights, keep default
+                print(f"   ⚠️  Could not read from config, using default attention_heads: {attention_heads}")
+            
+            # Check if positional encoding exists
+            positional_encoding = 'attention.attention.positional_encoding.pe' in state_dict
+            
+            print(f"🎯 Detected attention mechanism from state dict:")
+            print(f"   Attention enabled: {attention_enabled}")
+            print(f"   Attention heads: {attention_heads} (default - could not read from config)")
+            print(f"   Attention dimension: {attention_dim} (from state dict)")
+            print(f"   Positional encoding: {positional_encoding}")
+        except Exception as e:
+            print(f"⚠️  Could not fully determine attention config, using defaults: {e}")
+            attention_dim = None  # Fall back to None to use LSTM output dimension
+            attention_dim = None  # Fall back to None to use LSTM output dimension
+    
     print(f"🔧 Detected model architecture:")
     print(f"   Input size: {input_size}")
     print(f"   Hidden size: {hidden_size}")
     print(f"   Classes: {num_classes}")
     print(f"   Layers: {num_layers}")
+    if attention_enabled:
+        print(f"   🎯 Attention: enabled ({attention_heads} heads)")
+    else:
+        print(f"   🎯 Attention: disabled")
     
-    # Create model (num_layers defaults to 1 in BLSTMTagger)
+    # Create model with detected parameters
     model = BLSTMTagger(
         feat_dim=input_size,
         hidden_dim=hidden_size,
         num_classes=num_classes,
         num_layers=num_layers,
-        dropout=0.0  # No dropout during inference
+        dropout=0.0,  # No dropout during inference
+        # NEW: Attention parameters
+        attention_enabled=attention_enabled,
+        attention_heads=attention_heads,
+        attention_dropout=attention_dropout,
+        attention_dim=attention_dim,  # Use detected attention dimension
+        positional_encoding=positional_encoding
     )
     
     # Load weights
-    model.load_state_dict(state_dict)
+    try:
+        model.load_state_dict(state_dict)
+        print("✅ Model loaded successfully (including attention weights)")
+    except Exception as e:
+        print(f"❌ Error loading model weights: {e}")
+        print("🔧 This might be due to architecture mismatch or missing attention parameters")
+        raise
+    
     model.to(device)
     model.eval()
     
-    print("✅ Model loaded successfully")
     return model
 
 
@@ -662,7 +761,24 @@ Examples:
         pred_config.quiet = True
     
     # Load model (now that we have model_path)
-    model = load_model(model_path, device)
+    # Try to find training config for better model architecture detection
+    training_config_path = None
+    
+    if args.session:
+        # Session directory should contain training_config_snapshot.yaml
+        training_config_path = os.path.join(args.session, 'training_config_snapshot.yaml')
+        if not os.path.exists(training_config_path):
+            training_config_path = None
+    elif args.train_config_file:
+        # Direct training config file path
+        training_config_path = args.train_config_file
+    elif hasattr(pred_config, 'training_session') and pred_config.training_session:
+        # Training session referenced in prediction config
+        training_config_path = os.path.join(pred_config.training_session, 'training_config_snapshot.yaml')
+        if not os.path.exists(training_config_path):
+            training_config_path = None
+    
+    model = load_model(model_path, device, training_config_path)
     
     # Get input lines
     lines = []

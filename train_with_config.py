@@ -81,7 +81,14 @@ def setup_model_and_training(config: TrainingConfig, train_dataset: SongsDataset
         num_layers=config.num_layers,
         num_classes=config.num_classes,
         dropout=config.dropout,
-        layer_dropout=config.layer_dropout
+        layer_dropout=config.layer_dropout,
+        # NEW: Attention parameters
+        attention_enabled=config.attention_enabled,
+        attention_heads=config.attention_heads,
+        attention_dropout=config.attention_dropout,
+        attention_dim=config.attention_dim,
+        positional_encoding=config.positional_encoding,
+        max_seq_length=config.max_seq_length
     ).to(device)
     
     # Print detailed model information
@@ -102,6 +109,24 @@ def setup_model_and_training(config: TrainingConfig, train_dataset: SongsDataset
         print(f"      Total parameters: {total_params:,}")
     else:
         print(f"   Single-layer BiLSTM (backward compatible)")
+    
+    # NEW: Attention information in summary
+    if config.attention_enabled:
+        print(f"   🎯 Attention mechanism:")
+        print(f"      Heads: {config.attention_heads}")
+        print(f"      Dropout: {config.attention_dropout}")
+        if config.attention_dim:
+            print(f"      Dimension: {config.attention_dim}")
+        else:
+            print(f"      Dimension: auto (LSTM output = {config.hidden_dim * 2})")
+        print(f"      Positional encoding: {config.positional_encoding}")
+        if hasattr(model, 'attention') and model.attention is not None:
+            attention_params = sum(p.numel() for p in model.attention.parameters())
+            total_params = sum(p.numel() for p in model.parameters())
+            print(f"      Attention parameters: {attention_params:,} ({(attention_params/total_params*100):.1f}% of total)")
+    else:
+        print(f"   🎯 Attention: disabled")
+    
     print(f"   Output dropout: {config.dropout}")
     print(f"   Output classes: {config.num_classes}")
     

@@ -837,7 +837,20 @@ class Trainer:
                     "hidden_dim": getattr(self.model, 'hidden_dim', 128),
                     "num_layers": getattr(self.model, 'num_layers', 1),
                     "dropout": getattr(self.model, 'dropout_p', 0.2),
-                    "layer_dropout": getattr(self.model, 'layer_dropout_p', 0.0)
+                    "layer_dropout": getattr(self.model, 'layer_dropout_p', 0.0),
+                    # NEW: Attention parameters
+                    "attention_enabled": getattr(self.model, 'attention_enabled', False),
+                    "attention_heads": getattr(self.model, 'attention_heads', 8),
+                    "attention_dropout": getattr(self.model, 'attention_dropout', 0.1),
+                    "attention_dim": getattr(self.model, 'attention_dim', None),
+                    "positional_encoding": getattr(self.model, 'positional_encoding', True),
+                    "max_seq_length": getattr(self.model, 'max_seq_length', 1000),
+                    # Model architecture summary
+                    "total_params": sum(p.numel() for p in self.model.parameters()),
+                    "lstm_params": sum(p.numel() for p in self.model.lstm.parameters()),
+                    "attention_params": (sum(p.numel() for p in self.model.attention.parameters()) 
+                                       if hasattr(self.model, 'attention') and self.model.attention is not None else 0),
+                    "classifier_params": sum(p.numel() for p in self.model.classifier.parameters())
                 },
                 "training_info": {
                     "batch_size": getattr(self.config, 'batch_size', 16),
@@ -846,7 +859,12 @@ class Trainer:
                     "label_smoothing": getattr(self.config, 'label_smoothing', 0.0),
                     "weighted_sampling": getattr(self.config, 'weighted_sampling', False),
                     "total_epochs": len(self.training_metrics),
-                    "validation_strategy": self.validation_strategy
+                    "validation_strategy": self.validation_strategy,
+                    # NEW: Additional training parameters
+                    "weight_decay": getattr(self.config, 'weight_decay', 0.01),
+                    "gradient_clip_norm": getattr(self.config, 'gradient_clip_norm', 1.0),
+                    "max_epochs": getattr(self.config, 'max_epochs', 60),
+                    "patience": getattr(self.config, 'patience', 8)
                 },
                 "calibration_info": self.calibration_info
             },

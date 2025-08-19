@@ -26,6 +26,14 @@ class TrainingConfig:
     num_classes: int = 2
     dropout: float = 0.4
     
+    # NEW: Attention mechanism parameters
+    attention_enabled: bool = False
+    attention_heads: int = 8
+    attention_dropout: float = 0.1
+    attention_dim: int = None  # If None, uses LSTM output dimension
+    positional_encoding: bool = True
+    max_seq_length: int = 1000
+    
     # Training parameters
     batch_size: int = 16
     learning_rate: float = 0.001
@@ -229,6 +237,14 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         num_classes=model.get('num_classes', 2),
         dropout=model.get('dropout', 0.4),
         
+        # NEW: Attention parameters
+        attention_enabled=model.get('attention_enabled', False),
+        attention_heads=model.get('attention_heads', 8),
+        attention_dropout=model.get('attention_dropout', 0.1),
+        attention_dim=model.get('attention_dim', None),
+        positional_encoding=model.get('positional_encoding', True),
+        max_seq_length=model.get('max_seq_length', 1000),
+        
         # Training
         batch_size=training.get('batch_size', 16),
         learning_rate=training.get('learning_rate', 0.001),
@@ -360,6 +376,17 @@ def load_training_config(config_path: str) -> TrainingConfig:
     print(f"   Model: hidden_dim={training_config.hidden_dim}, layers={training_config.num_layers}, dropout={training_config.dropout}")
     if training_config.num_layers > 1:
         print(f"   ✅ Multi-layer LSTM: {training_config.num_layers} layers, layer_dropout={training_config.layer_dropout}")
+    
+    # NEW: Attention information
+    if training_config.attention_enabled:
+        print(f"   🎯 Attention: {training_config.attention_heads} heads, dropout={training_config.attention_dropout}")
+        if training_config.positional_encoding:
+            print(f"      ✅ Positional encoding enabled (max_len={training_config.max_seq_length})")
+        if training_config.attention_dim:
+            print(f"      Attention dimension: {training_config.attention_dim}")
+    else:
+        print(f"   🎯 Attention: disabled")
+    
     print(f"   Training: batch_size={training_config.batch_size}, lr={training_config.learning_rate}, epochs={training_config.max_epochs}")
     print(f"   ✅ Scheduler: {training_config.scheduler} (min_lr={training_config.min_lr})")
     print(f"   Anti-collapse: smoothing={training_config.label_smoothing}, entropy_λ={training_config.entropy_lambda}")
