@@ -1,128 +1,129 @@
-# Enhanced BiLSTM Configuration for Verse-Chorus Segmentation
-# Robust enhancement of working training_config.yaml with improved stability
+# Fast Debug BiLSTM Config
+# Minimal dimensions for faster iterations & debugging
 
-# Data Configuration
+# Data
 data:
   train_file: "data/train.jsonl"
   val_file: "data/val.jsonl"
   test_file: "data/test.jsonl"
 
-# Model Architecture - Robust configuration based on working training_config.yaml
+# Model
 model:
-  hidden_dim: 256  # Keep proven capacity from working config
+  hidden_dim: 64        
   num_layers: 1
-  layer_dropout: 0.3
+  layer_dropout: 0.25
   num_classes: 2
-  dropout: 0.2     # Slightly higher than working config (0.2) for more robustness
+  dropout: 0.15
 
-# Training Parameters - Enhanced robustness while maintaining performance
+  # Attention
+  attention_enabled: false
+  attention_heads: 2     # Very light
+  attention_dropout: 0.10
+  attention_dim: 64      # Match hidden_dim
+  positional_encoding: false  # Disabled for speed
+  max_seq_length: 512    # Shorter cap
+
+# Training
 training:
-  batch_size: 24           # Smaller than working (32) but not extreme for stability
-  learning_rate: 0.0008    # Slightly lower than working (0.001) for stability
-  weight_decay: 0.008      # Slightly higher than working (0.005) for regularization
-  max_epochs: 3          # Slightly shorter than working (120) to prevent overtraining
-  patience: 12             # Slightly less than working (25) for earlier stopping
-  gradient_clip_norm: 0.4  # Slightly tighter than working (0.5)
-  
-  # Learning rate scheduling - Keep proven cosine from working config
-  scheduler: "cosine"      # Keep what works from training_config.yaml
-  min_lr: 1e-6            # Same as working config
-  cosine_t_max: 100       # Match max_epochs
+  batch_size: 16         # Smaller batch fits everywhere
+  learning_rate: 0.001   # Higher LR for quick convergence
+  weight_decay: 0.01
+  max_epochs: 8          # Only a few epochs for debug
+  patience: 3
+  gradient_clip_norm: 0.5
 
-# Anti-Collapse System - Enhanced robustness (based on working config)
+  scheduler: "cosine"
+  min_lr: 1e-5
+  cosine_t_max: 8
+
+# Anti-Collapse
 anti_collapse:
-  label_smoothing: 0.20    # Higher than working (0.15) for more robustness
-  weighted_sampling: true  # Essential for balanced batches
-  entropy_lambda: 0.05     # Light entropy regularization (working config had 0.0)
+  label_smoothing: 0.1
+  weighted_sampling: false  # Skip for debug
+  entropy_lambda: 0.05
 
-# Emergency Monitoring - Enhanced vigilance (more robust than working config)
+# Emergency Monitoring
 emergency_monitoring:
-  enabled: false
-  
-  # Batch-level - More vigilant than working config
-  max_confidence_threshold: 0.90    # More strict than working (0.95)
-  min_chorus_rate: 0.08            # Slightly higher than working (0.05) 
-  max_chorus_rate: 0.80            # Slightly lower than working (0.85)
-  max_conf_over_95_ratio: 0.10     # More strict than working (0.15)
-  
-  # Epoch-level - Earlier intervention than working config
-  val_overconf_threshold: 0.95     # More strict than working (0.97)
-  val_f1_collapse_threshold: 0.08  # Higher than working (0.05)
-  emergency_overconf_threshold: 0.96  # Lower than working (0.98)
-  emergency_conf95_ratio: 0.8      # Same as working but with lower thresholds
-  emergency_f1_threshold: 0.03     # Slightly higher than working (0.02)
-  
-  # Monitoring timing - Earlier than working config
-  skip_batches: 30        # Earlier than working (50) but not extreme
-  skip_epochs: 3          # Earlier than working (5) 
-  print_batch_every: 10   # More frequent than working (20)
+  enabled: false  # Skip expensive monitoring for debug
 
-# Calibration Configuration - Clean implementation
+# Calibration
 calibration:
-  methods: ['temperature', 'platt', 'isotonic']  # Available: temperature, platt, isotonic
-  enabled: true
+  enabled: false  # Skip calibration in debug
+  methods: []
 
-validation_strategy: "composite"
+# Validation
+validation_strategy: "line_f1"
 
-# Feature Configuration - Balanced feature extraction
+# Features (keep minimal SSMs for debugging)
 features:
-  # Head-SSM: Captures opening patterns (important for verses)
   head_ssm:
-    enabled: true
+    enabled: false
     dimension: 12
-    head_words: 2          # Same as working config (proven optimal)
-  
-  # Tail-SSM: Captures ending patterns (important for rhyme schemes)
+    head_words: 2
+
   tail_ssm:
-    enabled: true
+    enabled: false
     dimension: 12
-    tail_words: 2          # Same as working config (proven optimal)
-  
-  # Phonetic-SSM: Critical for detecting chorus repetition
+    tail_words: 2
+
   phonetic_ssm:
     enabled: true
-    dimension: 12
-    mode: "rhyme"          # Focus on rhyme patterns
-    similarity_method: "binary"  # Valid option (binary, edit_distance, or sequence_match)
-    normalize: false       # Keep same as working config for consistency
-    normalize_method: "zscore"
-    high_sim_threshold: 0.35  # Slightly lower than working (0.4) for better sensitivity
+    dimension: 4     # Downscaled
+    mode: "rhyme"
+    similarity_method: "binary"
+    normalize: false
+    high_sim_threshold: 0.35
   
-  # POS-SSM: Grammatical structure differences
   pos_ssm:
-    enabled: true
-    dimension: 12
-    tagset: "simplified"   # Same as working config
-    similarity_method: "combined"  # Same as working config
-    high_sim_threshold: 0.28  # Slightly lower than working (0.3) for better sensitivity
+    enabled: false
+    dimension: 4
+    tagset: "simplified"
+    similarity_method: "combined"
   
-  # String-SSM: Direct text repetition (crucial for chorus detection)
   string_ssm:
     enabled: true
-    dimension: 12
-    case_sensitive: false  # Same as working config
-    remove_punctuation: true  # Same as working config
-    similarity_threshold: 0.08  # Slightly lower than working (0.1) for better sensitivity
-    similarity_method: "word_overlap"  # Same as working config (proven effective)
+    dimension: 4
+    case_sensitive: false
+    remove_punctuation: true
+    similarity_threshold: 0.1
+    similarity_method: "word_overlap"
 
-# Output Configuration
+# Embeddings (summary only)
+embeddings:
+  word2vec:
+    enabled: false
+    model: "word2vec-google-news-300"
+    mode: "summary"        # only 12D
+    normalize: false
+    similarity_metric: "cosine"
+    high_sim_threshold: 0.8
+
+  contextual:
+    enabled: false
+    model: "all-MiniLM-L6-v2"
+    mode: "summary"        # only 12D
+    normalize: false
+    similarity_metric: "cosine"
+    high_sim_threshold: 0.7
+
+# Output
 output:
-  base_dir: "training_sessions"
-  save_best_model: true
-  save_final_model: true
+  base_dir: "training_sessions_debug"
+  save_best_model: false
+  save_final_model: false
   save_training_metrics: true
-  save_config_snapshot: true
+  save_config_snapshot: false
 
-# System Settings
+# System
 system:
   seed: 42
   device: "auto"
-  num_workers: 0          # Single-threaded for stability (avoids multiprocessing pickle issues)
+  num_workers: 2
   deterministic: true
 
-# Experiment Metadata
+# Experiment
 experiment:
-  name: "training_validation_segment_composite_2layer_v1"
-  description: "Training configuration with composite validation strategy"
-  tags: ["validation-focused", "segmentation-metrics", "enhanced-monitoring", "production-ready", "2-layer-bilstm"]
-  notes: "Training configuration with composite validation strategy. Uses WindowDiff and Pk metrics for text segmentation evaluation. Enhanced monitoring of segment-level performance and transition accuracy. Optimized for structural coherence in predictions."
+  name: "debug_fast"
+  description: "Tiny config for fast debugging (1-layer, summary embeddings)"
+  tags: ["debug", "fast", "light"]
+  notes: "Minimal capacity, just for pipeline testing"
