@@ -4,7 +4,7 @@
 # No feature specifications needed - they're loaded from training session!
 
 # Training session directory (contains model + exact config + results)
-training_session: "training_sessions/session_20250819_155131_attention_embeddings_all_features"
+training_session: "training_sessions/session_20250819_173022_attention_embeddings_all_features"
 
 prediction:
   # Calibration configuration
@@ -23,7 +23,7 @@ prediction:
   quiet: false                        # Set to true for silent operation (AI-less machines)
 
 # Device configuration
-device: "auto"  # auto, cpu, cuda, mps
+device: "mps"  # auto, cpu, cuda, mps
 
 # Metadata
 config_version: "3.0"
