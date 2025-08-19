@@ -1,0 +1,112 @@
+# Enhanced BiLSTM with Localized Attention
+# Based on proven better_2layer_training.yaml configuration
+# Optimized for efficient boundary detection with local context
+
+# Data Configuration
+data:
+  train_file: "data/train.jsonl"
+  val_file: "data/val.jsonl"
+  test_file: "data/test.jsonl"
+
+# Model Architecture - Proven 2-layer configuration with localized attention
+model:
+  hidden_dim: 256          # Keep proven capacity
+  num_layers: 2            # 2-layer architecture
+  layer_dropout: 0.35      # Proven inter-layer regularization
+  num_classes: 2
+  dropout: 0.18            # Balanced with layer_dropout
+
+  # Localized Attention Configuration - Efficient boundary detection
+  attention_enabled: true
+  attention_type: "localized"     # NEW: Localized attention for efficiency
+  attention_heads: 4              # Balanced number of heads
+  attention_dropout: 0.15         # Balanced attention dropout
+  attention_dim: 256              # Match proven attention dimension
+  positional_encoding: true       # Keep existing positional encoding
+  max_seq_length: 1000
+  window_size: 7                  # NEW: Focus on ±3 positions around each token
+
+# Training Parameters - Based on proven better_2layer_training settings
+training:
+  batch_size: 32                  # Proven batch size
+  learning_rate: 0.0007           # Proven learning rate for 2-layer stability
+  weight_decay: 0.010             # Proven regularization strength
+  max_epochs: 32                 # Proven epoch budget
+  patience: 8                    # Proven patience for 2-layer convergence
+  gradient_clip_norm: 0.45        # Proven gradient clipping
+  
+  # Learning rate scheduling - Keep proven cosine
+  scheduler: "cosine"
+  min_lr: 1e-6
+  cosine_t_max: 100
+
+# Anti-Collapse System - Proven settings from better_2layer_training
+anti_collapse:
+  label_smoothing: 0.16           # Proven precision balance
+  weighted_sampling: true         # Essential balanced sampling
+  entropy_lambda: 0.08            # Proven prediction diversity
+
+# Emergency Monitoring - Proven 2-layer behavior settings
+emergency_monitoring:
+  enabled: true
+  
+  # Batch-level - Proven thresholds for 2-layer
+  max_confidence_threshold: 0.90
+  min_chorus_rate: 0.07
+  max_chorus_rate: 0.85
+  max_conf_over_95_ratio: 0.12
+  
+  # Epoch-level - Proven sensitivity for 2-layer
+  val_overconf_threshold: 0.94
+  val_f1_collapse_threshold: 0.10
+  emergency_overconf_threshold: 0.96
+  emergency_conf95_ratio: 0.65
+
+# Calibration - Proven configuration
+calibration:
+  enabled: true
+  methods: ["temperature", "platt"]
+
+# Validation Strategy - Proven strategy
+validation_strategy: "boundary_f1"
+
+# Features - Proven feature configuration from better_2layer_training
+features:
+  head_ssm:
+    enabled: true
+    dimension: 12
+    words: 2
+  tail_ssm:
+    enabled: true
+    dimension: 12
+    words: 2
+  phonetic_ssm:
+    enabled: true
+    dimension: 12
+    mode: "rhyme"
+    similarity_method: "binary"
+    normalize: false
+    high_sim_threshold: 0.32
+  pos_ssm:
+    enabled: true
+    dimension: 12
+    tagset: "simplified"
+    similarity_method: "combined"
+    high_sim_threshold: 0.28
+
+# Output and System - Proven settings
+output:
+  session_base_dir: "training_sessions/"
+  save_predictions: true
+
+system:
+  seed: 42
+  device: "auto"
+  num_workers: 0
+  deterministic: true
+
+# Experiment Information
+experiment:
+  name: "bilstm_localized_attention_v1"
+  description: "Enhanced BiLSTM with localized attention based on proven better_2layer_training configuration"
+  tags: ["localized-attention", "production", "efficient", "2-layer"]

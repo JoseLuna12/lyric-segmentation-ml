@@ -4,7 +4,7 @@
 # No feature specifications needed - they're loaded from training session!
 
 # Training session directory (contains model + exact config + results)
-training_session: "training_sessions/session_20250818_230500_attention_test_bilstm"
+training_session: "training_sessions/session_20250819_032034_bilstm_boundary_aware_attention_v1"
 
 prediction:
   # Calibration configuration

@@ -12,7 +12,7 @@ Clean, modular implementation of BiLSTM for verse/chorus classification with ant
 ├── segmodel/                    # Modular package
 │   ├── data/                    # Dataset loading with weighted sampling
 │   ├── features/                # Head-SSM & Tail-SSM feature extraction
-│   ├── models/                  # Simple BiLSTM model
+│   ├── models/                  # BiLSTM + Multi-head Attention models
 │   ├── losses/                  # Cross-entropy with label smoothing
 │   ├── train/                   # Training with guardrails
 │   └── utils/                   # Utilities
@@ -37,6 +37,10 @@ python train_with_config.py configs/training/aggressive_config.yaml
 
 # Train with multi-layer BiLSTM (3 layers, enhanced capacity)
 python train_with_config.py configs/training/multi_layer_example.yaml
+
+# NEW: Train with attention mechanisms
+python train_with_config.py configs/training/localized_attention.yaml     # Efficient localized attention
+python train_with_config.py configs/training/boundary_aware_attention.yaml # Advanced boundary detection
 
 # With command line overrides
 python train_with_config.py configs/training/aggressive_config.yaml \

@@ -68,6 +68,14 @@ def load_session_summary(session_dir: Path) -> dict:
                     summary['config_batch_size'] = line.split(':')[-1].strip()
                 elif 'lr:' in line and 'learning' not in line.lower():
                     summary['config_lr'] = line.split(':')[-1].strip()
+                elif 'attention_type:' in line:
+                    summary['attention_type'] = line.split(':')[-1].strip()
+                elif 'window_size:' in line:
+                    summary['window_size'] = line.split(':')[-1].strip()
+                elif 'boundary_temperature:' in line:
+                    summary['boundary_temperature'] = line.split(':')[-1].strip()
+                elif 'positional_encoding:' in line:
+                    summary['positional_encoding'] = line.split(':')[-1].strip()
                     
         except Exception:
             pass
@@ -183,6 +191,18 @@ def print_detailed_session_info(session_name: str, base_dir: str = "training_ses
         print(f"\n⏱️  Training Time:")
         print(f"   Total time: {summary['total_time']:.1f}s ({summary['total_time']/60:.1f} minutes)")
         print(f"   Avg time/epoch: {summary['total_time']/summary['epochs']:.1f}s")
+        
+        # Show attention configuration
+        if any(key in summary for key in ['attention_type', 'positional_encoding']):
+            print(f"\n🧠 Attention Configuration:")
+            if 'attention_type' in summary:
+                print(f"   Attention type: {summary['attention_type']}")
+                if summary.get('attention_type') == 'localized' and 'window_size' in summary:
+                    print(f"   Window size: {summary['window_size']}")
+                elif summary.get('attention_type') == 'boundary_aware' and 'boundary_temperature' in summary:
+                    print(f"   Boundary temperature: {summary['boundary_temperature']}")
+            if 'positional_encoding' in summary:
+                print(f"   Positional encoding: {summary['positional_encoding']}")
         
         # Show files available
         files = list(session_path.iterdir())

@@ -35,11 +35,14 @@ class BLSTMTagger(nn.Module):
         layer_dropout: float = 0.0,
         # NEW: Attention parameters
         attention_enabled: bool = False,
+        attention_type: str = 'self',
         attention_heads: int = 8,
         attention_dropout: float = 0.1,
         attention_dim: int = None,
         positional_encoding: bool = True,
-        max_seq_length: int = 1000
+        max_seq_length: int = 1000,
+        window_size: int = 7,
+        boundary_temperature: float = 2.0
     ):
         """
         Initialize the BiLSTM tagger.
@@ -52,11 +55,14 @@ class BLSTMTagger(nn.Module):
             dropout: Dropout probability for output layer
             layer_dropout: Inter-layer dropout for LSTM (only applied if num_layers > 1)
             attention_enabled: Whether to use attention mechanism
+            attention_type: Type of attention ('self', 'localized', 'boundary_aware')
             attention_heads: Number of attention heads
             attention_dropout: Dropout probability for attention
             attention_dim: Attention dimension (if None, uses LSTM output dimension)
             positional_encoding: Whether to use positional encoding in attention
             max_seq_length: Maximum sequence length for positional encoding
+            window_size: Window size for localized attention
+            boundary_temperature: Temperature for boundary-aware attention
         """
         super().__init__()
         
@@ -69,11 +75,14 @@ class BLSTMTagger(nn.Module):
         
         # NEW: Attention configuration
         self.attention_enabled = attention_enabled
+        self.attention_type = attention_type
         self.attention_heads = attention_heads
         self.attention_dropout = attention_dropout
         self.attention_dim = attention_dim
         self.positional_encoding = positional_encoding
         self.max_seq_length = max_seq_length
+        self.window_size = window_size
+        self.boundary_temperature = boundary_temperature
         
         # BiLSTM output dimension (bidirectional)
         self.lstm_output_dim = hidden_dim * 2
@@ -93,11 +102,14 @@ class BLSTMTagger(nn.Module):
             self.attention = AttentionModule(
                 input_dim=self.lstm_output_dim,
                 attention_dim=self.attention_dim,
+                attention_type=self.attention_type,
                 num_heads=self.attention_heads,
                 dropout=self.attention_dropout,
                 positional_encoding=self.positional_encoding,
                 max_seq_length=self.max_seq_length,
-                use_projection=True
+                use_projection=True,
+                window_size=self.window_size,
+                boundary_temperature=self.boundary_temperature
             )
         else:
             self.attention = None
@@ -340,11 +352,14 @@ class BLSTMTagger(nn.Module):
         if self.attention_enabled and self.attention is not None:
             attention_info = self.attention.get_module_info()
             info.update({
+                'attention_type': self.attention_type,
                 'attention_heads': self.attention_heads,
                 'attention_dropout': self.attention_dropout,
                 'attention_dim': self.attention_dim,
                 'positional_encoding': self.positional_encoding,
                 'max_seq_length': self.max_seq_length,
+                'window_size': self.window_size,
+                'boundary_temperature': self.boundary_temperature,
                 'attention_params': attention_params,
                 'attention_details': attention_info,
             })
@@ -399,11 +414,14 @@ def create_model(config) -> BLSTMTagger:
     """
     # Extract attention parameters with safe defaults
     attention_enabled = getattr(config, 'attention_enabled', False)
+    attention_type = getattr(config, 'attention_type', 'self')
     attention_heads = getattr(config, 'attention_heads', 8)
     attention_dropout = getattr(config, 'attention_dropout', 0.1)
     attention_dim = getattr(config, 'attention_dim', None)
     positional_encoding = getattr(config, 'positional_encoding', True)
     max_seq_length = getattr(config, 'max_seq_length', 1000)
+    window_size = getattr(config, 'window_size', 7)
+    boundary_temperature = getattr(config, 'boundary_temperature', 2.0)
     
     model = BLSTMTagger(
         feat_dim=config.feature_dim,
@@ -414,11 +432,14 @@ def create_model(config) -> BLSTMTagger:
         layer_dropout=config.layer_dropout,
         # NEW: Attention parameters
         attention_enabled=attention_enabled,
+        attention_type=attention_type,
         attention_heads=attention_heads,
         attention_dropout=attention_dropout,
         attention_dim=attention_dim,
         positional_encoding=positional_encoding,
-        max_seq_length=max_seq_length
+        max_seq_length=max_seq_length,
+        window_size=window_size,
+        boundary_temperature=boundary_temperature
     )
     
     model.print_model_info()

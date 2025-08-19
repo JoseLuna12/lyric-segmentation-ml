@@ -123,6 +123,133 @@ class PredictionConfig:
 
 ---
 
+## 🎯 **Adding New Attention Mechanisms**
+
+The attention system supports pluggable attention types. Here's how to add a new attention mechanism:
+
+### Step 1: Create New Attention Class
+
+**File to create/modify:** `segmodel/models/attention.py`
+
+```python
+class YourNewAttention(nn.Module):
+    """
+    Your custom attention mechanism.
+    Must follow the same interface as existing attention classes.
+    """
+    
+    def __init__(
+        self,
+        d_model: int,
+        num_heads: int = 8,
+        dropout: float = 0.1,
+        positional_encoding: bool = True,
+        max_seq_length: int = 1000,
+        your_custom_param: float = 1.0  # Your new parameter
+    ):
+        super().__init__()
+        # Implementation similar to existing attention classes
+        # ... your implementation ...
+    
+    def forward(
+        self, 
+        x: torch.Tensor, 
+        mask: Optional[torch.Tensor] = None
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Must return (output, attention_weights) tuple"""
+        # ... your implementation ...
+        return output, attention_weights
+    
+    def get_attention_info(self) -> dict:
+        """Must return attention information dict"""
+        return {
+            'type': 'YourNewAttention',
+            'd_model': self.d_model,
+            'num_heads': self.num_heads,
+            'your_custom_param': self.your_custom_param,
+            'total_params': sum(p.numel() for p in self.parameters()),
+        }
+```
+
+### Step 2: Update AttentionModule
+
+**File to modify:** `segmodel/models/attention.py`
+
+Add your attention type to the AttentionModule constructor:
+
+```python
+# In AttentionModule.__init__()
+elif attention_type == 'your_new_type':
+    self.attention = YourNewAttention(
+        d_model=self.attention_dim,
+        num_heads=num_heads,
+        dropout=dropout,
+        positional_encoding=positional_encoding,
+        max_seq_length=max_seq_length,
+        your_custom_param=kwargs.get('your_custom_param', 1.0)
+    )
+```
+
+### Step 3: Update Configuration System
+
+**Files to modify:**
+- `segmodel/utils/config_loader.py` (TrainingConfig dataclass)
+- `segmodel/models/blstm_tagger.py` (model initialization)
+
+**Add to TrainingConfig:**
+```python
+@dataclass
+class TrainingConfig:
+    # ... existing attention params ...
+    your_custom_param: float = 1.0  # Your new parameter
+```
+
+**Add to config loading:**
+```python
+# In load_training_config()
+your_custom_param=model.get('your_custom_param', 1.0),
+```
+
+### Step 4: Update Model Initialization
+
+**File to modify:** `segmodel/models/blstm_tagger.py`
+
+```python
+# In BLSTMTagger.__init__()
+self.your_custom_param = your_custom_param
+
+# In AttentionModule creation
+self.attention = AttentionModule(
+    # ... existing params ...
+    your_custom_param=self.your_custom_param
+)
+```
+
+### Step 5: Create Configuration Examples
+
+**File to create:** `configs/training/your_new_attention.yaml`
+
+```yaml
+model:
+  attention_enabled: true
+  attention_type: "your_new_type"
+  your_custom_param: 1.5
+```
+
+### ✅ **Validation Checklist for New Attention Mechanisms**
+
+- [ ] Attention class follows existing interface
+- [ ] Forward method returns (output, weights) tuple
+- [ ] get_attention_info() method implemented
+- [ ] AttentionModule supports new type
+- [ ] Configuration parameters added to TrainingConfig
+- [ ] Model initialization passes new parameters
+- [ ] Example configuration file created
+- [ ] Training works with new attention type
+- [ ] Model info includes new parameters
+
+---
+
 ## ⚙️ **Adding New Configuration Parameters**
 
 ### Step 1: Update YAML Configuration

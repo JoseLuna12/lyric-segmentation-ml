@@ -84,11 +84,14 @@ def setup_model_and_training(config: TrainingConfig, train_dataset: SongsDataset
         layer_dropout=config.layer_dropout,
         # NEW: Attention parameters
         attention_enabled=config.attention_enabled,
+        attention_type=config.attention_type,
         attention_heads=config.attention_heads,
         attention_dropout=config.attention_dropout,
         attention_dim=config.attention_dim,
         positional_encoding=config.positional_encoding,
-        max_seq_length=config.max_seq_length
+        max_seq_length=config.max_seq_length,
+        window_size=config.window_size,
+        boundary_temperature=config.boundary_temperature
     ).to(device)
     
     # Print detailed model information
@@ -463,6 +466,17 @@ Examples:
                 f.write(f"  Single-layer BiLSTM (backward compatible)\n")
                 total_params = sum(p.numel() for p in model.parameters())
                 f.write(f"      Total parameters: {total_params:,}\n")
+            
+            # Attention Configuration
+            f.write(f"  Attention type: {config.attention_type}\n")
+            if config.attention_type == 'localized':
+                f.write(f"    Window size: {config.window_size}\n")
+            elif config.attention_type == 'boundary_aware':
+                f.write(f"    Boundary temperature: {config.boundary_temperature}\n")
+            f.write(f"  Positional encoding: {config.positional_encoding}\n")
+            if config.positional_encoding:
+                f.write(f"    PE max length: {config.max_seq_length}\n")
+            
             f.write(f"  Output dropout: {config.dropout}\n")
             f.write(f"  Batch size: {config.batch_size}\n")
             f.write(f"  Learning rate: {config.learning_rate}\n")

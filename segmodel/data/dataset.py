@@ -251,6 +251,34 @@ def pad_labels(label_sequences: List[List[int]], ignore_index: int = -100) -> to
     return padded_labels
 
 
+class CollateFn:
+    """Collate function class that can be pickled for multiprocessing."""
+    
+    def __init__(self, feature_extractor):
+        self.feature_extractor = feature_extractor
+    
+    def __call__(self, batch_items):
+        """Collate function that processes raw data through feature extractor."""
+        song_ids, all_lines, all_labels = zip(*batch_items)
+        
+        # Extract features for each song
+        features_list = []
+        for lines in all_lines:
+            features = self.feature_extractor(lines)  # Should return (seq_len, feature_dim)
+            features_list.append(features)
+        
+        # Pad sequences
+        padded_features, mask = pad_sequences(features_list)
+        padded_labels = pad_labels(all_labels)
+        
+        return Batch(
+            song_ids=list(song_ids),
+            features=padded_features.float(),
+            labels=padded_labels.long(),
+            mask=mask
+        )
+
+
 def create_dataloader(
     dataset: SongsDataset,
     feature_extractor,
@@ -271,26 +299,8 @@ def create_dataloader(
         num_workers: Number of worker processes for data loading (0 = single-threaded)
     """
     
-    def collate_fn(batch_items):
-        """Collate function that processes raw data through feature extractor."""
-        song_ids, all_lines, all_labels = zip(*batch_items)
-        
-        # Extract features for each song
-        features_list = []
-        for lines in all_lines:
-            features = feature_extractor(lines)  # Should return (seq_len, feature_dim)
-            features_list.append(features)
-        
-        # Pad sequences
-        padded_features, mask = pad_sequences(features_list)
-        padded_labels = pad_labels(all_labels)
-        
-        return Batch(
-            song_ids=list(song_ids),
-            features=padded_features.float(),
-            labels=padded_labels.long(),
-            mask=mask
-        )
+    # Create collate function instance (can be pickled)
+    collate_fn = CollateFn(feature_extractor)
     
     # Set up sampling strategy
     if use_weighted_sampling:

@@ -54,10 +54,12 @@ def load_model(model_path: str, device: torch.device, training_config_path: str 
     
     # NEW: Detect attention parameters from state dict and training config
     attention_enabled = any(key.startswith('attention.') for key in state_dict.keys())
+    attention_type = 'self'  # Default attention type
     attention_heads = 8  # Default, will be overridden by config
     attention_dropout = 0.1  # Default, will be overridden by config
     positional_encoding = False  # Default, will be overridden by config
     attention_dim = None  # Will be determined from training config or saved weights
+    boundary_temperature = 2.0  # Default boundary temperature
     
     # Flag to track if config was successfully loaded
     config_loaded = False
@@ -86,6 +88,9 @@ def load_model(model_path: str, device: torch.device, training_config_path: str 
             val = get_config_value('attention_enabled', config_dict)
             if val is not None:
                 attention_enabled = val
+            val = get_config_value('attention_type', config_dict)  # NEW: Extract attention type
+            if val is not None:
+                attention_type = val
             val = get_config_value('attention_heads', config_dict)
             if val is not None:
                 attention_heads = val
@@ -98,14 +103,20 @@ def load_model(model_path: str, device: torch.device, training_config_path: str 
             val = get_config_value('positional_encoding', config_dict)
             if val is not None:
                 positional_encoding = val
+            val = get_config_value('boundary_temperature', config_dict)  # NEW: Extract boundary temperature
+            if val is not None:
+                boundary_temperature = val
                 
             config_loaded = True
             print(f"🎯 Loaded attention config from training config:")
             print(f"   Attention enabled: {attention_enabled}")
+            print(f"   Attention type: {attention_type}")  # NEW: Show attention type
             print(f"   Attention heads: {attention_heads}")
             print(f"   Attention dimension: {attention_dim}")
             print(f"   Attention dropout: {attention_dropout}")
             print(f"   Positional encoding: {positional_encoding}")
+            if attention_type == 'boundary_aware':  # NEW: Show boundary temperature for boundary_aware
+                print(f"   Boundary temperature: {boundary_temperature}")
             
         except Exception as e:
             print(f"⚠️  Could not load training config, falling back to state dict detection: {e}")
@@ -152,12 +163,15 @@ def load_model(model_path: str, device: torch.device, training_config_path: str 
         num_classes=num_classes,
         num_layers=num_layers,
         dropout=0.0,  # No dropout during inference
-        # NEW: Attention parameters
+        # NEW: Attention parameters (with safe defaults for older models)
         attention_enabled=attention_enabled,
+        attention_type=attention_type,  # Use loaded attention type
         attention_heads=attention_heads,
         attention_dropout=attention_dropout,
         attention_dim=attention_dim,  # Use detected attention dimension
-        positional_encoding=positional_encoding
+        positional_encoding=positional_encoding,
+        window_size=7,  # Default window size
+        boundary_temperature=boundary_temperature  # Use loaded boundary temperature
     )
     
     # Load weights

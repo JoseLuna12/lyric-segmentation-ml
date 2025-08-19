@@ -51,12 +51,34 @@ model:
   hidden_dim: 512
   num_classes: 2
   dropout: 0.2
+  
+  # Attention Mechanism (Optional)
+  attention_enabled: false
+  attention_type: "self"  # "self", "localized", "boundary_aware"
+  attention_heads: 8
+  attention_dropout: 0.1
+  attention_dim: null  # If null, uses BiLSTM output dimension
+  positional_encoding: true
+  max_seq_length: 1000
+  window_size: 7  # For localized attention
+  boundary_temperature: 2.0  # For boundary-aware attention
 ```
 
 **Parameter Details:**
 - `hidden_dim` - BiLSTM hidden state dimension (integer)
 - `num_classes` - Number of output classes (integer, fixed at 2 for verse/chorus)
 - `dropout` - Dropout probability for regularization (float 0.0-1.0)
+
+**Attention Parameters (Optional):**
+- `attention_enabled` - Whether to use attention mechanism (boolean)
+- `attention_type` - Type of attention: `"self"`, `"localized"`, `"boundary_aware"`
+- `attention_heads` - Number of attention heads (integer)
+- `attention_dropout` - Attention dropout probability (float)
+- `attention_dim` - Attention dimension (integer, if null uses BiLSTM output dimension)
+- `positional_encoding` - Whether to use positional encoding (boolean)
+- `max_seq_length` - Maximum sequence length for positional encoding (integer)
+- `window_size` - Window size for localized attention (integer, default: 7)
+- `boundary_temperature` - Temperature for boundary-aware attention (float, default: 2.0)
 
 ---
 

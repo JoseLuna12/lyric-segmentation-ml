@@ -28,11 +28,15 @@ class TrainingConfig:
     
     # NEW: Attention mechanism parameters
     attention_enabled: bool = False
+    attention_type: str = 'self'  # NEW: 'self', 'localized', 'boundary_aware'
     attention_heads: int = 8
     attention_dropout: float = 0.1
     attention_dim: int = None  # If None, uses LSTM output dimension
     positional_encoding: bool = True
     max_seq_length: int = 1000
+    # NEW: Attention type-specific parameters
+    window_size: int = 7  # For localized attention
+    boundary_temperature: float = 2.0  # For boundary-aware attention
     
     # Training parameters
     batch_size: int = 16
@@ -239,11 +243,14 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         
         # NEW: Attention parameters
         attention_enabled=model.get('attention_enabled', False),
+        attention_type=model.get('attention_type', 'self'),
         attention_heads=model.get('attention_heads', 8),
         attention_dropout=model.get('attention_dropout', 0.1),
         attention_dim=model.get('attention_dim', None),
         positional_encoding=model.get('positional_encoding', True),
         max_seq_length=model.get('max_seq_length', 1000),
+        window_size=model.get('window_size', 7),
+        boundary_temperature=model.get('boundary_temperature', 2.0),
         
         # Training
         batch_size=training.get('batch_size', 16),
@@ -379,7 +386,11 @@ def load_training_config(config_path: str) -> TrainingConfig:
     
     # NEW: Attention information
     if training_config.attention_enabled:
-        print(f"   🎯 Attention: {training_config.attention_heads} heads, dropout={training_config.attention_dropout}")
+        print(f"   🎯 Attention: {training_config.attention_type} type, {training_config.attention_heads} heads, dropout={training_config.attention_dropout}")
+        if training_config.attention_type == 'localized':
+            print(f"      🔍 Localized: window_size={training_config.window_size}")
+        elif training_config.attention_type == 'boundary_aware':
+            print(f"      🎯 Boundary-aware: temperature={training_config.boundary_temperature}")
         if training_config.positional_encoding:
             print(f"      ✅ Positional encoding enabled (max_len={training_config.max_seq_length})")
         if training_config.attention_dim:
