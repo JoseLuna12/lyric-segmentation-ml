@@ -4,7 +4,7 @@
 # No feature specifications needed - they're loaded from training session!
 
 # Training session directory (contains model + exact config + results)
-training_session: "training_sessions/session_20250821_191048_all_features_boundary_aware_loss"
+training_session: "training_sessions/session_20250821_232920_all_features_boundary_aware_loss_tuned"
 
 prediction:
   # Calibration configuration
