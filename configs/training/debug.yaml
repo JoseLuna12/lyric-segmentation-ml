@@ -36,11 +36,22 @@ training:
   min_lr: 1e-5
   cosine_t_max: 8
 
-# Anti-Collapse
-anti_collapse:
+# Loss Function Configuration
+loss:
+  type: "boundary_aware_cross_entropy"
   label_smoothing: 0.1
-  weighted_sampling: false  # Skip for debug
   entropy_lambda: 0.05
+  
+  # Boundary-aware components (conservative for debug)
+  boundary_weight: 2.0
+  segment_consistency_lambda: 0.03
+  conf_penalty_lambda: 0.005
+  conf_threshold: 0.95
+  use_boundary_as_primary: true
+
+# Anti-Collapse (non-loss settings only)
+anti_collapse:
+  weighted_sampling: false  # Skip for debug
 
 # Emergency Monitoring
 emergency_monitoring:

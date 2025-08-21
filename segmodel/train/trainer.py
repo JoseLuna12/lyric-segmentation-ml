@@ -21,6 +21,7 @@ from typing import Dict, List, Optional, Tuple, Any
 import time
 from dataclasses import dataclass, asdict
 import json
+from collections import deque
 
 from ..losses import batch_guardrails, sequence_f1_score
 from ..metrics import (
@@ -32,6 +33,108 @@ from ..metrics import (
     format_segmentation_metrics_report
 )
 from .calibration import fit_calibration, load_calibration
+
+
+class EarlyStopper:
+    """
+    Intelligent early stopping with ECE + F1 calibration awareness.
+    
+    Non-destructive design: 
+    - If ECE + F1 metrics are available, uses calibration-aware stopping
+    - Otherwise falls back to traditional patience/min_delta on validation loss
+    - No configuration required - automatically adapts based on available metrics
+    """
+    
+    def __init__(self, patience=10, min_delta=0.0):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.best_score = None
+        self.counter = 0
+        self.should_stop = False
+        
+        # New buffers for optional ECE + F1 logic
+        self.f1_hist = deque(maxlen=3)
+        self.ece_hist = deque(maxlen=3)
+        self.mode = "uninitialized"  # Track which stopping mode we're using
+    
+    def step(self, metrics: Dict[str, float]) -> bool:
+        """
+        Main stepping function with dual-mode logic.
+        
+        Args:
+            metrics: Dictionary containing validation metrics
+                     Should include val_loss at minimum
+                     Optionally val_f1 and val_ece for calibration-aware stopping
+        
+        Returns:
+            bool: True if training should stop
+        """
+        
+        # --- Priority path: ECE + F1 based calibration-aware stopping ---
+        if "val_f1" in metrics and "val_ece" in metrics:
+            if self.mode != "calibration":
+                self.mode = "calibration"
+                print(f"  🎯 EarlyStopper: Using calibration-aware mode (ECE + F1)")
+            
+            self.f1_hist.append(metrics["val_f1"])
+            self.ece_hist.append(metrics["val_ece"])
+            
+            # Only evaluate once we have enough history
+            if len(self.f1_hist) == self.f1_hist.maxlen:
+                ece_increasing = all(self.ece_hist[i] <= self.ece_hist[i+1] 
+                                   for i in range(len(self.ece_hist)-1))
+                f1_gain = max(self.f1_hist) - min(self.f1_hist)
+                
+                # Stop if calibration is degrading and F1 improvement is minimal
+                if ece_increasing and f1_gain < 0.005:
+                    self.should_stop = True
+                    print(f"  🛑 Calibration-aware early stop triggered:")
+                    print(f"     ECE increasing: {ece_increasing}")
+                    print(f"     F1 gain: {f1_gain:.4f} < 0.005")
+                    print(f"     Recent ECE: {list(self.ece_hist)}")
+                    print(f"     Recent F1: {list(self.f1_hist)}")
+                    return True
+                else:
+                    # Reset counter if we're still improving
+                    self.counter = 0
+                    return False
+            
+            # Not enough history yet, continue
+            return False
+        
+        # --- Fallback path: Traditional patience on validation loss ---
+        if self.mode != "traditional":
+            self.mode = "traditional"
+            print(f"  📉 EarlyStopper: Using traditional mode (val_loss patience)")
+        
+        score = -metrics.get("val_loss", 0.0)  # Higher is better (lower loss)
+        
+        if self.best_score is None:
+            self.best_score = score
+            self.counter = 0
+        elif score < self.best_score + self.min_delta:
+            self.counter += 1
+            if self.counter >= self.patience:
+                self.should_stop = True
+                print(f"  🛑 Traditional early stop triggered:")
+                print(f"     No improvement for {self.patience} epochs")
+                print(f"     Best score: {self.best_score:.4f}")
+                print(f"     Current score: {score:.4f}")
+                return True
+        else:
+            self.best_score = score
+            self.counter = 0
+        
+        return False
+    
+    def reset(self):
+        """Reset early stopper state."""
+        self.best_score = None
+        self.counter = 0
+        self.should_stop = False
+        self.f1_hist.clear()
+        self.ece_hist.clear()
+        self.mode = "uninitialized"
 
 
 @dataclass
@@ -352,6 +455,13 @@ class Trainer:
         self.best_val_score = -1.0  # Now tracks configurable validation metric
         self.patience_counter = 0
         self.training_metrics = []
+        self._best_epoch = 0  # Track which epoch produced the best model
+        
+        # Initialize intelligent early stopper (replaces manual patience logic)
+        self.early_stopper = EarlyStopper(
+            patience=getattr(config, 'patience', 8),
+            min_delta=getattr(config, 'min_delta', 0.0)
+        )
         
         # Create output directory
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -363,7 +473,8 @@ class Trainer:
         print(f"   Device: {device}")
         print(f"   Output dir: {output_dir}")
         print(f"   Max epochs: {config.max_epochs}")
-        print(f"   Patience: {config.patience}")
+        print(f"   Patience: {config.patience} (intelligent early stopping)")
+        print(f"   Early stopping: Auto-detect mode (ECE+F1 preferred, fallback to val_loss)")
     
     def _run_calibration(self, val_loader):
         """
@@ -700,22 +811,44 @@ class Trainer:
                         print(f"🛑 EMERGENCY STOP at epoch {epoch}")
                         break
                     
-                    # Early stopping and best model tracking with configurable validation metric
+                    # Intelligent early stopping with automatic ECE + F1 detection
+                    # Prepare metrics for early stopper (auto-detects available metrics)
+                    stopper_metrics = {
+                        'val_loss': metrics.val_loss,
+                        'val_f1': metrics.val_macro_f1,
+                        # Use confidence over 95% as a proxy for poor calibration (higher = worse calibration)
+                        'val_ece': metrics.val_conf_over_95  # Proxy for calibration quality
+                    }
+                    
+                    # Check if we should stop
+                    should_early_stop = self.early_stopper.step(stopper_metrics)
+                    
+                    # Traditional best model tracking (still track best validation score)
+                    current_val_score = compute_validation_score(metrics, self.config)
+                    
                     if current_val_score > self.best_val_score:
                         self.best_val_score = current_val_score
-                        self.patience_counter = 0
+                        self._best_epoch = epoch
                         best_model_state = {k: v.cpu().clone() for k, v in self.model.state_dict().items()}
                         best_epoch = epoch
                         
                         # Save best model
                         torch.save(best_model_state, self.output_dir / "best_model.pt")
-                        print(f"  ✅ New best {self.validation_strategy}: {self.best_val_score:.4f}")
+                        print(f"  ✅ New best {self.validation_strategy}: {current_val_score:.4f} (epoch {epoch})")
                     else:
-                        self.patience_counter += 1
-                        print(f"  📉 Patience: {self.patience_counter}/{self.config.patience}")
+                        # Show patience progress when no improvement
+                        if self.early_stopper.mode == "traditional":
+                            print(f"  📉 Patience: {self.early_stopper.counter}/{self.early_stopper.patience} (no improvement)")
+                        elif self.early_stopper.mode == "calibration":
+                            print(f"  🎯 Calibration monitoring: F1 trend and ECE tracking")
+                        else:
+                            print(f"  📊 Early stopping: monitoring mode not yet determined")
                     
-                    if self.patience_counter >= self.config.patience:
-                        print(f"🛑 Early stopping after {epoch} epochs")
+                    # Always show current best model info
+                    print(f"  🏆 Best model: {self.validation_strategy}={self.best_val_score:.4f} from epoch {self._best_epoch}")
+                    
+                    if should_early_stop:
+                        print(f"🛑 Intelligent early stopping after {epoch} epochs")
                         break
                 
                 except RuntimeError as e:
@@ -811,6 +944,7 @@ class Trainer:
 
         print(f"\n✅ Training completed!")
         print(f"   Best validation score ({self.validation_strategy}): {self.best_val_score:.4f}")
+        print(f"   Early stopping mode: {self.early_stopper.mode}")
         if self.calibration_info:
             print(f"   Calibration methods: {', '.join(self.calibration_info.keys())}")
             for method, info in self.calibration_info.items():

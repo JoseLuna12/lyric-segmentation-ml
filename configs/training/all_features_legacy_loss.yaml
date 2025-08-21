@@ -1,9 +1,9 @@
-# Enhanced BiLSTM Configuration for 2-Layer Verse-Chorus Segmentation
-# Optimized based on successful 0.85 F1 performance - targeting 0.87+ F1
-# Updated to use modern loss configuration structure
+# Enhanced BiLSTM Configuration with LEGACY CROSS-ENTROPY LOSS
+# Based on successful all_features_active_training.yaml (0.85 F1 performance)
+# Using proven legacy loss function with conservative but effective settings
 
 # =============================================================================
-# LOSS CONFIGURATION - LEGACY CROSS-ENTROPY (PROVEN SETTINGS)
+# LOSS CONFIGURATION - LEGACY CROSS-ENTROPY
 # =============================================================================
 loss:
   type: "cross_entropy"
@@ -12,10 +12,15 @@ loss:
   num_classes: 2
   ignore_index: -100
   
-  # Proven anti-collapse mechanisms (from original config)
-  label_smoothing: 0.12    # Reduced from 0.2 → 0.12 for more precision
-  # class_weights: Automatically calculated from dataset statistics
-  entropy_lambda: 0.08     # Increased from 0.05 → 0.08 for prediction diversity
+  # Proven safety mechanisms
+  label_smoothing: 0.12         # Matches anti_collapse setting from original
+  # class_weights: Automatically calculated from dataset statistics (inverse frequency, capped at 2.0 ratio)
+  entropy_lambda: 0.08          # Matches anti_collapse entropy_lambda from original
+  
+  # Legacy loss characteristics:
+  # - Stable and reliable token-level accuracy
+  # - Proven anti-collapse mechanisms
+  # - Conservative approach for comparison baseline
 
 # =============================================================================
 # DATA CONFIGURATION
@@ -30,13 +35,14 @@ data:
 # =============================================================================
 model:
   hidden_dim: 256
-  num_layers: 2        # 2-layer architecture
+  num_layers: 2        # 2-layer architecture that achieved 0.85 F1
   layer_dropout: 0.30
   num_classes: 2
   dropout: 0.20
 
-    # Attention Configuration - Dimensionally compatible with reduced hidden_dim
+  # Attention Configuration - Dimensionally compatible
   attention_enabled: true
+  attention_type: "boundary_aware"
   attention_heads: 8   
   attention_dropout: 0.15
   attention_dim: 256
@@ -44,17 +50,17 @@ model:
   max_seq_length: 1000
 
 # =============================================================================
-# TRAINING PARAMETERS - OPTIMIZED FOR PROVEN PERFORMANCE
+# TRAINING PARAMETERS - OPTIMIZED FOR LEGACY LOSS
 # =============================================================================
 training:
-  batch_size: 32           # ⬆️ Increased from 24 → 32 (smaller model, can fit larger batches)
-  learning_rate: 0.0005    # ⬆️ Slightly increased from 0.0004 → 0.0005 (smaller model can handle higher LR)
-  weight_decay: 0.012      # ⬆️ Increased from 0.008 → 0.010 for stronger regularization
-  max_epochs: 40          # Keep proven epoch budget
-  patience: 8             # ⬆️ Increased from 12 → 15 for deeper model convergence
-  gradient_clip_norm: 0.6 # ⬆️ Slightly increased from 0.4 → 0.45
+  batch_size: 32           # Proven batch size
+  learning_rate: 0.0005    # Slightly conservative for legacy stability
+  weight_decay: 0.012      # Strong regularization
+  max_epochs: 40           # Proven epoch budget
+  patience: 8              # Allow more time for legacy convergence
+  gradient_clip_norm: 0.6  # Stable gradient clipping
   
-  # Learning rate scheduling - Keep proven cosine
+  # Learning rate scheduling - Proven cosine
   scheduler: "cosine"
   min_lr: 1e-6
   cosine_t_max: 40
@@ -72,33 +78,36 @@ anti_collapse:
 emergency_monitoring:
   enabled: true
   
-  # Batch-level - Fine-tuned for 2-layer confidence patterns
-  max_confidence_threshold: 0.90    # ⬆️ Increased from 0.90
-  min_chorus_rate: 0.07            # Keep proven minimum
-  max_chorus_rate: 0.85            # Keep proven maximum
-  max_conf_over_95_ratio: 0.12     # Keep current setting
+  # Batch-level monitoring
+  max_confidence_threshold: 0.90
+  min_chorus_rate: 0.07
+  max_chorus_rate: 0.85
+  max_conf_over_95_ratio: 0.12
   
-  # Epoch-level - Enhanced sensitivity for 2-layer
-  val_overconf_threshold: 0.94     # Keep current
-  val_f1_collapse_threshold: 0.10  # ⬆️ Increased from 0.08 (more sensitive)
-  emergency_overconf_threshold: 0.96  # Keep current
-  emergency_conf95_ratio: 0.65       # Keep current
-  emergency_f1_threshold: 0.05       # ⬆️ Increased from 0.03 (higher bar)
+  # Epoch-level monitoring
+  val_overconf_threshold: 0.94
+  val_f1_collapse_threshold: 0.10
+  emergency_overconf_threshold: 0.96
+  emergency_conf95_ratio: 0.65
+  emergency_f1_threshold: 0.05
   
   # Monitoring timing
   skip_batches: 30
   skip_epochs: 3
   print_batch_every: 10
 
-# Temperature Calibration
+# =============================================================================
+# CALIBRATION & VALIDATION
+# =============================================================================
 calibration:
-  methods: ['temperature', 'platt']  # Available: temperature, platt, isotonic
+  methods: ['temperature', 'platt']
   enabled: true
 
-# Validation Strategy - Focus on structural boundaries
-validation_strategy: "boundary_f1"  # ⬅️ Changed from "composite" to focus on transitions
+validation_strategy: "boundary_f1"  # Focus on structural boundaries
 
-# Feature Configuration - Tuned for better chorus detection
+# =============================================================================
+# FEATURE CONFIGURATION - PROVEN FEATURE SET
+# =============================================================================
 features:
   # Head-SSM: Captures opening patterns
   head_ssm:
@@ -112,7 +121,7 @@ features:
     dimension: 12
     tail_words: 2
   
-  # Phonetic-SSM: Critical for chorus detection - TUNED
+  # Phonetic-SSM: Critical for chorus detection
   phonetic_ssm:
     enabled: true
     dimension: 12
@@ -120,7 +129,7 @@ features:
     similarity_method: "binary"
     normalize: false
     normalize_method: "zscore"
-    high_sim_threshold: 0.32  # ⬇️ Reduced from 0.35 → 0.32 (more sensitive to rhymes)
+    high_sim_threshold: 0.32
   
   # POS-SSM: Grammatical structure
   pos_ssm:
@@ -128,28 +137,28 @@ features:
     dimension: 12
     tagset: "simplified"
     similarity_method: "combined"
-    high_sim_threshold: 0.28  # Keep proven setting
+    high_sim_threshold: 0.28
   
-  # String-SSM: Direct repetition detection - TUNED
+  # String-SSM: Direct repetition detection
   string_ssm:
     enabled: true
     dimension: 12
     case_sensitive: false
     remove_punctuation: true
-    similarity_threshold: 0.06  # ⬇️ Reduced from 0.08 → 0.06 (catch more repetitions)
+    similarity_threshold: 0.06
     similarity_method: "word_overlap"
 
-  # NEW: Syllable Pattern SSM (syllable sequence similarity)
+  # Syllable Pattern SSM
   syllable_pattern_ssm:
     enabled: true
     dimension: 12
-    similarity_method: "cosine"  # "levenshtein", "cosine", or "combined"
+    similarity_method: "cosine"
     levenshtein_weight: 0.7
     cosine_weight: 0.3
     normalize: false
     normalize_method: "zscore"
 
-  # NEW: Line Syllable SSM (line-level syllable count rhythm)
+  # Line Syllable SSM
   line_syllable_ssm:
     enabled: true
     dimension: 12
@@ -162,22 +171,22 @@ features:
 # EMBEDDINGS CONFIGURATION
 # =============================================================================
 embeddings:
-  # Word2Vec embeddings using Google News 300D vectors
+  # Word2Vec embeddings
   word2vec:
     enabled: true
     model: "word2vec-google-news-300"
-    mode: "complete"        # options: "summary" (12D), "complete" (300D)
+    mode: "complete"
     normalize: true
-    similarity_metric: "cosine"  # options: "cosine", "dot"
+    similarity_metric: "cosine"
     high_sim_threshold: 0.8
 
-  # Contextual embeddings using SentenceTransformer
+  # Contextual embeddings
   contextual:
     enabled: true
     model: "all-MiniLM-L6-v2"
-    mode: "complete"        # options: "summary" (12D), "complete" (384D)
+    mode: "complete"
     normalize: true
-    similarity_metric: "cosine"  # options: "cosine", "dot"
+    similarity_metric: "cosine"
     high_sim_threshold: 0.7
 
 # =============================================================================
@@ -200,7 +209,18 @@ system:
 # EXPERIMENT METADATA
 # =============================================================================
 experiment:
-  name: "all_features_active_training"
-  description: "Enhanced BiLSTM with proven features using legacy cross-entropy loss (updated structure)"
-  tags: ["legacy", "proven", "baseline", "updated"]
-  notes: "Original successful config updated to modern loss configuration structure - baseline for comparison"
+  name: "all_features_legacy_loss"
+  description: "Enhanced BiLSTM with proven features using legacy cross-entropy loss"
+  tags: ["legacy", "baseline", "proven", "stable"]
+  notes: "Baseline configuration using legacy loss for comparison with boundary-aware improvements"
+
+# =============================================================================
+# EXPECTED PERFORMANCE CHARACTERISTICS
+# =============================================================================
+# With legacy loss, expect:
+# ✅ Strong token-level accuracy (val_macro_f1)
+# ✅ Stable and reliable training
+# ✅ Good baseline segmentation performance
+# ✅ Proven anti-collapse mechanisms
+# ⚠️  May need more epochs for boundary optimization
+# ⚠️  Less direct focus on segmentation boundaries

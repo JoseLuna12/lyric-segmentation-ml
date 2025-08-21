@@ -203,7 +203,26 @@ def create_feature_extractor_from_training_config(config_path: str) -> FeatureEx
         raise FileNotFoundError(f"Training config file not found: {config_path}")
     
     print(f"📋 Loading training config from: {config_path}")
-    config = load_training_config(config_path)
+    
+    # Load flattened config directly (training_config_snapshot.yaml is already flattened)
+    import yaml
+    with open(config_path, 'r') as f:
+        config_dict = yaml.safe_load(f)
+    
+    # Create a simple object to access config values with dot notation
+    class Config:
+        def __init__(self, config_dict):
+            for key, value in config_dict.items():
+                setattr(self, key, value)
+        
+        def get(self, key, default=None):
+            return getattr(self, key, default)
+    
+    config = Config(config_dict)
+    
+    # Debug: print some key attributes to verify loading
+    print(f"🔧 Debug - syllable_pattern_ssm_enabled: {getattr(config, 'syllable_pattern_ssm_enabled', 'NOT_FOUND')}")
+    print(f"🔧 Debug - line_syllable_ssm_enabled: {getattr(config, 'line_syllable_ssm_enabled', 'NOT_FOUND')}")
     
     # Build feature config from training config
     feature_config = {}
@@ -254,6 +273,7 @@ def create_feature_extractor_from_training_config(config_path: str) -> FeatureEx
     
     # NEW: Syllable SSM features
     if config.syllable_pattern_ssm_enabled:
+        print(f"🔧 Adding syllable_pattern_ssm feature (dimension: {config.syllable_pattern_ssm_dimension})")
         feature_config['syllable_pattern_ssm'] = {
             'enabled': True,
             'dimension': config.syllable_pattern_ssm_dimension,
@@ -265,6 +285,7 @@ def create_feature_extractor_from_training_config(config_path: str) -> FeatureEx
         }
     
     if config.line_syllable_ssm_enabled:
+        print(f"🔧 Adding line_syllable_ssm feature (dimension: {config.line_syllable_ssm_dimension})")
         feature_config['line_syllable_ssm'] = {
             'enabled': True,
             'dimension': config.line_syllable_ssm_dimension,
@@ -274,12 +295,29 @@ def create_feature_extractor_from_training_config(config_path: str) -> FeatureEx
             'normalize_method': config.line_syllable_ssm_normalize_method
         }
     
+    # Embeddings - converted to flattened format FeatureExtractor expects
+    if config.word2vec_enabled:
+        feature_config['word2vec_enabled'] = True
+        feature_config['word2vec_model'] = config.word2vec_model
+        feature_config['word2vec_mode'] = config.word2vec_mode
+        feature_config['word2vec_normalize'] = config.word2vec_normalize
+        feature_config['word2vec_similarity_metric'] = config.word2vec_similarity_metric
+        feature_config['word2vec_high_sim_threshold'] = config.word2vec_high_sim_threshold
+    
+    if config.contextual_enabled:
+        feature_config['contextual_enabled'] = True
+        feature_config['contextual_model'] = config.contextual_model
+        feature_config['contextual_mode'] = config.contextual_mode
+        feature_config['contextual_normalize'] = config.contextual_normalize
+        feature_config['contextual_similarity_metric'] = config.contextual_similarity_metric
+        feature_config['contextual_high_sim_threshold'] = config.contextual_high_sim_threshold
+    
     if not feature_config:
         raise ValueError(f"No features enabled in training config: {config_path}")
     
     extractor = FeatureExtractor(feature_config)
     print(f"🧩 Initialized feature extractor from training config:")
-    enabled_features = [name for name, config in feature_config.items() if config.get('enabled', False)]
+    enabled_features = [name for name, config in feature_config.items() if isinstance(config, dict) and config.get('enabled', False)]
     print(f"   Enabled features: {enabled_features}")
     print(f"   Total dimension: {extractor.get_feature_dimension()}")
     
@@ -760,6 +798,31 @@ Examples:
         print("❌ No model path specified!")
         print("   Use --model [path] or --session [session_dir]")
         return
+
+    # Try to find training config for better model architecture detection
+    training_config_path = None
+    
+    if args.session:
+        # Session directory should contain training_config_snapshot.yaml
+        training_config_path = os.path.join(args.session, 'training_config_snapshot.yaml')
+        if not os.path.exists(training_config_path):
+            training_config_path = None
+    elif args.train_config_file:
+        # Direct training config file path
+        training_config_path = args.train_config_file
+    elif hasattr(pred_config, 'training_session') and pred_config.training_session:
+        # Training session referenced in prediction config
+        training_config_path = os.path.join(pred_config.training_session, 'training_config_snapshot.yaml')
+        if not os.path.exists(training_config_path):
+            training_config_path = None
+
+    # For session-based prediction, override feature extractor with training config
+    if training_config_path and os.path.exists(training_config_path):
+        if not args.quiet:
+            print(f"🔧 Using feature configuration from training session")
+        feature_extractor = create_feature_extractor_from_training_config(training_config_path)
+
+    model = load_model(model_path, device, training_config_path)
         
     if not feature_extractor:
         print("❌ Failed to create feature extractor!")
@@ -795,26 +858,6 @@ Examples:
     
     if args.quiet:
         pred_config.quiet = True
-    
-    # Load model (now that we have model_path)
-    # Try to find training config for better model architecture detection
-    training_config_path = None
-    
-    if args.session:
-        # Session directory should contain training_config_snapshot.yaml
-        training_config_path = os.path.join(args.session, 'training_config_snapshot.yaml')
-        if not os.path.exists(training_config_path):
-            training_config_path = None
-    elif args.train_config_file:
-        # Direct training config file path
-        training_config_path = args.train_config_file
-    elif hasattr(pred_config, 'training_session') and pred_config.training_session:
-        # Training session referenced in prediction config
-        training_config_path = os.path.join(pred_config.training_session, 'training_config_snapshot.yaml')
-        if not os.path.exists(training_config_path):
-            training_config_path = None
-    
-    model = load_model(model_path, device, training_config_path)
     
     # Get input lines
     lines = []

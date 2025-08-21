@@ -24,7 +24,7 @@ sys.path.append(str(project_root))
 import torch
 from segmodel.models.blstm_tagger import BLSTMTagger
 from segmodel.data import SongsDataset, create_dataloader
-from segmodel.features.extractor import create_feature_extractor
+from segmodel.features.extractor import create_feature_extractor, FeatureExtractor
 from segmodel.train.calibration import fit_calibration
 import yaml
 import json
@@ -88,14 +88,115 @@ def load_model_from_session(session_dir: Path) -> tuple[BLSTMTagger, dict]:
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
     
-    # Create model with correct parameters
+    # Convert flattened config to feature config format expected by FeatureExtractor
+    feature_config = {}
+    
+    # SSM features
+    if config.get('head_ssm_enabled', False):
+        feature_config['head_ssm'] = {
+            'enabled': True,
+            'output_dim': config.get('head_ssm_dimension', 12),
+            'head_words': config.get('head_ssm_words', 2)
+        }
+    
+    if config.get('tail_ssm_enabled', False):
+        feature_config['tail_ssm'] = {
+            'enabled': True,
+            'output_dim': config.get('tail_ssm_dimension', 12),
+            'tail_words': config.get('tail_ssm_words', 2)
+        }
+    
+    if config.get('phonetic_ssm_enabled', False):
+        feature_config['phonetic_ssm'] = {
+            'enabled': True,
+            'output_dim': config.get('phonetic_ssm_dimension', 12),
+            'mode': config.get('phonetic_ssm_mode', 'rhyme'),
+            'similarity_method': config.get('phonetic_ssm_similarity_method', 'binary'),
+            'normalize': config.get('phonetic_ssm_normalize', False),
+            'normalize_method': config.get('phonetic_ssm_normalize_method', 'zscore'),
+            'high_sim_threshold': config.get('phonetic_ssm_high_sim_threshold', 0.8)
+        }
+    
+    if config.get('pos_ssm_enabled', False):
+        feature_config['pos_ssm'] = {
+            'enabled': True,
+            'output_dim': config.get('pos_ssm_dimension', 12),
+            'tagset': config.get('pos_ssm_tagset', 'simplified'),
+            'similarity_method': config.get('pos_ssm_similarity_method', 'combined'),
+            'high_sim_threshold': config.get('pos_ssm_high_sim_threshold', 0.7)
+        }
+    
+    if config.get('string_ssm_enabled', False):
+        feature_config['string_ssm'] = {
+            'enabled': True,
+            'output_dim': config.get('string_ssm_dimension', 12),
+            'case_sensitive': config.get('string_ssm_case_sensitive', False),
+            'remove_punctuation': config.get('string_ssm_remove_punctuation', True),
+            'similarity_threshold': config.get('string_ssm_similarity_threshold', 0.0),
+            'similarity_method': config.get('string_ssm_similarity_method', 'word_overlap')
+        }
+    
+    if config.get('syllable_pattern_ssm_enabled', False):
+        feature_config['syllable_pattern_ssm'] = {
+            'enabled': True,
+            'dimension': config.get('syllable_pattern_ssm_dimension', 12),
+            'similarity_method': config.get('syllable_pattern_ssm_similarity_method', 'levenshtein'),
+            'levenshtein_weight': config.get('syllable_pattern_ssm_levenshtein_weight', 0.7),
+            'cosine_weight': config.get('syllable_pattern_ssm_cosine_weight', 0.3),
+            'normalize': config.get('syllable_pattern_ssm_normalize', False),
+            'normalize_method': config.get('syllable_pattern_ssm_normalize_method', 'zscore')
+        }
+    
+    if config.get('line_syllable_ssm_enabled', False):
+        feature_config['line_syllable_ssm'] = {
+            'enabled': True,
+            'dimension': config.get('line_syllable_ssm_dimension', 12),
+            'similarity_method': config.get('line_syllable_ssm_similarity_method', 'cosine'),
+            'ratio_threshold': config.get('line_syllable_ssm_ratio_threshold', 0.1),
+            'normalize': config.get('line_syllable_ssm_normalize', False),
+            'normalize_method': config.get('line_syllable_ssm_normalize_method', 'minmax')
+        }
+    
+    # Embeddings - converted to flattened format FeatureExtractor expects
+    if config.get('word2vec_enabled', False):
+        feature_config['word2vec_enabled'] = True
+        feature_config['word2vec_model'] = config.get('word2vec_model', 'word2vec-google-news-300')
+        feature_config['word2vec_mode'] = config.get('word2vec_mode', 'summary')
+        feature_config['word2vec_normalize'] = config.get('word2vec_normalize', True)
+        feature_config['word2vec_similarity_metric'] = config.get('word2vec_similarity_metric', 'cosine')
+        feature_config['word2vec_high_sim_threshold'] = config.get('word2vec_high_sim_threshold', 0.8)
+    
+    if config.get('contextual_enabled', False):
+        feature_config['contextual_enabled'] = True
+        feature_config['contextual_model'] = config.get('contextual_model', 'all-MiniLM-L6-v2')
+        feature_config['contextual_mode'] = config.get('contextual_mode', 'summary')
+        feature_config['contextual_normalize'] = config.get('contextual_normalize', True)
+        feature_config['contextual_similarity_metric'] = config.get('contextual_similarity_metric', 'cosine')
+        feature_config['contextual_high_sim_threshold'] = config.get('contextual_high_sim_threshold', 0.7)
+    
+    # Create feature extractor to calculate dimension automatically
+    from segmodel.features.extractor import FeatureExtractor
+    feature_extractor = FeatureExtractor(feature_config=feature_config)
+    feat_dim = feature_extractor.get_feature_dimension()
+    
+    print(f"🔧 Calculated feature dimension: {feat_dim}D")
+    
+    # Create model with correct parameters including attention
     model = BLSTMTagger(
-        feat_dim=60,  # Feature dimension from your system
+        feat_dim=feat_dim,
         hidden_dim=config.get('hidden_dim', 256),
         num_layers=config.get('num_layers', 2),
         num_classes=config.get('num_classes', 2),
         dropout=config.get('dropout', 0.1),
-        layer_dropout=config.get('layer_dropout', 0.0)
+        layer_dropout=config.get('layer_dropout', 0.0),
+        # Attention parameters
+        attention_enabled=config.get('attention_enabled', False),
+        attention_type=config.get('attention_type', 'self'),
+        attention_heads=config.get('attention_heads', 8),
+        attention_dim=config.get('attention_dim', 256),
+        attention_dropout=config.get('attention_dropout', 0.1),
+        positional_encoding=config.get('positional_encoding', False),
+        max_seq_length=config.get('max_seq_length', 1000)
     )
     
     # Load weights
@@ -106,28 +207,17 @@ def load_model_from_session(session_dir: Path) -> tuple[BLSTMTagger, dict]:
         model.load_state_dict(checkpoint)
     
     print(f"✅ Model loaded successfully")
-    return model, config
+    return model, config, feature_extractor
 
 
-def create_validation_loader(config: dict) -> torch.utils.data.DataLoader:
-    """Create validation data loader with feature extractor."""
-    
-    # Create feature extractor (standard configuration)
-    feature_config = {
-        'head_ssm': {'enabled': True, 'output_dim': 12},
-        'tail_ssm': {'enabled': True, 'output_dim': 12},
-        'string_ssm': {'enabled': True, 'output_dim': 12},
-        'pos_ssm': {'enabled': True, 'output_dim': 12},
-        'phonetic_ssm': {'enabled': True, 'output_dim': 12}
-    }
-    
-    feature_extractor = create_feature_extractor(feature_config)
+def create_validation_loader(config: dict, feature_extractor: FeatureExtractor) -> torch.utils.data.DataLoader:
+    """Create validation data loader with feature extractor from training config."""
     
     # Load validation dataset
     val_file = config.get('val_file', 'data/val.jsonl')
     val_dataset = SongsDataset(val_file)
     
-    # Create data loader
+    # Create data loader using the provided feature extractor
     val_loader = create_dataloader(
         val_dataset,
         feature_extractor,
@@ -155,12 +245,12 @@ def run_calibration(session_name: str) -> bool:
         
         # Find and load session
         session_dir = find_session_directory(session_name)
-        model, config = load_model_from_session(session_dir)
+        model, config, feature_extractor = load_model_from_session(session_dir)
         model.to(device)
         model.eval()
         
         # Create validation loader
-        val_loader = create_validation_loader(config)
+        val_loader = create_validation_loader(config, feature_extractor)
         
         # Run calibration
         methods = ['temperature', 'platt', 'isotonic']

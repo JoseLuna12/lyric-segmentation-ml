@@ -11,6 +11,27 @@ import torch
 
 
 @dataclass
+class LossConfig:
+    """Loss function configuration."""
+    loss_type: str = "CrossEntropyWithLabelSmoothing"
+    # For CrossEntropyWithLabelSmoothing
+    label_smoothing: float = 0.0
+    # For BoundaryAwareCrossEntropy  
+    boundary_weight: float = 1.0
+    entropy_lambda: float = 0.05
+    segment_consistency_lambda: float = 0.0
+    conf_penalty_lambda: float = 0.01
+    conf_threshold: float = 0.7
+    use_boundary_as_primary: bool = False
+
+
+@dataclass
+class AntiCollapseConfig:
+    """Anti-collapse mechanism configuration."""
+    weighted_sampling: bool = False
+
+
+@dataclass
 class TrainingConfig:
     """Complete training configuration dataclass."""
     
@@ -58,10 +79,12 @@ class TrainingConfig:
     cosine_t0: int = 10
     cosine_t_mult: int = 2
     
-    # Anti-collapse settings
-    label_smoothing: float = 0.2
+    # Anti-collapse settings (non-loss parameters only)
     weighted_sampling: bool = True
-    entropy_lambda: float = 0.0
+    # Note: label_smoothing and entropy_lambda moved to loss configuration
+    
+    # NEW: Loss function configuration
+    loss: Optional[Any] = None  # Will hold loss configuration dict
     
     # Enhanced Emergency Monitoring (all configurable)
     emergency_monitoring_enabled: bool = True
@@ -84,6 +107,10 @@ class TrainingConfig:
     # Calibration Configuration - Clean implementation
     calibration_enabled: bool = True
     calibration_methods: list = None
+    
+    # Loss and Anti-collapse Configuration
+    loss_config: LossConfig = None
+    anti_collapse: AntiCollapseConfig = None
     
     # Validation Strategy (Phase 3) - Simplified
     validation_strategy: str = "line_f1"  # Simple strategy selection
@@ -167,6 +194,10 @@ class TrainingConfig:
             self.experiment_tags = []
         if self.calibration_methods is None:
             self.calibration_methods = ['temperature', 'platt', 'isotonic']
+        if self.loss_config is None:
+            self.loss_config = LossConfig()
+        if self.anti_collapse is None:
+            self.anti_collapse = AntiCollapseConfig()
 
 
 def load_yaml_config(config_path: str) -> Dict[str, Any]:
@@ -224,16 +255,9 @@ def validate_config(config: Dict[str, Any]) -> Dict[str, Any]:
     if training.get('max_epochs', 1) < 1:
         raise ValueError("max_epochs must be >= 1")
     
-    # Validate anti-collapse settings
+    # Validate anti-collapse settings (non-loss parameters only)
     anti_collapse = config.get('anti_collapse', {})
-    label_smoothing = anti_collapse.get('label_smoothing', 0.0)
-    
-    if not (0.0 <= label_smoothing <= 1.0):
-        raise ValueError("label_smoothing must be between 0.0 and 1.0")
-    
-    entropy_lambda = anti_collapse.get('entropy_lambda', 0.0)
-    if entropy_lambda < 0:
-        raise ValueError("entropy_lambda must be >= 0")
+    # Note: label_smoothing and entropy_lambda validation moved to loss section
     
     print("✅ Configuration validation passed")
     return config
@@ -246,6 +270,7 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
     data = config.get('data', {})
     model = config.get('model', {})
     training = config.get('training', {})
+    loss = config.get('loss', {})
     anti_collapse = config.get('anti_collapse', {})
     emergency = config.get('emergency_monitoring', {})
     calibration = config.get('calibration', {})  # New clean calibration config
@@ -310,10 +335,12 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         cosine_t0=training.get('cosine_t0', 10),
         cosine_t_mult=training.get('cosine_t_mult', 2),
         
-        # Anti-collapse
-        label_smoothing=anti_collapse.get('label_smoothing', 0.2),
+        # Anti-collapse (non-loss parameters only)
         weighted_sampling=anti_collapse.get('weighted_sampling', True),
-        entropy_lambda=anti_collapse.get('entropy_lambda', 0.0),
+        # Note: label_smoothing and entropy_lambda are now handled in loss section
+        
+        # NEW: Loss function configuration
+        loss=config.get('loss', None),
         
         # ✅ UPDATED: Enhanced Emergency Monitoring
         emergency_monitoring_enabled=emergency.get('enabled', True),
@@ -336,6 +363,21 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         # Calibration Configuration - Clean implementation
         calibration_enabled=calibration.get('enabled', True),
         calibration_methods=calibration.get('methods', ['temperature', 'platt', 'isotonic']),
+        
+        # Loss and Anti-collapse Configuration
+        loss_config=LossConfig(
+            loss_type=loss.get('type', 'CrossEntropyWithLabelSmoothing'),  # Use 'type' not 'loss_type'
+            label_smoothing=loss.get('label_smoothing', 0.0),
+            boundary_weight=loss.get('boundary_weight', 1.0),
+            entropy_lambda=loss.get('entropy_lambda', 0.05),
+            segment_consistency_lambda=loss.get('segment_consistency_lambda', 0.0),
+            conf_penalty_lambda=loss.get('conf_penalty_lambda', 0.01),
+            conf_threshold=loss.get('conf_threshold', 0.7),
+            use_boundary_as_primary=loss.get('use_boundary_as_primary', False)
+        ),
+        anti_collapse=AntiCollapseConfig(
+            weighted_sampling=anti_collapse.get('weighted_sampling', False)
+        ),
         
         # 🎯 NEW: Validation Strategy (Phase 3) - Simplified
         validation_strategy=config.get('validation_strategy', 'line_f1'),
@@ -469,7 +511,7 @@ def load_training_config(config_path: str) -> TrainingConfig:
     
     print(f"   Training: batch_size={training_config.batch_size}, lr={training_config.learning_rate}, epochs={training_config.max_epochs}")
     print(f"   ✅ Scheduler: {training_config.scheduler} (min_lr={training_config.min_lr})")
-    print(f"   Anti-collapse: smoothing={training_config.label_smoothing}, entropy_λ={training_config.entropy_lambda}")
+    print(f"   Anti-collapse: weighted_sampling={training_config.weighted_sampling}")
     print(f"   ✅ Emergency monitoring: {len([x for x in [training_config.max_confidence_threshold, training_config.val_overconf_threshold] if x])} thresholds")
     print(f"   🎯 Calibration: {', '.join(training_config.calibration_methods) if training_config.calibration_enabled else 'disabled'}")
     
@@ -571,13 +613,8 @@ def merge_with_args(config: TrainingConfig, args: argparse.Namespace) -> Trainin
         config.max_epochs = args.epochs
         overrides.append(f"max_epochs={args.epochs}")
     
-    if hasattr(args, 'label_smoothing') and args.label_smoothing is not None:
-        config.label_smoothing = args.label_smoothing
-        overrides.append(f"label_smoothing={args.label_smoothing}")
-    
-    if hasattr(args, 'entropy_lambda') and args.entropy_lambda is not None:
-        config.entropy_lambda = args.entropy_lambda
-        overrides.append(f"entropy_lambda={args.entropy_lambda}")
+    # Note: label_smoothing and entropy_lambda command-line overrides are deprecated
+    # These should now be specified in the loss section of the config file
     
     if hasattr(args, 'disable_emergency_monitoring') and args.disable_emergency_monitoring:
         config.emergency_monitoring_enabled = False

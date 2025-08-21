@@ -1,0 +1,130 @@
+attention_dim: 256
+attention_dropout: 0.15
+attention_enabled: true
+attention_heads: 8
+attention_type: self
+batch_size: 32
+boundary_temperature: 2.0
+calibration_enabled: true
+calibration_methods:
+- temperature
+- platt
+- isotonic
+contextual_enabled: true
+contextual_high_sim_threshold: 0.65
+contextual_mode: complete
+contextual_model: all-MiniLM-L6-v2
+contextual_normalize: true
+contextual_similarity_metric: cosine
+cosine_t0: 10
+cosine_t_max: 35
+cosine_t_mult: 2
+device: mps
+dropout: 0.2
+emergency_conf95_ratio: 0.7
+emergency_f1_threshold: 0.05
+emergency_monitoring_enabled: true
+emergency_overconf_threshold: 0.95
+experiment_description: Enhanced BiLSTM with proven features using boundary-aware
+  loss for improved segmentation
+experiment_name: all_features_boundary_aware_loss
+experiment_notes: Advanced configuration using boundary-aware loss for superior segmentation
+  performance
+experiment_tags:
+- boundary_aware
+- segmentation
+- advanced
+- optimized
+gradient_clip_norm: 0.7
+head_ssm_dimension: 12
+head_ssm_enabled: true
+head_ssm_words: 2
+hidden_dim: 256
+layer_dropout: 0.3
+learning_rate: 0.0006
+line_syllable_ssm_dimension: 12
+line_syllable_ssm_enabled: true
+line_syllable_ssm_normalize: false
+line_syllable_ssm_normalize_method: minmax
+line_syllable_ssm_ratio_threshold: 0.08
+line_syllable_ssm_similarity_method: cosine
+loss:
+  boundary_weight: 2.5
+  conf_penalty_lambda: 0.012
+  conf_threshold: 0.92
+  entropy_lambda: 0.08
+  ignore_index: -100
+  label_smoothing: 0.15
+  num_classes: 2
+  segment_consistency_lambda: 0.06
+  type: boundary_aware_cross_entropy
+  use_boundary_as_primary: true
+lr_factor: 0.5
+lr_patience: 3
+max_chorus_rate: 0.85
+max_conf_over_95_ratio: 0.15
+max_confidence_threshold: 0.92
+max_epochs: 35
+max_seq_length: 1000
+min_chorus_rate: 0.07
+min_lr: 1e-6
+num_classes: 2
+num_layers: 2
+num_workers: 0
+output_base_dir: training_sessions
+patience: 7
+phonetic_ssm_dimension: 12
+phonetic_ssm_enabled: true
+phonetic_ssm_high_sim_threshold: 0.3
+phonetic_ssm_mode: rhyme
+phonetic_ssm_normalize: false
+phonetic_ssm_normalize_method: zscore
+phonetic_ssm_similarity_method: binary
+pos_ssm_dimension: 12
+pos_ssm_enabled: true
+pos_ssm_high_sim_threshold: 0.26
+pos_ssm_similarity_method: combined
+pos_ssm_tagset: simplified
+positional_encoding: true
+print_batch_every: 10
+save_best_model: true
+save_final_model: true
+save_training_metrics: true
+scheduler: cosine
+seed: 42
+skip_batches: 30
+skip_epochs: 3
+step_gamma: 0.5
+step_size: 8
+string_ssm_case_sensitive: false
+string_ssm_dimension: 12
+string_ssm_enabled: true
+string_ssm_remove_punctuation: true
+string_ssm_similarity_method: word_overlap
+string_ssm_similarity_threshold: 0.05
+syllable_pattern_ssm_cosine_weight: 0.3
+syllable_pattern_ssm_dimension: 12
+syllable_pattern_ssm_enabled: true
+syllable_pattern_ssm_levenshtein_weight: 0.7
+syllable_pattern_ssm_normalize: false
+syllable_pattern_ssm_normalize_method: zscore
+syllable_pattern_ssm_similarity_method: cosine
+tail_ssm_dimension: 12
+tail_ssm_enabled: true
+tail_ssm_words: 2
+test_file: data/test.jsonl
+train_file: data/train.jsonl
+val_f1_collapse_threshold: 0.1
+val_file: data/val.jsonl
+val_overconf_threshold: 0.92
+validation_strategy: boundary_f1
+warmup_epochs: 5
+weight_decay: 0.01
+weighted_sampling: true
+window_size: 7
+word2vec_enabled: true
+word2vec_high_sim_threshold: 0.75
+word2vec_mode: complete
+word2vec_model: word2vec-google-news-300
+word2vec_normalize: true
+word2vec_similarity_metric: cosine

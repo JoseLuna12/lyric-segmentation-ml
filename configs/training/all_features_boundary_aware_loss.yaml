@@ -1,0 +1,206 @@
+# Enhanced BiLSTM Configuration with BOUNDARY-AWARE LOSS (Tuned)
+
+# =============================================================================
+# LOSS CONFIGURATION - BOUNDARY-AWARE CROSS-ENTROPY
+# =============================================================================
+loss:
+  type: "boundary_aware_cross_entropy"
+  
+  # Core parameters
+  num_classes: 2
+  ignore_index: -100
+  
+  # Phase 1: Enhanced safety mechanisms
+  label_smoothing: 0.20           # reduced from 0.30 → less blur, helps precision
+  entropy_lambda: 0.04            # ↑ slightly (0.02 → 0.04) for better calibration
+  
+  # Phase 2: Boundary awareness
+  boundary_weight: 1.8            # tuned down (1.5 → 1.8) for balance
+  
+  # Phase 3: Segment consistency
+  segment_consistency_lambda: 0.02 # ↑ slightly from 0.01, encourage coherence
+  
+  # Phase 4: Confidence control & calibration
+  conf_penalty_lambda: 0.010      # slightly reduced (0.012 → 0.010) avoid too much penalty
+  conf_threshold: 0.93            # raised a bit (0.92 → 0.93) to avoid early clipping
+  
+  # Advanced options
+  use_boundary_as_primary: true
+
+# =============================================================================
+# DATA CONFIGURATION
+# =============================================================================
+data:
+  train_file: "data/train.jsonl"
+  val_file: "data/val.jsonl"
+  test_file: "data/test.jsonl"
+
+# =============================================================================
+# MODEL ARCHITECTURE
+# =============================================================================
+model:
+  hidden_dim: 256
+  num_layers: 2
+  layer_dropout: 0.30
+  num_classes: 2
+  dropout: 0.25                 # ↑ 0.20 → 0.25 (anti-overfitting)
+
+  attention_enabled: true
+  attention_type: "boundary_aware"
+  attention_heads: 8   
+  attention_dropout: 0.20       # ↑ 0.15 → 0.20 (regularization)
+  attention_dim: 256
+  positional_encoding: true  
+  max_seq_length: 1000
+
+# =============================================================================
+# TRAINING PARAMETERS
+# =============================================================================
+training:
+  batch_size: 32
+  learning_rate: 0.0005         # ↓ from 0.0006 (stability w/ new loss)
+  weight_decay: 0.015           # middle ground (0.020 → 0.015)
+  max_epochs: 45                # allow a bit more room
+  patience: 8                   # was 7, safer
+  min_delta: 0.005
+  gradient_clip_norm: 0.5       # tighter (0.6 → 0.5) to avoid spikes
+
+  scheduler: "cosine"
+  min_lr: 1e-6
+  cosine_t_max: 45              # match max_epochs
+
+# =============================================================================
+# ANTI-COLLAPSE SYSTEM
+# =============================================================================
+anti_collapse:
+  weighted_sampling: true
+
+# =============================================================================
+# EMERGENCY MONITORING
+# =============================================================================
+emergency_monitoring:
+  enabled: true
+  
+  max_confidence_threshold: 0.93   # ↑ from 0.92
+  min_chorus_rate: 0.07
+  max_chorus_rate: 0.85
+  max_conf_over_95_ratio: 0.12     # ↓ tolerance from 0.15
+
+  val_overconf_threshold: 0.93
+  val_f1_collapse_threshold: 0.10
+  emergency_overconf_threshold: 0.95
+  emergency_conf95_ratio: 0.65     # ↓ from 0.70 (more strict)
+  emergency_f1_threshold: 0.05
+
+  skip_batches: 30
+  skip_epochs: 3
+  print_batch_every: 10
+
+# =============================================================================
+# CALIBRATION & VALIDATION
+# =============================================================================
+calibration:
+  methods: ['temperature', 'platt']
+  enabled: true
+
+validation_strategy: "boundary_f1"
+
+# =============================================================================
+# FEATURE CONFIGURATION
+# =============================================================================
+features:
+  head_ssm:
+    enabled: true
+    dimension: 12
+    head_words: 2
+  
+  tail_ssm:
+    enabled: true
+    dimension: 12
+    tail_words: 2
+  
+  phonetic_ssm:
+    enabled: true
+    dimension: 12
+    mode: "rhyme"
+    similarity_method: "binary"
+    normalize: false
+    normalize_method: "zscore"
+    high_sim_threshold: 0.31       # slight ↑ from 0.30
+  
+  pos_ssm:
+    enabled: true
+    dimension: 12
+    tagset: "simplified"
+    similarity_method: "combined"
+    high_sim_threshold: 0.27       # slight ↑ from 0.26
+  
+  string_ssm:
+    enabled: true
+    dimension: 12
+    case_sensitive: false
+    remove_punctuation: true
+    similarity_threshold: 0.055    # ↑ slightly (0.05 → 0.055)
+    similarity_method: "word_overlap"
+
+  syllable_pattern_ssm:
+    enabled: true
+    dimension: 12
+    similarity_method: "cosine"
+    levenshtein_weight: 0.7
+    cosine_weight: 0.3
+    normalize: false
+    normalize_method: "zscore"
+
+  line_syllable_ssm:
+    enabled: true
+    dimension: 12
+    similarity_method: "cosine"
+    ratio_threshold: 0.09          # ↑ from 0.08
+    normalize: false
+    normalize_method: "minmax"
+
+# =============================================================================
+# EMBEDDINGS CONFIGURATION
+# =============================================================================
+embeddings:
+  word2vec:
+    enabled: true
+    model: "word2vec-google-news-300"
+    mode: "complete"
+    normalize: true
+    similarity_metric: "cosine"
+    high_sim_threshold: 0.82       # ↑ from 0.80
+
+  contextual:
+    enabled: true
+    model: "all-MiniLM-L6-v2"
+    mode: "complete"
+    normalize: true
+    similarity_metric: "cosine"
+    high_sim_threshold: 0.72       # ↑ from 0.70
+
+# =============================================================================
+# OUTPUT & SYSTEM CONFIGURATION
+# =============================================================================
+output:
+  base_dir: "training_sessions"
+  save_best_model: true
+  save_final_model: true
+  save_training_metrics: true
+  save_config_snapshot: true
+
+system:
+  seed: 42
+  device: "auto"
+  num_workers: 0
+  deterministic: true
+
+# =============================================================================
+# EXPERIMENT METADATA
+# =============================================================================
+experiment:
+  name: "all_features_boundary_aware_loss_tuned"
+  description: "BiLSTM with boundary-aware loss (tuned for less overfitting, better calibration)"
+  tags: ["boundary_aware", "segmentation", "tuned"]
+  notes: "Adjustments focus on calibration, regularization, and boundary sensitivity"

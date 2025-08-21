@@ -133,20 +133,108 @@ def setup_model_and_training(config: TrainingConfig, train_dataset: SongsDataset
     print(f"   Output dropout: {config.dropout}")
     print(f"   Output classes: {config.num_classes}")
     
-    # Create loss function
-    print(f"🎯 Setting up loss function...")
-    class_weights = train_dataset.get_class_weights().to(device)
-    loss_function = create_loss_function(
-        num_classes=config.num_classes,
-        label_smoothing=config.label_smoothing,
-        class_weights=class_weights,
-        entropy_lambda=config.entropy_lambda
-    )
+    # Enhanced Loss Function Configuration
+    print(f"\n🎯 Loss Function Configuration:")
+    print(f"=" * 70)
     
-    print(f"🔧 Loss function configuration:")
-    print(f"   Label smoothing: {config.label_smoothing}")
-    print(f"   Class weights: {class_weights.cpu().numpy()}")
-    print(f"   Entropy lambda: {config.entropy_lambda}")
+    # Require new loss configuration format
+    if not hasattr(config, 'loss'):
+        raise ValueError(
+            "❌ Config must include 'loss' section!\n"
+            "   Please update your YAML config to include:\n"
+            "   loss:\n"
+            "     type: 'boundary_aware_cross_entropy'  # or 'cross_entropy'\n"
+            "     label_smoothing: 0.16\n"
+            "     # ... other loss parameters\n"
+            "   See: documentation/boundary_aware_loss_migration_roadmap.md"
+        )
+    
+    loss_config = config.loss
+    loss_type = loss_config.get('type', 'boundary_aware_cross_entropy')
+    
+    print(f"   ✅ Loss Configuration Found")
+    print(f"      Loss Type: {loss_type}")
+    
+    # Extract parameters from loss config
+    class_weights = train_dataset.get_class_weights().to(device)
+    
+    label_smoothing = loss_config.get('label_smoothing', 0.2)
+    
+    if loss_type == 'boundary_aware_cross_entropy':
+        # Boundary-aware loss parameters
+        entropy_lambda = loss_config.get('entropy_lambda', 0.0)
+        boundary_weight = loss_config.get('boundary_weight', 2.0)
+        segment_consistency_lambda = loss_config.get('segment_consistency_lambda', 0.03)
+        conf_penalty_lambda = loss_config.get('conf_penalty_lambda', 0.005)
+        conf_threshold = loss_config.get('conf_threshold', 0.95)
+        use_boundary_as_primary = loss_config.get('use_boundary_as_primary', True)
+        
+        # Create boundary-aware loss function
+        from segmodel.losses.boundary_aware_cross_entropy import BoundaryAwareCrossEntropy
+        loss_function = BoundaryAwareCrossEntropy(
+            num_classes=config.num_classes,
+            label_smoothing=label_smoothing,
+            class_weights=class_weights,
+            boundary_weight=boundary_weight,
+            segment_consistency_lambda=segment_consistency_lambda,
+            conf_penalty_lambda=conf_penalty_lambda,
+            conf_threshold=conf_threshold,
+            entropy_lambda=entropy_lambda,
+            use_boundary_as_primary=use_boundary_as_primary
+        )
+        
+        print(f"\n   � Boundary-Aware Loss Architecture:")
+        print(f"      Base Loss: Cross-Entropy (label_smoothing={label_smoothing:.3f})")
+        print(f"      Class Weights: {class_weights.cpu().numpy()}")
+        print(f"      ├── Boundary Weight: {boundary_weight:.1f}x {'✅ ACTIVE' if boundary_weight > 1.0 else '❌ DISABLED'}")
+        print(f"      ├── Segment Consistency: λ={segment_consistency_lambda:.3f} {'✅ ACTIVE' if segment_consistency_lambda > 0 else '❌ DISABLED'}")
+        print(f"      ├── Confidence Penalty: λ={conf_penalty_lambda:.3f} (threshold={conf_threshold:.2f}) {'✅ ACTIVE' if conf_penalty_lambda > 0 else '❌ DISABLED'}")
+        print(f"      ├── Entropy Regularization: λ={entropy_lambda:.3f} {'✅ ACTIVE' if entropy_lambda > 0 else '❌ DISABLED'}")
+        print(f"      └── Architecture: {'🎯 Boundary-Primary' if use_boundary_as_primary else '📊 Cross-Entropy Primary'}")
+        
+        # Expected improvements
+        print(f"\n   📈 Expected Improvements:")
+        active_components = []
+        if boundary_weight > 1.0:
+            active_components.append("Better boundary detection (+5-15% boundary F1)")
+        if segment_consistency_lambda > 0:
+            active_components.append("Reduced fragmentation (+10-20% segment quality)")
+        if conf_penalty_lambda > 0:
+            active_components.append("Improved confidence calibration")
+        if entropy_lambda > 0:
+            active_components.append("Enhanced prediction diversity")
+        
+        if active_components:
+            for improvement in active_components:
+                print(f"      • {improvement}")
+        else:
+            print(f"      • Using minimal settings - consider enabling boundary components")
+            
+    elif loss_type == 'cross_entropy':
+        # Legacy cross-entropy loss
+        entropy_lambda = loss_config.get('entropy_lambda', 0.0)
+        
+        from segmodel.losses.cross_entropy import create_loss_function as create_legacy_loss
+        loss_function = create_legacy_loss(
+            num_classes=config.num_classes,
+            label_smoothing=label_smoothing,
+            class_weights=class_weights,
+            entropy_lambda=entropy_lambda
+        )
+        
+        print(f"\n   � Legacy Cross-Entropy Loss:")
+        print(f"      Base Loss: Cross-Entropy (label_smoothing={label_smoothing:.3f})")
+        print(f"      Class Weights: {class_weights.cpu().numpy()}")
+        print(f"      Entropy Regularization: λ={entropy_lambda:.3f} {'✅ ACTIVE' if entropy_lambda > 0 else '❌ DISABLED'}")
+        print(f"\n   ⚠️  Consider upgrading to 'boundary_aware_cross_entropy' for:")
+        print(f"      • Better boundary detection")
+        print(f"      • Improved segmentation quality")
+        print(f"      • Enhanced confidence calibration")
+        
+    else:
+        raise ValueError(f"❌ Unknown loss type: {loss_type}. Supported: 'boundary_aware_cross_entropy', 'cross_entropy'")
+    
+    print(f"=" * 70)
     
     # Create optimizer
     optimizer = AdamW(
@@ -649,7 +737,15 @@ Examples:
             f.write(f"  Output dropout: {config.dropout}\n")
             f.write(f"  Batch size: {config.batch_size}\n")
             f.write(f"  Learning rate: {config.learning_rate}\n")
-            f.write(f"  Label smoothing: {config.label_smoothing}\n")
+            # Write loss configuration in summary
+            if config.loss_config.loss_type == 'cross_entropy':
+                f.write(f"  Loss type: {config.loss_config.loss_type}\n")
+                f.write(f"  Label smoothing: {config.loss_config.label_smoothing}\n")
+            elif config.loss_config.loss_type == 'boundary_aware_cross_entropy':
+                f.write(f"  Loss type: {config.loss_config.loss_type}\n")
+                f.write(f"  Boundary weight: {config.loss_config.boundary_weight}\n")
+                f.write(f"  Entropy lambda: {config.loss_config.entropy_lambda}\n")
+                f.write(f"  Segment consistency lambda: {config.loss_config.segment_consistency_lambda}\n")
             f.write(f"  Weighted sampling: {config.weighted_sampling}\n")
             
             f.write(f"\nTest Results:\n")

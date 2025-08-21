@@ -1,0 +1,86 @@
+BLSTM Training Results - all_features_boundary_aware_loss_tuned
+==================================================
+
+Configuration: configs/training/all_features_boundary_aware_loss.yaml
+Training time: 64.4 minutes
+Feature dimension: 768
+
+Feature Configuration:
+-------------------------
+  Head-SSM: Enabled (12D)
+    Head words: 2
+  Tail-SSM: Enabled (12D)
+    Tail words: 2
+  Phonetic-SSM: Enabled (12D)
+    Mode: rhyme
+    Similarity: binary
+    Normalize: False
+    High sim threshold: 0.31
+  POS-SSM: Enabled (12D)
+    Tagset: simplified
+    Similarity: combined
+    High sim threshold: 0.27
+  String-SSM: Enabled (12D)
+    Case sensitive: False
+    Remove punctuation: True
+    Similarity threshold: 0.055
+    Similarity method: word_overlap
+  SyllablePattern-SSM: Enabled (12D)
+    Similarity method: cosine
+    Normalize: False
+  LineSyllable-SSM: Enabled (12D)
+    Similarity method: cosine
+    Ratio threshold: 0.09
+    Normalize: False
+
+  Word2Vec Embeddings: Enabled (300D)
+    Model: word2vec-google-news-300
+    Mode: complete (300D full embeddings)
+    Normalize: True
+    Similarity metric: cosine
+    High similarity threshold: 0.82
+  Contextual Embeddings: Enabled (384D)
+    Model: all-MiniLM-L6-v2
+    Mode: complete (384D full embeddings)
+    Normalize: True
+    Similarity metric: cosine
+    High similarity threshold: 0.72
+
+  Total Feature Dimension: 768D (Head-SSM: 12D + Tail-SSM: 12D + Phonetic-SSM: 12D + POS-SSM: 12D + String-SSM: 12D + SyllablePattern-SSM: 12D + LineSyllable-SSM: 12D + Word2Vec: 300D + Contextual: 384D)
+
+Model Architecture:
+------------------
+  Input dimension: 768D
+  Hidden dimension: 256D
+  LSTM layers: 2
+  ✅ Multi-layer BiLSTM architecture
+      Inter-layer dropout: 0.3
+      Total parameters: 4,238,851
+  Attention type: boundary_aware
+    Boundary temperature: 2.0
+  Positional encoding: True
+    PE max length: 1000
+  Output dropout: 0.25
+  Batch size: 32
+  Learning rate: 0.0005
+  Loss type: boundary_aware_cross_entropy
+  Boundary weight: 1.8
+  Entropy lambda: 0.04
+  Segment consistency lambda: 0.02
+  Weighted sampling: True
+
+Test Results:
+-------------
+  Macro F1: 0.7423
+  Verse F1: 0.8599
+  Chorus F1: 0.6247
+  Confidence: 0.809
+  Chorus rate: 26.67%
+  Calibration: ['temperature', 'platt']
+
+Calibration Details:
+--------------------
+  temperature: ECE 0.0603 → 0.0583 (Δ+0.0021)
+    T = 0.886
+  platt: ECE 0.0603 → 0.0936 (Δ-0.0333)
+    A = 1.000, B = -0.137
