@@ -17,8 +17,6 @@ from datetime import datetime
 from segmodel.utils import TrainingConfig, load_training_config, merge_with_args, save_config_snapshot
 from segmodel.data import SongsDataset, create_dataloader
 from segmodel.features import FeatureExtractor
-from segmodel.models import create_model
-from segmodel.losses import create_loss_function
 from segmodel.train import Trainer
 
 

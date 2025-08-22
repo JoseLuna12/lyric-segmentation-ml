@@ -65,6 +65,7 @@ class TrainingConfig:
     weight_decay: float = 0.01
     max_epochs: int = 60
     patience: int = 8
+    min_delta: float = 0.0
     gradient_clip_norm: float = 1.0
     
     # Advanced Learning Rate Scheduling
