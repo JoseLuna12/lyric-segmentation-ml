@@ -994,11 +994,40 @@ def objective(trial):
     except TrialPruned:
         print(f"🔪 Trial {trial.number} pruned.")
         raise
-        
+
     except Exception as e:
         print(f"❌ Trial {trial.number} failed: {e}")
         print(f"Traceback: {traceback.format_exc()}")
-        return 0.0  # Return worst possible score
+        # Save error details for debugging
+        error_details = {
+            'trial_number': trial.number,
+            'error_type': type(e).__name__,
+            'error_message': str(e),
+            'traceback': traceback.format_exc(),
+            'parameters': getattr(trial, 'params', {})
+        }
+        trial_dir = SESSION_DIR / "trials" / f"trial_{trial.number:03d}"
+        trial_dir.mkdir(parents=True, exist_ok=True)
+        with open(trial_dir / "error.json", 'w') as f:
+            json.dump(error_details, f, indent=2)
+        # Do NOT return 0.0, let Optuna mark as FAIL
+        raise
+        # Save error details for debugging
+        error_details = {
+            'trial_number': trial.number,
+            'error_type': type(e).__name__,
+            'error_message': str(e),
+            'traceback': traceback.format_exc(),
+            'parameters': trial.params if hasattr(trial, 'params') else {}
+        }
+        
+        trial_dir = SESSION_DIR / "trials" / f"trial_{trial.number:03d}"
+        trial_dir.mkdir(parents=True, exist_ok=True)
+        with open(trial_dir / "error.json", 'w') as f:
+            json.dump(error_details, f, indent=2)
+        
+        # Don't return 0.0 - let the trial actually fail so Optuna knows about it
+        raise
 
 
 def export_results(study, session_dir: Path):

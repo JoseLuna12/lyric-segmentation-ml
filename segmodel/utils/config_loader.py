@@ -199,6 +199,12 @@ class TrainingConfig:
             self.loss_config = LossConfig()
         if self.anti_collapse is None:
             self.anti_collapse = AntiCollapseConfig()
+        
+        # Auto-fix num_workers for MPS compatibility
+        if (self.device == "auto" and torch.backends.mps.is_available()) or self.device == "mps":
+            if self.num_workers > 0:
+                print(f"🍎 MPS detected: Setting num_workers=0 for compatibility (was {self.num_workers})")
+                self.num_workers = 0
 
 
 def load_yaml_config(config_path: str) -> Dict[str, Any]:
