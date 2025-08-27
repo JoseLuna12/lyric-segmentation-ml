@@ -387,7 +387,7 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         ),
         
         # 🎯 NEW: Validation Strategy (Phase 3) - Simplified
-        validation_strategy=config.get('validation_strategy', 'line_f1'),
+        validation_strategy=training.get('validation_strategy', config.get('validation_strategy', 'line_f1')),
         
         # Features
         head_ssm_enabled=head_ssm.get('enabled', True),

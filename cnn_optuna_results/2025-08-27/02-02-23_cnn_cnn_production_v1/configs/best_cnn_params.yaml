@@ -1,0 +1,43 @@
+best_cnn_parameters:
+  attention_dropout: 0.13540362888980229
+  attention_enabled: true
+  attention_heads: 4
+  attention_type: boundary_aware
+  batch_size: 32
+  boundary_weight: 2.145614570099021
+  cnn_batch_multiplier: 1.3005575058716043
+  cnn_dilation_rates:
+  - 1
+  - 2
+  cnn_kernel_sizes:
+  - 3
+  - 5
+  - 7
+  cnn_use_residual: true
+  conf_penalty_lambda: 0.006460723242676091
+  conf_threshold: 0.9309908552988108
+  convergence_window: 3
+  dropout: 0.3231993941811405
+  entropy_lambda: 0.02912139968434072
+  gradient_clip_norm: 2.2623782158161188
+  hidden_dim: 128
+  label_smoothing: 0.18059264473611897
+  layer_dropout: 0.15986584841970367
+  learning_rate: 0.0012211037261966801
+  max_chorus_rate: 0.8508540663048166
+  max_conf_over_95_ratio: 0.06777243706586128
+  max_confidence_threshold: 0.9157035192278603
+  max_epochs: 5
+  min_chorus_rate: 0.0539934756431672
+  min_delta: 0.0002216968971838151
+  num_layers: 2
+  scheduler: onecycle
+  segment_consistency_lambda: 0.01639493860652042
+  validation_strategy: cnn_composite
+  weight_decay: 0.006116122765800601
+best_cnn_validation_score: 0.0
+optimization_info:
+  model_type: CNN
+  n_trials: 50
+  optimization_date: '2025-08-27T02:02:25.709993'
+  study_name: cnn_cnn_production_v1

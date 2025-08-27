@@ -45,32 +45,35 @@ class HyperparameterSpace:
     def _load_defaults(self):
         """Load optimized parameter ranges for boundary F1 optimization."""
         # ================================================================
-        # MODEL ARCHITECTURE - COMPATIBLE COMBINATIONS ONLY
+        # SPEED-OPTIMIZED ARCHITECTURE (Remove 512d - too slow for hyperopt)
         # ================================================================
-        self.HIDDEN_DIM = [128, 256, 512]        # Core dimensions
-        self.NUM_LAYERS = [1, 2]                 # Limited as requested
-        self.DROPOUT_RANGE = (0.1, 0.4)          # General dropout
-        self.LAYER_DROPOUT_RANGE = (0.1, 0.3)    # Between layers
-        
-        # Attention - COMPATIBILITY ENFORCED
-        # Heads must divide hidden_dim evenly and attention_dim should match hidden_dim
-        self.ATTENTION_HEADS = [4, 8]            # Safe options: 128÷4=32, 256÷8=32, 512÷8=64
-        self.ATTENTION_DIM = [128, 256, 512]     # Will be matched to hidden_dim in sampling
-        self.ATTENTION_DROPOUT_RANGE = (0.1, 0.25)
+        self.HIDDEN_DIM = [128, 256]             # Remove 512 - too slow, focus on fast models
+        self.NUM_LAYERS = [1, 2]                 # 1=fast, 2=capable
+        self.DROPOUT_RANGE = (0.15, 0.35)        # Around proven 0.25
+        self.LAYER_DROPOUT_RANGE = (0.20, 0.40)  # Around proven 0.30
         
         # ================================================================
-        # TRAINING PARAMETERS - EPOCHS = COSINE_T_MAX
+        # ATTENTION ON/OFF - CRITICAL NEW ADDITION
         # ================================================================
-        self.MAX_EPOCHS_OPTIONS = [25, 27, 30]   # Used for BOTH max_epochs AND cosine_t_max (25-30 range)
-        self.BATCH_SIZE = [16, 32, 64]
-        self.LEARNING_RATE_RANGE = (1e-5, 1e-2)  # Log scale
-        self.WEIGHT_DECAY_RANGE = (1e-6, 1e-3)
-        self.SCHEDULER_OPTIONS = ['plateau', 'cosine', 'cosine_restarts']  # Fixed scheduler names
+        self.ATTENTION_ENABLED_OPTIONS = [True, False]  # Test both attention and no-attention
+        self.ATTENTION_TYPE_OPTIONS = ['self', 'localized', 'boundary_aware']  # Three attention types to test
+        self.ATTENTION_HEADS = [4, 8]            # Safe options: 128÷4=32, 256÷8=32
+        self.ATTENTION_DIM = [128, 256]          # Will be matched to hidden_dim in sampling
+        self.ATTENTION_DROPOUT_RANGE = (0.10, 0.30)  # Around proven 0.20
         
-        # Early stopping and optimization
-        self.PATIENCE_OPTIONS = [5, 8, 12]
+        # ================================================================
+        # SPEED-OPTIMIZED TRAINING - MUCH SHORTER EPOCHS
+        # ================================================================
+        self.MAX_EPOCHS_OPTIONS = [8, 12, 15]    # Was [25, 27, 30] - 50% reduction for speed
+        self.PATIENCE = 4                        # Aggressive early stopping for speed
+        self.BATCH_SIZE = [32, 64]               # Remove 16 (too slow), focus on faster batches
+        self.LEARNING_RATE_RANGE = (1e-4, 1e-3)  # Around proven 0.0005
+        self.WEIGHT_DECAY_RANGE = (0.005, 0.025) # Around proven 0.015
+        self.SCHEDULER_OPTIONS = ['cosine']       # Focus on proven cosine scheduler
+        
+        # Early stopping and optimization - speed focused
         self.MIN_DELTA_RANGE = (1e-5, 1e-3)
-        self.GRADIENT_CLIP_RANGE = (0.5, 2.0)
+        self.GRADIENT_CLIP_RANGE = (0.3, 1.0)    # Around proven 0.5
         
         # VALIDATION STRATEGY OPTIMIZATION (corrected to match trainer)
         self.VALIDATION_STRATEGY_OPTIONS = ['boundary_f1', 'line_f1', 'composite']
@@ -81,14 +84,14 @@ class HyperparameterSpace:
         self.HEAD_TAIL_WORDS_OPTIONS = [2, 3, 4]  # Test different word counts
         
         # ================================================================
-        # BOUNDARY-AWARE LOSS PARAMETERS
+        # LOSS PARAMETERS - RANGES AROUND YOUR PROVEN VALUES
         # ================================================================
-        self.BOUNDARY_WEIGHT_RANGE = (1.0, 3.0)
-        self.LABEL_SMOOTHING_RANGE = (0.1, 0.3)
-        self.SEGMENT_CONSISTENCY_RANGE = (0.01, 0.05)
-        self.CONF_PENALTY_RANGE = (0.005, 0.02)
-        self.CONF_THRESHOLD_RANGE = (0.90, 0.95)
-        self.ENTROPY_LAMBDA_RANGE = (0.0, 0.08)
+        self.BOUNDARY_WEIGHT_RANGE = (1.5, 2.2)       # Around your proven 1.8
+        self.LABEL_SMOOTHING_RANGE = (0.10, 0.30)     # Around your proven 0.20
+        self.SEGMENT_CONSISTENCY_RANGE = (0.01, 0.03) # Around your proven 0.02
+        self.CONF_PENALTY_RANGE = (0.005, 0.015)      # Around your proven 0.010
+        self.CONF_THRESHOLD_RANGE = (0.90, 0.95)      # Around your proven 0.93
+        self.ENTROPY_LAMBDA_RANGE = (0.02, 0.06)      # Around your proven 0.04
         
         # ================================================================
         # EMERGENCY MONITORING PARAMETERS
@@ -541,38 +544,47 @@ def create_trial_config(trial, base_config_path=None, hyperparams=None):
     else:
         layer_dropout = 0.0
     
-    # COMPATIBILITY CHECK: attention_dim should match hidden_dim for optimal performance
-    attention_heads = trial.suggest_categorical('attention_heads', hyperparams.ATTENTION_HEADS)
-    attention_dim = hidden_dim  # FORCE COMPATIBILITY
-    attention_dropout = trial.suggest_float('attention_dropout', *hyperparams.ATTENTION_DROPOUT_RANGE)
+    # ========================================================================
+    # ATTENTION ON/OFF TOGGLE - CRITICAL NEW ADDITION
+    # ========================================================================
+    attention_enabled = trial.suggest_categorical('attention_enabled', hyperparams.ATTENTION_ENABLED_OPTIONS)
     
-    # Validate heads compatibility
-    if hidden_dim % attention_heads != 0:
-        # Force compatible heads
-        compatible_heads = [h for h in hyperparams.ATTENTION_HEADS if hidden_dim % h == 0]
-        if compatible_heads:
-            attention_heads = trial.suggest_categorical('attention_heads_compat', compatible_heads)
-        else:
-            attention_heads = 4  # Safe fallback
+    if attention_enabled:
+        # COMPATIBILITY CHECK: attention_dim should match hidden_dim for optimal performance
+        attention_type = trial.suggest_categorical('attention_type', hyperparams.ATTENTION_TYPE_OPTIONS)  # Sample attention type
+        attention_heads = trial.suggest_categorical('attention_heads', hyperparams.ATTENTION_HEADS)
+        attention_dim = hidden_dim  # FORCE COMPATIBILITY
+        attention_dropout = trial.suggest_float('attention_dropout', *hyperparams.ATTENTION_DROPOUT_RANGE)
+        
+        # Validate heads compatibility
+        if hidden_dim % attention_heads != 0:
+            # Force compatible heads
+            compatible_heads = [h for h in hyperparams.ATTENTION_HEADS if hidden_dim % h == 0]
+            if compatible_heads:
+                attention_heads = trial.suggest_categorical('attention_heads_compat', compatible_heads)
+            else:
+                attention_heads = 4  # Safe fallback
+    else:
+        # No attention - simple BiLSTM
+        attention_type = None  # No attention type when disabled
+        attention_heads = 1
+        attention_dim = hidden_dim
+        attention_dropout = 0.0
     
     # ========================================================================
-    # TRAINING PARAMETERS - EPOCHS = COSINE_T_MAX + OOM PREVENTION
+    # SPEED-OPTIMIZED TRAINING PARAMETERS
     # ========================================================================
-    max_epochs = trial.suggest_categorical('max_epochs', hyperparams.MAX_EPOCHS_OPTIONS)
+    max_epochs = trial.suggest_categorical('max_epochs', hyperparams.MAX_EPOCHS_OPTIONS)  # [8, 12, 15]
     cosine_t_max = max_epochs  # FORCE EQUALITY as requested
     
-    # OOM Prevention: Reduce batch size for large models
-    if hidden_dim >= 512 and num_layers >= 2:
-        batch_size = trial.suggest_categorical('batch_size_large', [16, 32])  # Smaller batches for large models
-        print(f"   ⚠️  Large model detected ({hidden_dim}D, {num_layers}L) - limiting batch size to {[16, 32]}")
-    else:
-        batch_size = trial.suggest_categorical('batch_size', hyperparams.BATCH_SIZE)
+    # No OOM prevention needed - removed 512d models for speed
+    batch_size = trial.suggest_categorical('batch_size', hyperparams.BATCH_SIZE)  # [32, 64]
     learning_rate = trial.suggest_float('learning_rate', *hyperparams.LEARNING_RATE_RANGE, log=True)
     weight_decay = trial.suggest_float('weight_decay', *hyperparams.WEIGHT_DECAY_RANGE, log=True)
-    scheduler = trial.suggest_categorical('scheduler', hyperparams.SCHEDULER_OPTIONS)
+    scheduler = trial.suggest_categorical('scheduler', hyperparams.SCHEDULER_OPTIONS)  # ['cosine']
     
-    # Additional training parameters
-    patience = trial.suggest_categorical('patience', hyperparams.PATIENCE_OPTIONS)
+    # Speed-optimized training parameters
+    patience = hyperparams.PATIENCE  # Fixed at 4 for aggressive early stopping
     min_delta = trial.suggest_float('min_delta', *hyperparams.MIN_DELTA_RANGE)
     gradient_clip_norm = trial.suggest_float('gradient_clip_norm', *hyperparams.GRADIENT_CLIP_RANGE)
     
@@ -681,12 +693,12 @@ def create_trial_config(trial, base_config_path=None, hyperparams=None):
         'layer_dropout': layer_dropout,
         'num_classes': 2,
         'dropout': dropout,
-        'attention_enabled': True,  # Always enabled
-        'attention_type': 'boundary_aware',
+        'attention_enabled': attention_enabled,  # Dynamic: True or False
+        'attention_type': attention_type,  # Dynamic: sampled from ['self', 'localized', 'boundary_aware'] or None
         'attention_heads': attention_heads,
         'attention_dropout': attention_dropout,
         'attention_dim': attention_dim,
-        'positional_encoding': True,
+        'positional_encoding': attention_enabled,  # Only with attention
         'max_seq_length': 1000,
         'window_size': 7,
         'boundary_temperature': 2.0,
@@ -860,13 +872,15 @@ def set_all_seeds(seed: int):
 
 def objective(trial):
     """
-    Objective function for hyperparameter optimization.
-    NO external config loading - everything is local.
+    Speed-optimized objective function with comprehensive multi-metric tracking.
     """
     from optuna.exceptions import TrialPruned
+    import time
+    
+    trial_start_time = time.time()
     
     try:
-        print(f"\n🔬 Starting Trial {trial.number}")
+        print(f"\n⚡ Starting SPEED-OPTIMIZED Trial {trial.number}")
         
         # Create trial config (completely local, no external files)
         config_dict, _ = create_trial_config(trial, hyperparams=HYPERPARAMS)
@@ -882,11 +896,15 @@ def objective(trial):
         # Set all seeds for reproducibility
         set_all_seeds(config.seed)
         
-        print(f"   📋 Trial {trial.number} Configuration:")
-        print(f"      Model: {config.hidden_dim}D hidden, {config.num_layers} layers, {config.attention_heads} heads")
-        print(f"      Training: lr={config.learning_rate:.2e}, batch={config.batch_size}, {config.scheduler} scheduler")
-        print(f"      Loss: boundary_wt={config.loss['boundary_weight']:.2f}, label_smooth={config.loss['label_smoothing']:.2f}")
-        print(f"      Features: head/tail={config.head_ssm_words} words, validation={config.validation_strategy}")
+        print(f"   📋 Trial {trial.number} SPEED-OPTIMIZED Configuration:")
+        print(f"      🧠 Attention: {'ON' if config.attention_enabled else 'OFF'}")
+        print(f"      📊 Architecture: {config.hidden_dim}D x {config.num_layers}L")
+        print(f"      ⏱️  Epochs: {config.max_epochs} (patience={config.patience})")
+        print(f"      📦 Batch Size: {config.batch_size}")
+        print(f"      📈 Learning Rate: {config.learning_rate:.2e}")
+        print(f"      🎯 Target: <60 minutes")
+        print(f"      🎯 Loss Params: boundary_wt={config.loss['boundary_weight']:.2f}, label_smooth={config.loss['label_smoothing']:.2f}")
+        print(f"      🔧 Features: head/tail={config.head_ssm_words} words, validation={config.validation_strategy}")
         
         # Show feature toggles
         if HYPERPARAMS.OPTIMIZE_FEATURE_TOGGLES:
@@ -955,7 +973,7 @@ def objective(trial):
         model, train_metrics = trainer.train(train_loader, val_loader)
         
         # ====================================================================
-        # EVALUATION - BOUNDARY F1 AS PRIMARY METRIC
+        # EVALUATION WITH MULTI-METRIC TRACKING
         # ====================================================================
         
         print(f"   📊 Evaluating trial {trial.number}...")
@@ -964,22 +982,96 @@ def objective(trial):
         # Extract boundary F1 (our primary optimization target)
         boundary_f1 = val_metrics.get('boundary_f1', 0.0)
         
-        # Log comprehensive results
-        print(f"   📈 Trial {trial.number} Results:")
-        print(f"      Boundary F1: {boundary_f1:.4f}")
-        print(f"      Validation Strategy: {config.validation_strategy}")
-        print(f"      Overall Accuracy: {val_metrics.get('accuracy', 0.0):.4f}")
-        print(f"      Weighted F1: {val_metrics.get('weighted_f1', 0.0):.4f}")
+        # ================================================================
+        # MULTI-METRIC TRACKING (Option 1 - User Attributes)
+        # ================================================================
+        # Core segmentation metrics - FIXED KEY NAMES
+        trial.set_user_attr('line_f1', val_metrics.get('macro_f1', 0.0))  # macro_f1 is the line-level average
+        trial.set_user_attr('macro_f1', val_metrics.get('macro_f1', 0.0))  # Also save as macro_f1 for clarity
+        trial.set_user_attr('verse_f1', val_metrics.get('verse_f1', 0.0))  # Individual class F1s
+        trial.set_user_attr('chorus_f1', val_metrics.get('chorus_f1', 0.0))  # Individual class F1s
+        trial.set_user_attr('windowdiff', val_metrics.get('window_diff', 1.0))  # Fixed: was 'windowdiff'
+        trial.set_user_attr('pk', val_metrics.get('pk_metric', 1.0))  # Fixed: was 'pk'
         
-        print(f"✅ Trial {trial.number} completed: boundary_f1 = {boundary_f1:.4f}")
+        # Standard ML metrics - FIXED KEY NAMES
+        trial.set_user_attr('val_loss', val_metrics.get('loss', float('inf')))  # Fixed: was 'val_loss'
+        trial.set_user_attr('val_accuracy', val_metrics.get('accuracy', 0.0))  # Already correct
+        trial.set_user_attr('weighted_f1', val_metrics.get('weighted_f1', 0.0))
+        
+        # Performance and timing metrics
+        trial_time = time.time() - trial_start_time
+        trial.set_user_attr('training_time', trial_time)
+        trial.set_user_attr('training_time_minutes', trial_time / 60.0)
+        
+        # Model configuration tracking
+        trial.set_user_attr('attention_enabled', config.attention_enabled)
+        trial.set_user_attr('hidden_dim', config.hidden_dim)
+        trial.set_user_attr('num_layers', config.num_layers)
+        trial.set_user_attr('actual_epochs', getattr(train_metrics, 'actual_epochs', config.max_epochs))
+        trial.set_user_attr('total_params', getattr(model, 'total_params', 0))
+        
+        # Loss configuration tracking
+        trial.set_user_attr('boundary_weight', config.loss['boundary_weight'])
+        trial.set_user_attr('label_smoothing', config.loss['label_smoothing'])
+        trial.set_user_attr('conf_threshold', config.loss['conf_threshold'])
+        
+        # ================================================================
+        # COMPREHENSIVE LOGGING WITH SPEED FOCUS
+        # ================================================================
+        print(f"   � Trial {trial.number} MULTI-METRIC RESULTS:")
+        print(f"      🎯 Boundary F1: {boundary_f1:.4f} (PRIMARY TARGET)")
+        print(f"      📏 Line F1: {val_metrics.get('line_f1', 0.0):.4f}")
+        print(f"      🪟 WindowDiff: {val_metrics.get('windowdiff', 1.0):.4f} (lower=better)")
+        print(f"      📍 Pk: {val_metrics.get('pk', 1.0):.4f} (lower=better)")
+        print(f"      📊 Accuracy: {val_metrics.get('accuracy', 0.0):.4f}")
+        print(f"      📉 Val Loss: {val_metrics.get('val_loss', float('inf')):.4f}")
+        print(f"      ⏱️  Training Time: {trial_time/60:.1f}min {'✅' if trial_time < 3600 else '⚠️'}")
+        print(f"      🧠 Architecture: {config.hidden_dim}d x {config.num_layers}L {'+ Attention' if config.attention_enabled else 'LSTM-only'}")
+        print(f"      🔧 Model Params: {getattr(model, 'total_params', 0):,}")
+        
+        print(f"✅ Trial {trial.number} completed: boundary_f1={boundary_f1:.4f}, time={trial_time/60:.1f}min")
         
         # Final report for pruning
         trial.report(boundary_f1, step=999)  # Final step
         
-        # Save trial results
+        # Save comprehensive trial results
         trial_results = {
             'trial_number': trial.number,
+            'timestamp': time.time(),
+            
+            # Primary metrics - FIXED KEY NAMES  
             'boundary_f1': boundary_f1,
+            'line_f1': val_metrics.get('macro_f1', 0.0),  # macro_f1 is the line-level average
+            'macro_f1': val_metrics.get('macro_f1', 0.0),  # Also save as macro_f1 for clarity
+            'verse_f1': val_metrics.get('verse_f1', 0.0),  # Individual class F1s
+            'chorus_f1': val_metrics.get('chorus_f1', 0.0),  # Individual class F1s
+            'windowdiff': val_metrics.get('window_diff', 1.0),  # Fixed: was 'windowdiff'
+            'pk': val_metrics.get('pk_metric', 1.0),  # Fixed: was 'pk'
+            
+            # Secondary metrics - FIXED KEY NAMES
+            'val_loss': val_metrics.get('loss', float('inf')),  # Fixed: was 'val_loss'
+            'val_accuracy': val_metrics.get('accuracy', 0.0),
+            'weighted_f1': val_metrics.get('weighted_f1', 0.0),
+            
+            # Performance metadata
+            'training_time': trial_time,
+            'training_time_minutes': trial_time / 60.0,
+            'total_params': getattr(model, 'total_params', 0),
+            'actual_epochs': getattr(train_metrics, 'actual_epochs', config.max_epochs),
+            
+            # Configuration summary
+            'config_summary': {
+                'attention_enabled': config.attention_enabled,
+                'hidden_dim': config.hidden_dim,
+                'num_layers': config.num_layers,
+                'max_epochs': config.max_epochs,
+                'batch_size': config.batch_size,
+                'learning_rate': config.learning_rate,
+                'boundary_weight': config.loss['boundary_weight'],
+                'label_smoothing': config.loss['label_smoothing'],
+            },
+            
+            # Full data
             'validation_strategy': config.validation_strategy,
             'all_metrics': val_metrics,
             'parameters': trial.params,
@@ -996,37 +1088,30 @@ def objective(trial):
         raise
 
     except Exception as e:
-        print(f"❌ Trial {trial.number} failed: {e}")
+        trial_time = time.time() - trial_start_time
+        print(f"❌ Trial {trial.number} failed after {trial_time/60:.1f} minutes: {e}")
         print(f"Traceback: {traceback.format_exc()}")
-        # Save error details for debugging
+        
+        # Enhanced error details with timing
         error_details = {
             'trial_number': trial.number,
+            'timestamp': time.time(),
             'error_type': type(e).__name__,
             'error_message': str(e),
             'traceback': traceback.format_exc(),
-            'parameters': getattr(trial, 'params', {})
+            'training_time': trial_time,
+            'training_time_minutes': trial_time / 60.0,
+            'parameters': getattr(trial, 'params', {}),
+            'config': config_dict if 'config_dict' in locals() else None
         }
+        
         trial_dir = SESSION_DIR / "trials" / f"trial_{trial.number:03d}"
         trial_dir.mkdir(parents=True, exist_ok=True)
         with open(trial_dir / "error.json", 'w') as f:
-            json.dump(error_details, f, indent=2)
+            json.dump(error_details, f, indent=2, default=str)
+        
+        print(f"   💾 Error details saved to: {trial_dir / 'error.json'}")
         # Do NOT return 0.0, let Optuna mark as FAIL
-        raise
-        # Save error details for debugging
-        error_details = {
-            'trial_number': trial.number,
-            'error_type': type(e).__name__,
-            'error_message': str(e),
-            'traceback': traceback.format_exc(),
-            'parameters': trial.params if hasattr(trial, 'params') else {}
-        }
-        
-        trial_dir = SESSION_DIR / "trials" / f"trial_{trial.number:03d}"
-        trial_dir.mkdir(parents=True, exist_ok=True)
-        with open(trial_dir / "error.json", 'w') as f:
-            json.dump(error_details, f, indent=2)
-        
-        # Don't return 0.0 - let the trial actually fail so Optuna knows about it
         raise
 
 
@@ -1214,8 +1299,8 @@ def create_best_config_local(study, session_dir: Path):
             'dropout': best_params.get('dropout', 0.25),
             'layer_dropout': best_params.get('layer_dropout', 0.0),
             'num_classes': 2,
-            'attention_enabled': True,
-            'attention_type': 'boundary_aware',
+            'attention_enabled': best_params.get('attention_enabled', True),
+            'attention_type': best_params.get('attention_type', 'boundary_aware'),
             'attention_heads': best_params.get('attention_heads', 8),
             'attention_dropout': best_params.get('attention_dropout', 0.2),
             'attention_dim': best_params.get('hidden_dim', 256),  # Match hidden_dim
@@ -1480,6 +1565,177 @@ OPTIMIZATION STATISTICS
     print(f"📄 Summary report saved to {summary_file}")
 
 
+def create_multi_metric_summary(study, session_dir):
+    """Comprehensive multi-metric analysis with attention comparison."""
+    completed_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
+    
+    if not completed_trials:
+        print("❌ No completed trials for multi-metric analysis")
+        return
+    
+    print(f"\n📊 COMPREHENSIVE MULTI-METRIC ANALYSIS")
+    print("=" * 80)
+    print(f"📈 Total completed trials: {len(completed_trials)}")
+    print(f"🏆 Best boundary F1: {study.best_value:.4f} (Trial #{study.best_trial.number})")
+    
+    # Extract all metrics
+    results = []
+    for trial in completed_trials:
+        result = {
+            'trial': trial.number,
+            'boundary_f1': trial.value,
+            'line_f1': trial.user_attrs.get('line_f1', 0.0),
+            'windowdiff': trial.user_attrs.get('windowdiff', 1.0),
+            'pk': trial.user_attrs.get('pk', 1.0),
+            'val_accuracy': trial.user_attrs.get('val_accuracy', 0.0),
+            'val_loss': trial.user_attrs.get('val_loss', float('inf')),
+            'training_time': trial.user_attrs.get('training_time', 0.0),
+            'training_time_minutes': trial.user_attrs.get('training_time_minutes', 0.0),
+            'total_params': trial.user_attrs.get('total_params', 0),
+            'attention_enabled': trial.user_attrs.get('attention_enabled', True),
+            'hidden_dim': trial.user_attrs.get('hidden_dim', 256),
+            'num_layers': trial.user_attrs.get('num_layers', 2),
+            'actual_epochs': trial.user_attrs.get('actual_epochs', 0),
+        }
+        results.append(result)
+    
+    # Create DataFrame for analysis
+    try:
+        import pandas as pd
+        df = pd.DataFrame(results)
+        
+        # ================================================================
+        # TOP PERFORMERS BY EACH METRIC
+        # ================================================================
+        print(f"\n🏆 TOP 5 TRIALS BY BOUNDARY F1 (Primary Target):")
+        top_boundary = df.nlargest(5, 'boundary_f1')[['trial', 'boundary_f1', 'line_f1', 'windowdiff', 'pk', 'attention_enabled', 'training_time_minutes']]
+        print(top_boundary.to_string(index=False, float_format='%.4f'))
+        
+        print(f"\n🏆 TOP 5 TRIALS BY LINE F1:")
+        top_line = df.nlargest(5, 'line_f1')[['trial', 'boundary_f1', 'line_f1', 'windowdiff', 'pk', 'attention_enabled', 'training_time_minutes']]
+        print(top_line.to_string(index=False, float_format='%.4f'))
+        
+        print(f"\n🏆 TOP 5 TRIALS BY WINDOWDIFF (lower is better):")
+        top_window = df.nsmallest(5, 'windowdiff')[['trial', 'boundary_f1', 'line_f1', 'windowdiff', 'pk', 'attention_enabled', 'training_time_minutes']]
+        print(top_window.to_string(index=False, float_format='%.4f'))
+        
+        print(f"\n🏆 TOP 5 TRIALS BY PK (lower is better):")
+        top_pk = df.nsmallest(5, 'pk')[['trial', 'boundary_f1', 'line_f1', 'windowdiff', 'pk', 'attention_enabled', 'training_time_minutes']]
+        print(top_pk.to_string(index=False, float_format='%.4f'))
+        
+        # ================================================================
+        # ATTENTION vs NO-ATTENTION COMPARISON
+        # ================================================================
+        attention_on = df[df['attention_enabled'] == True]
+        attention_off = df[df['attention_enabled'] == False]
+        
+        if len(attention_on) > 0 and len(attention_off) > 0:
+            print(f"\n🧠 ATTENTION MECHANISM IMPACT ANALYSIS:")
+            print(f"{'='*60}")
+            
+            print(f"\n✅ WITH ATTENTION ({len(attention_on)} trials):")
+            print(f"   🎯 Boundary F1: {attention_on['boundary_f1'].mean():.4f} ± {attention_on['boundary_f1'].std():.4f}")
+            print(f"   📏 Line F1: {attention_on['line_f1'].mean():.4f} ± {attention_on['line_f1'].std():.4f}")
+            print(f"   🪟 WindowDiff: {attention_on['windowdiff'].mean():.4f} ± {attention_on['windowdiff'].std():.4f}")
+            print(f"   📍 Pk: {attention_on['pk'].mean():.4f} ± {attention_on['pk'].std():.4f}")
+            print(f"   ⏱️  Avg Time: {attention_on['training_time_minutes'].mean():.1f}min")
+            print(f"   🔧 Avg Params: {attention_on['total_params'].mean()/1e6:.2f}M")
+            
+            print(f"\n❌ WITHOUT ATTENTION ({len(attention_off)} trials):")
+            print(f"   🎯 Boundary F1: {attention_off['boundary_f1'].mean():.4f} ± {attention_off['boundary_f1'].std():.4f}")
+            print(f"   📏 Line F1: {attention_off['line_f1'].mean():.4f} ± {attention_off['line_f1'].std():.4f}")
+            print(f"   🪟 WindowDiff: {attention_off['windowdiff'].mean():.4f} ± {attention_off['windowdiff'].std():.4f}")
+            print(f"   📍 Pk: {attention_off['pk'].mean():.4f} ± {attention_off['pk'].std():.4f}")
+            print(f"   ⏱️  Avg Time: {attention_off['training_time_minutes'].mean():.1f}min")
+            print(f"   🔧 Avg Params: {attention_off['total_params'].mean()/1e6:.2f}M")
+            
+            # Speed vs Performance Analysis
+            speed_improvement = attention_off['training_time_minutes'].mean() / attention_on['training_time_minutes'].mean()
+            performance_diff = attention_on['boundary_f1'].mean() - attention_off['boundary_f1'].mean()
+            
+            print(f"\n⚖️  TRADE-OFF ANALYSIS:")
+            print(f"   ⚡ Speed improvement (no attention): {speed_improvement:.1f}x faster")
+            print(f"   📈 Performance difference: {performance_diff:+.4f} boundary F1")
+            print(f"   💡 Recommendation: {'Attention worth it' if performance_diff > 0.01 else 'Consider no-attention for speed'}")
+        
+        # ================================================================
+        # SPEED ANALYSIS
+        # ================================================================
+        print(f"\n⏱️  SPEED ANALYSIS:")
+        print(f"   📊 Average trial time: {df['training_time_minutes'].mean():.1f} ± {df['training_time_minutes'].std():.1f} minutes")
+        print(f"   ⚡ Fastest trial: {df['training_time_minutes'].min():.1f} minutes")
+        print(f"   🐌 Slowest trial: {df['training_time_minutes'].max():.1f} minutes")
+        under_60_min = len(df[df['training_time_minutes'] < 60])
+        print(f"   🎯 Trials under 60 min: {under_60_min}/{len(df)} ({under_60_min/len(df)*100:.1f}%)")
+        
+        # ================================================================
+        # SAVE RESULTS
+        # ================================================================
+        summary_path = session_dir / "multi_metric_analysis.csv"
+        df.to_csv(summary_path, index=False)
+        
+        print(f"\n💾 ANALYSIS SAVED:")
+        print(f"   📊 Multi-metric data: {summary_path}")
+        
+        return df
+        
+    except ImportError:
+        print("⚠️  pandas not available, showing basic summary only")
+        
+        # Basic analysis without pandas
+        print(f"\n📊 BASIC SUMMARY:")
+        attention_trials = [r for r in results if r['attention_enabled']]
+        no_attention_trials = [r for r in results if not r['attention_enabled']]
+        
+        if attention_trials:
+            avg_f1_attn = sum(r['boundary_f1'] for r in attention_trials) / len(attention_trials)
+            avg_time_attn = sum(r['training_time_minutes'] for r in attention_trials) / len(attention_trials)
+            print(f"   🧠 With attention ({len(attention_trials)} trials): F1={avg_f1_attn:.4f}, Time={avg_time_attn:.1f}min")
+            
+        if no_attention_trials:
+            avg_f1_no_attn = sum(r['boundary_f1'] for r in no_attention_trials) / len(no_attention_trials)
+            avg_time_no_attn = sum(r['training_time_minutes'] for r in no_attention_trials) / len(no_attention_trials)
+            print(f"   🚫 No attention ({len(no_attention_trials)} trials): F1={avg_f1_no_attn:.4f}, Time={avg_time_no_attn:.1f}min")
+
+
+def create_resumable_study(args, session_dir):
+    """Create or resume study with bulletproof resumability."""
+    study_db_path = session_dir / "optuna_study.db"
+    
+    try:
+        # ALWAYS try to resume first
+        study = optuna.load_study(
+            study_name=args.study_name,
+            storage=f'sqlite:///{study_db_path}'
+        )
+        print(f"✅ STUDY RESUMED!")
+        print(f"   📊 Existing trials: {len(study.trials)}")
+        print(f"   🏆 Best boundary F1: {study.best_value:.4f}")
+        print(f"   🔄 Last trial: #{study.trials[-1].number if study.trials else 'None'}")
+        
+        # Show parameter coverage
+        completed_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
+        if completed_trials:
+            attention_on = len([t for t in completed_trials if t.user_attrs.get('attention_enabled', True)])
+            attention_off = len(completed_trials) - attention_on
+            avg_time = sum([t.user_attrs.get('training_time', 0) for t in completed_trials]) / len(completed_trials) / 60.0
+            print(f"   🧠 Parameter Coverage: {attention_on} attention-ON, {attention_off} attention-OFF")
+            print(f"   ⏱️  Average trial time: {avg_time:.1f} minutes")
+        
+        return study, True
+        
+    except Exception as e:
+        print(f"ℹ️  No existing study found, creating new one")
+        study = optuna.create_study(
+            direction='maximize',
+            storage=f'sqlite:///{study_db_path}',
+            study_name=args.study_name,
+            pruner=optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=3)
+        )
+        print(f"🆕 NEW STUDY: Starting fresh")
+        return study, False
+
+
 def main():
     """Main hyperparameter optimization with LOCAL configuration only."""
     global HYPERPARAMS, SESSION_DIR
@@ -1489,14 +1745,24 @@ def main():
     parser.add_argument('--timeout', type=int, default=72*3600, help='Timeout in seconds (default: 72 hours)')
     parser.add_argument('--study-name', default='boundary_aware_hyperopt_local', help='Study name')
     parser.add_argument('--resume', action='store_true', help='Resume existing study')
+    parser.add_argument('--session-dir', type=str, help='Existing session directory to resume (e.g., results/2025-08-22/04-58-19_production_optimization)')
     
     args = parser.parse_args()
     
     # Initialize hyperparameter space (LOCAL ONLY - no external config files)
     HYPERPARAMS = HyperparameterSpace()
     
-    # Create session directory with date/time organization
-    SESSION_DIR = create_session_directory(args.study_name)
+    # Create or use existing session directory
+    if args.session_dir:
+        # Use existing session directory for resume
+        SESSION_DIR = Path(args.session_dir)
+        if not SESSION_DIR.exists():
+            raise ValueError(f"Session directory not found: {SESSION_DIR}")
+        print(f"📁 Using existing session directory: {SESSION_DIR}")
+    else:
+        # Create new session directory with date/time organization
+        SESSION_DIR = create_session_directory(args.study_name)
+        print(f"📁 Created new session directory: {SESSION_DIR}")
     
     print("🔬 Boundary-Aware BiLSTM Hyperparameter Optimization (LOCAL CONFIG)")
     print("=" * 70)
@@ -1510,73 +1776,71 @@ def main():
     # Show device info
     device = get_optimal_device()
     
-    print(f"\n📋 Search Space Summary:")
-    print(f"   🏗️  Architecture: hidden_dim {HYPERPARAMS.HIDDEN_DIM}, layers {HYPERPARAMS.NUM_LAYERS}")
-    print(f"       Attention: heads {HYPERPARAMS.ATTENTION_HEADS}, dims matched to hidden_dim")
-    print(f"       Compatibility: ENFORCED (heads divide hidden_dim, attention_dim = hidden_dim)")
-    print(f"   🎯  Training: epochs = cosine_t_max {HYPERPARAMS.MAX_EPOCHS_OPTIONS}")
-    print(f"       Validation strategy: {HYPERPARAMS.VALIDATION_STRATEGY_OPTIONS}")
-    print(f"       Calibration: ALWAYS ENABLED (temperature + platt)")
+    print(f"\n📋 SPEED-OPTIMIZED Search Space Summary:")
+    print(f"   ⚡ SPEED FOCUS: Target <60 minutes per trial")
+    print(f"   🏗️  Architecture: hidden_dim {HYPERPARAMS.HIDDEN_DIM} (removed 512d for speed)")
+    print(f"       Layers: {HYPERPARAMS.NUM_LAYERS}, patience: {HYPERPARAMS.PATIENCE} (aggressive)")
+    print(f"   🧠  Attention: ON/OFF toggle + heads {HYPERPARAMS.ATTENTION_HEADS}")
+    print(f"       NEW: Testing both attention enabled and disabled")
+    print(f"   🎯  Training: epochs {HYPERPARAMS.MAX_EPOCHS_OPTIONS} (reduced from 25-30)")
+    print(f"       Batch sizes: {HYPERPARAMS.BATCH_SIZE} (removed slow 16, added fast 64)")
+    print(f"       Scheduler: {HYPERPARAMS.SCHEDULER_OPTIONS} (focused on proven cosine)")
+    print(f"   📊  Multi-metrics: boundary_f1 (primary), line_f1, windowdiff, pk")
     print(f"   🎵  Features: head/tail words {HYPERPARAMS.HEAD_TAIL_WORDS_OPTIONS}")
     if HYPERPARAMS.OPTIMIZE_FEATURE_TOGGLES:
         print(f"       Feature toggles: {len(HYPERPARAMS.FEATURE_TOGGLES)} ON/OFF switches")
     else:
         print(f"       Feature toggles: All enabled (not optimizing)")
-    print(f"   📊  Embeddings: STATIC models (word2vec-google-news-300, all-MiniLM-L6-v2)")
-    print(f"       Only mode/similarity optimized, NO dimension/model changes")
     print(f"   📈  Target metric: boundary_f1 (primary optimization goal)")
     
-    # Show parameter counts
+    # Show parameter counts - speed optimized
     arch_combinations = len(HYPERPARAMS.HIDDEN_DIM) * len(HYPERPARAMS.NUM_LAYERS)
-    attention_combinations = len(HYPERPARAMS.ATTENTION_HEADS)  # attention_dim matches hidden_dim
+    attention_combinations = len(HYPERPARAMS.ATTENTION_ENABLED_OPTIONS) * len(HYPERPARAMS.ATTENTION_HEADS)
     training_combinations = len(HYPERPARAMS.MAX_EPOCHS_OPTIONS) * len(HYPERPARAMS.BATCH_SIZE) * len(HYPERPARAMS.SCHEDULER_OPTIONS)
-    validation_combinations = len(HYPERPARAMS.VALIDATION_STRATEGY_OPTIONS)
-    head_tail_combinations = len(HYPERPARAMS.HEAD_TAIL_WORDS_OPTIONS)
     
-    print(f"\n🔢 Parameter Combinations:")
-    print(f"   Architecture: {arch_combinations} combinations")
-    print(f"   Attention: {attention_combinations} head options (compatible with all hidden_dims)")
-    print(f"   Training: {training_combinations} combinations")
-    print(f"   Validation: {validation_combinations} strategies")
-    print(f"   Head/Tail words: {head_tail_combinations} options")
-    if HYPERPARAMS.OPTIMIZE_FEATURE_TOGGLES:
-        feature_combinations = 2 ** len(HYPERPARAMS.FEATURE_TOGGLES)
-        print(f"   Feature toggles: {feature_combinations} combinations")
-    print(f"   Continuous parameters: ~100 combinations (loss, thresholds, etc.)")
+    print(f"\n🔢 SPEED-OPTIMIZED Parameter Combinations:")
+    print(f"   🏗️  Architecture: {arch_combinations} combinations (128d/256d x 1-2 layers)")
+    print(f"   🧠  Attention: {attention_combinations} combinations (ON/OFF x {len(HYPERPARAMS.ATTENTION_HEADS)} heads)")
+    print(f"   🎯  Training: {training_combinations} combinations (short epochs for speed)")
+    print(f"   📊  Expected trials in 72h: ~60-80 (vs previous ~6)")
+    print(f"   ⚡  Speed improvement: ~10x more trials in same time")
     
-    # Create study with SQLite persistence in session directory
-    study_db_path = SESSION_DIR / "optuna_study.db"
-    study = optuna.create_study(
-        direction='maximize',
-        storage=f'sqlite:///{study_db_path}',
-        study_name=args.study_name,
-        load_if_exists=args.resume,
-        pruner=optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=3)
-    )
+    # Create or resume study with bulletproof resumability
+    study, was_resumed = create_resumable_study(args, SESSION_DIR)
     
-    if args.resume and len(study.trials) > 0:
-        print(f"\n📈 Resuming study with {len(study.trials)} existing trials")
-        print(f"   Best so far: {study.best_value:.4f}")
+    # Calculate remaining trials
+    completed_trials = len([t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE])
+    remaining_trials = max(0, args.n_trials - completed_trials)
     
-    print(f"\n🚀 Starting optimization...")
-    print(f"   ⚙️  Compatibility checks: ENABLED")
-    print(f"   📏  Calibration: ALWAYS ON")
-    print(f"   🎵  Embedding models: STATIC")
-    print(f"   📊  Epochs = cosine_t_max: ENFORCED")
+    if was_resumed:
+        print(f"\n� RESUMING optimization with {remaining_trials} more trials (target: {args.n_trials} total)")
+    else:
+        print(f"\n🆕 STARTING optimization with {args.n_trials} trials")
+    
+    print(f"   ⚙️  Speed optimizations: ENABLED")
+    print(f"   🧠  Attention toggle: ON/OFF testing enabled")
+    print(f"   📊  Multi-metric tracking: boundary_f1, line_f1, windowdiff, pk")
+    print(f"   ⏱️  Target time per trial: <60 minutes")
     
     try:
-        # Optimize
-        study.optimize(objective, n_trials=args.n_trials, timeout=args.timeout)
+        if remaining_trials > 0:
+            print(f"\n🚀 Running {remaining_trials} more trials...")
+            study.optimize(objective, n_trials=remaining_trials, timeout=args.timeout)
+        else:
+            print(f"\n✅ Target of {args.n_trials} trials already reached!")
         
         print(f"\n✅ Optimization complete!")
         print(f"   🏆 Best boundary F1: {study.best_value:.4f}")
         print(f"   📊 Total trials: {len(study.trials)}")
+        print(f"   ⏱️  Completed trials: {len([t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE])}")
+        print(f"   ❌ Failed trials: {len([t for t in study.trials if t.state == optuna.trial.TrialState.FAIL])}")
         
         # Show best parameters summary
         if len(study.trials) > 0:
             best_params = study.best_params
             print(f"\n🎯 Best Configuration Summary:")
-            print(f"   Model: {best_params.get('hidden_dim')}D hidden, {best_params.get('num_layers')} layers")
+            print(f"   🧠 Attention: {'ON' if best_params.get('attention_enabled', True) else 'OFF'}")
+            print(f"   📊 Model: {best_params.get('hidden_dim')}D hidden, {best_params.get('num_layers')} layers")
             print(f"   Attention: {best_params.get('attention_heads')} heads")
             print(f"   Training: lr={best_params.get('learning_rate', 0):.2e}, batch={best_params.get('batch_size')}")
             print(f"   Epochs: {best_params.get('max_epochs')} (= cosine_t_max)")
@@ -1589,23 +1853,27 @@ def main():
         create_best_config_local(study, SESSION_DIR)
         create_summary_report(study, SESSION_DIR)
         
+        # Create comprehensive multi-metric analysis
+        create_multi_metric_summary(study, SESSION_DIR)
+        
         print(f"\n📁 All results saved to session directory: {SESSION_DIR}")
         print(f"   🏆 Best config: {SESSION_DIR}/best_config_local.yaml")
         print(f"   📊 Summary: {SESSION_DIR}/hyperopt_summary.txt")
         print(f"   📈 Full results: {SESSION_DIR}/hyperopt_results.json")
         print(f"   🗄️  SQL database: {SESSION_DIR}/hyperopt_results.db")
+        print(f"   📊 Multi-metric analysis: {SESSION_DIR}/multi_metric_analysis.csv")
         print(f"   📂 Trial details: {SESSION_DIR}/trials/")
         
     except KeyboardInterrupt:
         print(f"\n⏹️  Optimization interrupted by user")
         if len(study.trials) > 0:
             print(f"   Partial results available with {len(study.trials)} trials")
+            print(f"   🔄 Resume with: python scripts/hyperopt.py --resume --study-name {args.study_name}")
             export_results(study, SESSION_DIR)
             export_to_sql(study, SESSION_DIR)
             create_best_config_local(study, SESSION_DIR)
             create_summary_report(study, SESSION_DIR)
-            create_best_config_local(study)
-            create_summary_report(study)
+            create_multi_metric_summary(study, SESSION_DIR)
     except Exception as e:
         print(f"❌ Optimization failed: {e}")
         print(traceback.format_exc())

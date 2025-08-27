@@ -1,0 +1,143 @@
+# CNN Hyperparameter Optimization Configuration
+# Fast testing configuration with minimal parameter space
+
+# Global configuration  
+validation_strategy: "cnn_composite"  # CNN-optimized validation strategy
+
+# Experiment metadata
+experiment:
+  name: "cnn_hyperopt_fast_test"
+  description: "Fast CNN hyperparameter optimization for testing"
+  tags: ["CNN", "hyperopt", "fast_test", "boundary_aware"]
+  notes: "Minimal parameter space for quick Optuna trials"
+
+# Data configuration
+data:
+  train_file: "data/train.jsonl"
+  val_file: "data/val.jsonl"
+  test_file: "data/test.jsonl"
+
+# Base model configuration (will be overridden by hyperopt)
+model:
+  hidden_dim: 128
+  num_layers: 2
+  num_classes: 2
+  dropout: 0.3
+  layer_dropout: 0.1
+
+  # Attention mechanism
+  attention_enabled: true
+  attention_type: "boundary_aware"
+  attention_heads: 4
+  attention_dropout: 0.1
+  attention_dim: null  # Auto-size to CNN output
+  positional_encoding: true
+  max_seq_length: 1000
+  window_size: 7
+  boundary_temperature: 2.0
+
+# Base training configuration (will be overridden by hyperopt)
+training:
+  batch_size: 32
+  learning_rate: 0.002
+  weight_decay: 0.01
+  max_epochs: 5  # Short for testing
+  patience: 3
+  min_delta: 0.001
+  gradient_clip_norm: 2.0
+
+  # CNN-optimized scheduler
+  scheduler: "onecycle"
+  onecycle_pct_start: 0.3
+  onecycle_anneal: "cos"
+  lr_factor: 0.3
+  lr_patience: 2
+  min_lr: 1e-6
+
+  # CNN-specific validation strategy
+  validation_strategy: "cnn_composite"
+  convergence_window: 3
+  
+  # CNN architecture parameters (defaults)
+  cnn_kernel_sizes: [3, 5, 7]
+  cnn_dilation_rates: [1, 2, 4]
+  cnn_use_residual: true
+  cnn_batch_multiplier: 1.0
+  
+  # Emergency monitoring for CNNs
+  emergency_monitoring_enabled: true
+  max_confidence_threshold: 0.91
+  min_chorus_rate: 0.05
+  max_chorus_rate: 0.85
+  max_conf_over_95_ratio: 0.06
+  emergency_overconf_threshold: 0.92
+  
+  # Data loading
+  weighted_sampling: true
+  num_workers: 2
+
+# Loss configuration - Boundary-aware for CNN
+loss:
+  type: "boundary_aware_cross_entropy"
+  label_smoothing: 0.15
+  boundary_weight: 2.5
+  segment_consistency_lambda: 0.02
+  conf_penalty_lambda: 0.008
+  conf_threshold: 0.93
+  entropy_lambda: 0.03
+  use_boundary_as_primary: true
+
+# Feature configuration - Minimal set for speed
+features:
+  head_ssm:
+    enabled: true
+    head_words: 3
+    dimension: 12
+
+  tail_ssm:
+    enabled: true
+    tail_words: 3
+    dimension: 12
+
+  phonetic_ssm:
+    enabled: true
+    mode: "rhyme"
+    dimension: 12
+    similarity_method: "binary"
+    normalize: true
+    normalize_method: "zscore"
+    high_sim_threshold: 0.7
+
+  pos_ssm:
+    enabled: false  # Disable for speed
+
+  string_ssm:
+    enabled: false  # Disable for speed
+
+  syllable_pattern_ssm:
+    enabled: true
+    similarity_method: "cosine"
+    levenshtein_weight: 0.3
+    cosine_weight: 0.7
+    normalize: true
+    normalize_method: "zscore"
+    dimension: 12
+
+  line_syllable_ssm:
+    enabled: false  # Disable for speed
+
+  # Disable embeddings for speed
+  word2vec:
+    enabled: false
+
+  contextual:
+    enabled: false
+
+# Calibration
+calibration:
+  methods: ["temperature", "platt"]
+
+# Output and environment
+output_base_dir: "cnn_hyperopt_results"
+device: "mps"  # Use MPS on Mac, change to "cuda" or "cpu" as needed
+seed: 42

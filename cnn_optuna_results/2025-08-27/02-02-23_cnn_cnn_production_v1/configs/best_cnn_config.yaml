@@ -1,0 +1,84 @@
+calibration:
+  methods:
+  - temperature
+  - platt
+cnn:
+  batch_multiplier: 1.3005575058716043
+  dilation_rates:
+  - 1
+  - 2
+  kernel_sizes:
+  - 3
+  - 5
+  - 7
+  use_residual: true
+  weight_decay: 0.006116122765800601
+data:
+  test_file: data/test.jsonl
+  train_file: data/train.jsonl
+  val_file: data/val.jsonl
+device: mps
+experiment:
+  description: Best CNN configuration from hyperparameter optimization
+  name: cnn_optimized_best
+  notes: Generated from trial 0 with score 0.0000
+  tags:
+  - CNN
+  - hyperopt
+  - boundary_aware
+  - optimized
+features:
+  head_ssm:
+    dimension: 12
+    enabled: true
+    head_words: 3
+  phonetic_ssm:
+    dimension: 12
+    enabled: true
+    high_sim_threshold: 0.7
+    mode: rhyme
+    normalize: true
+    normalize_method: zscore
+    similarity_method: binary
+  tail_ssm:
+    dimension: 12
+    enabled: true
+    tail_words: 3
+loss:
+  boundary_weight: 2.145614570099021
+  conf_penalty_lambda: 0.006460723242676091
+  conf_threshold: 0.9309908552988108
+  entropy_lambda: 0.02912139968434072
+  label_smoothing: 0.18059264473611897
+  segment_consistency_lambda: 0.01639493860652042
+  type: boundary_aware_cross_entropy
+  use_boundary_as_primary: true
+model:
+  attention_dropout: 0.13540362888980229
+  attention_enabled: true
+  attention_heads: 4
+  attention_type: boundary_aware
+  boundary_temperature: 2.0
+  dropout: 0.3231993941811405
+  hidden_dim: 128
+  layer_dropout: 0.15986584841970367
+  max_seq_length: 1000
+  num_classes: 2
+  num_layers: 2
+  positional_encoding: true
+  window_size: 7
+output_base_dir: results
+seed: 42
+training:
+  batch_size: 32
+  convergence_window: 3
+  gradient_clip_norm: 2.2623782158161188
+  learning_rate: 0.0012211037261966801
+  max_epochs: 5
+  min_delta: 0.0002216968971838151
+  num_workers: 2
+  patience: 3
+  scheduler: onecycle
+  validation_strategy: cnn_composite
+  weight_decay: 0.006116122765800601
+  weighted_sampling: true

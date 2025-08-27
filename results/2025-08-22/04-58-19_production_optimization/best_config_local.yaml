@@ -1,0 +1,133 @@
+anti_collapse:
+  weighted_sampling: true
+calibration:
+  enabled: true
+  methods:
+  - temperature
+  - platt
+data:
+  test_file: data/test.jsonl
+  train_file: data/train.jsonl
+  val_file: data/val.jsonl
+embeddings:
+  contextual:
+    enabled: true
+    high_sim_threshold: 0.7195306725047218
+    mode: complete
+    model: all-MiniLM-L6-v2
+    normalize: true
+    similarity_metric: dot
+  word2vec:
+    enabled: true
+    high_sim_threshold: 0.8017394440870349
+    mode: complete
+    model: word2vec-google-news-300
+    normalize: true
+    similarity_metric: cosine
+emergency_monitoring:
+  enabled: true
+  max_chorus_rate: 0.7721146320261278
+  max_conf_over_95_ratio: 0.13426994344852913
+  max_confidence_threshold: 0.9124750601870566
+  min_chorus_rate: 0.13894142331185333
+  val_f1_collapse_threshold: 0.1
+  val_overconf_threshold: 0.96
+experiment_name: best_hyperopt_config_20250823_144000
+features:
+  head_ssm:
+    dimension: 12
+    enabled: true
+    words: 3
+  line_syllable_ssm:
+    dimension: 12
+    enabled: true
+    normalize: false
+    normalize_method: minmax
+    ratio_threshold: 0.10678925406538661
+    similarity_method: cosine
+  phonetic_ssm:
+    dimension: 12
+    enabled: true
+    high_sim_threshold: 0.2866510962103292
+    mode: combined
+    normalize: true
+    normalize_method: zscore
+    similarity_method: binary
+  pos_ssm:
+    dimension: 12
+    enabled: false
+    high_sim_threshold: 0.29149149324297496
+    similarity_method: lcs
+    tagset: simplified
+  string_ssm:
+    case_sensitive: false
+    dimension: 12
+    enabled: true
+    remove_punctuation: false
+    similarity_method: jaccard
+    similarity_threshold: 0.05662602491227061
+  syllable_pattern_ssm:
+    cosine_weight: 0.32951717691176863
+    dimension: 12
+    enabled: true
+    levenshtein_weight: 0.7881748751536101
+    normalize: true
+    normalize_method: minmax
+    similarity_method: cosine
+  tail_ssm:
+    dimension: 12
+    enabled: true
+    words: 3
+loss:
+  boundary_weight: 1.8983232792704108
+  conf_penalty_lambda: 0.013563512635488433
+  conf_threshold: 0.9032362603074339
+  entropy_lambda: 0.005203013123710196
+  label_smoothing: 0.107026847004282
+  segment_consistency_lambda: 0.01853065384570065
+  type: boundary_aware
+model:
+  attention_dim: 256
+  attention_dropout: 0.21527202993006728
+  attention_enabled: true
+  attention_heads: 8
+  attention_type: boundary_aware
+  boundary_temperature: 2.0
+  dropout: 0.10396327827118965
+  hidden_dim: 256
+  layer_dropout: 0.0
+  max_seq_length: 1000
+  num_classes: 2
+  num_layers: 1
+  positional_encoding: true
+  window_size: 7
+optimization_info:
+  best_boundary_f1: 0.463855421686747
+  calibration_always_enabled: true
+  compatibility_enforced: true
+  config_mode: LOCAL (no external files)
+  n_trials: 7
+  optimization_date: '2025-08-23T14:40:00.784703'
+  optimized_with_optuna: true
+  static_embedding_models: true
+  study_name: production_optimization
+training:
+  batch_size: 16
+  cosine_t0: 10
+  cosine_t_max: 25
+  cosine_t_mult: 2
+  gradient_clip_norm: 1.429657961402908
+  learning_rate: 0.00043285641363634665
+  lr_factor: 0.5
+  lr_patience: 10
+  max_epochs: 25
+  min_delta: 0.00022168448819505056
+  min_lr: 1.0e-06
+  patience: 8
+  scheduler: cosine_restarts
+  step_gamma: 0.5
+  step_size: 30
+  warmup_epochs: 5
+  weight_decay: 1.0275733987754579e-05
+validation:
+  strategy: line_f1

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 BLSTM training script with YAML configuration support.
 

@@ -1,0 +1,51 @@
+Boundary-Aware BiLSTM Hyperparameter Optimization Results
+========================================================
+Optimization completed: 2025-08-23 14:40:00
+Study name: production_optimization
+Session directory: results/2025-08-22/04-58-19_production_optimization
+
+PERFORMANCE
+-----------
+Best boundary F1: 0.4639
+Total trials completed: 7
+Total trials: 7
+
+OPTIMAL PARAMETERS
+------------------
+Model Architecture:
+  - hidden_dim: 256
+  - num_layers: 1
+  - dropout: 0.1040
+  - layer_dropout: N/A
+
+Attention Mechanism:
+  - attention_heads: 8
+  - attention_dropout: 0.2153
+  - attention_dim: N/A
+
+Training Configuration:
+  - learning_rate: 0.0004
+  - batch_size: 16
+  - weight_decay: 0.0000
+  - scheduler: cosine_restarts
+
+Boundary-Aware Loss:
+  - boundary_weight: 1.90
+  - label_smoothing: 0.11
+  - segment_consistency_lambda: 0.0185
+  - conf_penalty_lambda: 0.0136
+  - entropy_lambda: 0.0052
+
+OPTIMIZATION STATISTICS
+-----------------------
+Boundary F1 distribution:
+  - Best: 0.4639
+  - Worst: 0.0835
+  - Mean: 0.2806
+  - Median: 0.3219
+
+Next steps:
+1. Review results/2025-08-22/04-58-19_production_optimization/best_config_local.yaml
+2. Run full training with optimized parameters
+3. Compare against previous manual configurations
+4. Analyze SQL database: results/2025-08-22/04-58-19_production_optimization/hyperopt_results.db

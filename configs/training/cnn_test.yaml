@@ -1,0 +1,189 @@
+# CNN Training Configuration
+# Optimized for CNN models with fast convergence and local pattern detection
+
+# Global configuration
+validation_strategy: "cnn_composite"  # CNN-optimized validation strategy
+
+# Experiment metadata
+experiment:
+  name: "cnn_quick_test"
+  description: "Quick CNN test with boundary-aware loss and attention"
+  tags: ["CNN", "quick_test", "boundary_aware", "attention"]
+  notes: "Testing CNN model with 3 epochs for validation"
+
+# Data configuration
+data:
+  train_file: "data/train.jsonl"
+  val_file: "data/val.jsonl"
+  test_file: "data/test.jsonl"
+
+# Model configuration
+model:
+  hidden_dim: 128
+  num_layers: 2  # CNN blocks
+  num_classes: 2
+  dropout: 0.3
+  layer_dropout: 0.1  # Between CNN blocks
+
+  # Attention mechanism (works with CNNs too)
+  attention_enabled: true
+  attention_type: "boundary_aware"  # Good for segmentation
+  attention_heads: 4  # Fewer heads for quick test
+  attention_dropout: 0.1
+  attention_dim: null  # Auto-size to CNN output
+  positional_encoding: true
+  max_seq_length: 1000
+  window_size: 7
+  boundary_temperature: 2.0
+
+# Training configuration
+training:
+  batch_size: 32
+  learning_rate: 0.002  # Slightly higher for CNNs
+  weight_decay: 0.005
+  max_epochs: 3  # Quick test
+  patience: 3  # Short patience for CNNs
+  min_delta: 0.001
+  gradient_clip_norm: 2.0
+
+  # CNN-optimized scheduler
+  scheduler: "onecycle"  # Best for CNNs
+  onecycle_pct_start: 0.3
+  onecycle_anneal: "cos"
+  lr_factor: 0.3
+  lr_patience: 2
+  min_lr: 1e-6
+
+  # Validation strategy - CNN composite with safeguards
+  validation_strategy: "cnn_composite"  # Emphasizes boundary detection
+  convergence_window: 3  # Quick convergence detection
+  
+  # CNN architecture parameters (flattened for compatibility)
+  cnn_kernel_sizes: [3, 5, 7]  # Multiple kernel sizes for multi-scale patterns
+  cnn_dilation_rates: [1, 2, 4]  # Progressive dilation for larger receptive fields
+  cnn_use_residual: true  # Residual connections for better gradient flow
+  
+  # Additional CNN safeguards
+  early_stopping_metric: "line_f1"  # Primary metric for early stopping
+  monitor_chorus_ratio: true  # Monitor and maintain chorus/verse balance
+  chorus_ratio_tolerance: 0.15  # Allow 15% deviation from expected ratio
+  confidence_monitoring: true  # Enable confidence distribution monitoring
+  gradient_stability_check: true  # Monitor gradient stability for CNNs
+
+  # Emergency monitoring - CNN optimized with enhanced safeguards
+  emergency_monitoring_enabled: true
+  max_confidence_threshold: 0.91  # More conservative for CNNs (BiLSTM uses 0.95)
+  min_chorus_rate: 0.05  # Prevent complete collapse to verse
+  max_chorus_rate: 0.85  # Prevent complete collapse to chorus
+  max_conf_over_95_ratio: 0.06  # Stricter than BiLSTM (0.08) for CNN overconfidence
+  val_overconf_threshold: 0.92  # More conservative than BiLSTM (0.95)
+  val_f1_collapse_threshold: 0.10  # Same as BiLSTM
+  emergency_overconf_threshold: 0.94  # More conservative than BiLSTM (0.95)
+  emergency_conf95_ratio: 0.60  # Stricter than BiLSTM (0.65) for CNNs
+  emergency_f1_threshold: 0.05  # Same as BiLSTM
+  max_gradient_norm: 3.0  # Lower than default 5.0 for CNN stability
+  skip_batches: 15  # Shorter for CNNs (vs 30 for BiLSTM)
+  skip_epochs: 2  # Shorter for CNNs (vs 3 for BiLSTM)
+
+  # Data loading
+  weighted_sampling: true
+  num_workers: 2
+
+# Loss configuration - Boundary-aware for CNN with enhanced safeguards
+loss:
+  type: "boundary_aware_cross_entropy"
+  label_smoothing: 0.15  # Moderate smoothing for CNNs (vs 0.20 for BiLSTM)
+  boundary_weight: 2.5  # CNNs excel at boundary detection
+  segment_consistency_lambda: 0.02
+  conf_penalty_lambda: 0.008  # Slightly higher for CNN overconfidence prevention
+  conf_threshold: 0.93  # Aligned with BiLSTM best practices
+  entropy_lambda: 0.035  # Enable entropy regularization for better calibration
+  use_boundary_as_primary: true
+
+# CNN-specific parameters (documented - actual values in training section above)
+cnn:
+  kernel_sizes: [3, 5, 7]  # Multiple kernel sizes for multi-scale patterns
+  dilation_rates: [1, 2, 4]  # Progressive dilation for larger receptive fields  
+  use_residual: true  # Residual connections for better gradient flow
+  batch_multiplier: 1.5  # CNNs can handle larger batches efficiently
+  weight_decay: 0.005  # CNN-optimized weight decay
+
+# Feature configuration - Balanced set for quick test
+features:
+  head_ssm:
+    enabled: true
+    head_words: 3
+    dimension: 12
+
+  tail_ssm:
+    enabled: true
+    tail_words: 3
+    dimension: 12
+
+  phonetic_ssm:
+    enabled: true
+    mode: "rhyme"
+    dimension: 12
+    similarity_method: "binary"
+    normalize: true
+    normalize_method: "zscore"
+    high_sim_threshold: 0.7
+
+  pos_ssm:
+    enabled: false  # Disable for quick test
+    tagset: "universal"
+    similarity_method: "cosine"
+    high_sim_threshold: 0.8
+    dimension: 12
+
+  string_ssm:
+    enabled: false  # Disable for quick test
+    case_sensitive: false
+    remove_punctuation: true
+    similarity_threshold: 0.8
+    similarity_method: "jaccard"
+    dimension: 12
+
+  # Syllable features - Good for CNNs
+  syllable_pattern_ssm:
+    enabled: true
+    similarity_method: "cosine"
+    levenshtein_weight: 0.3
+    cosine_weight: 0.7
+    normalize: true
+    normalize_method: "zscore"
+    dimension: 12
+
+  line_syllable_ssm:
+    enabled: false  # Disable for quick test
+    similarity_method: "cosine"
+    ratio_threshold: 0.8
+    normalize: true
+    normalize_method: "zscore"
+    dimension: 12
+
+  # Embedding features - Disable for quick test
+  word2vec:
+    enabled: false
+    model: "spacy"
+    mode: "summary"
+    normalize: true
+    similarity_metric: "cosine"
+    high_sim_threshold: 0.7
+
+  contextual:
+    enabled: false
+    model: "sentence-transformers/all-MiniLM-L6-v2"
+    mode: "summary"
+    normalize: true
+    similarity_metric: "cosine"
+    high_sim_threshold: 0.7
+
+# Calibration
+calibration:
+  methods: ["temperature", "platt"]
+
+# Output and environment
+output_base_dir: "results"
+device: "mps"  # Use MPS on Mac, change to "cuda" or "cpu" as needed
+seed: 42

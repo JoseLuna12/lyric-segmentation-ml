@@ -236,7 +236,6 @@ data/external/
 
 # Metrics and results
 metrics/
-results/
 outputs/
 checkpoints/
 
