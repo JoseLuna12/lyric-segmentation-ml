@@ -39,58 +39,61 @@ class CNNHyperparameterSpace:
     """
     
     def __init__(self, config_path=None):
-        """Initialize with CNN-optimized configuration."""
-        print("🧠 Using CNN-OPTIMIZED search space configuration")
+        """Initialize with CNN-optimized comprehensive configuration like BLSTM."""
+        print("🧠 Using CNN-COMPREHENSIVE search space configuration (like BLSTM)")
         self._load_cnn_defaults()
     
     def _load_cnn_defaults(self):
-        """Load CNN-optimized parameter ranges for boundary F1 optimization - FAST TESTING VERSION."""
+        """Load CNN-optimized parameter ranges for comprehensive optimization - LIKE BLSTM VERSION."""
         # ================================================================
         # CNN ARCHITECTURE PARAMETERS - Reduced for speed
         # ================================================================
-        self.HIDDEN_DIM = [128]                   # Single size for speed
-        self.NUM_LAYERS = [1, 2]                  # Only 1-2 layers for fast testing
-        self.DROPOUT_RANGE = (0.25, 0.35)        # Narrow range
-        self.LAYER_DROPOUT_RANGE = (0.10, 0.20)  # Narrow range
+        self.HIDDEN_DIM = [128]                  # Removed 256 for memory safety
+        self.NUM_LAYERS = [1, 2]                 # Removed 3 layers for memory safety
+        self.DROPOUT_RANGE = (0.25, 0.40)        # Unchanged
+        self.LAYER_DROPOUT_RANGE = (0.10, 0.25)  # Unchanged
         
-        # CNN-specific architecture parameters - simplified
+        # CNN-specific architecture parameters - more aggressive (convert to strings for Optuna)
+        # Note: Optuna requires categorical options to be primitive types (str, int, float, bool, None)
+        # Lists cause warnings, so we store as comma-separated strings and convert back to lists
         self.CNN_KERNEL_SIZES_OPTIONS = [
-            [3, 5, 7],          # Standard multi-scale only
-            [3, 5],             # Simple dual-scale
+            "3,5",            # Simple dual-scale (MEMORY SAFE)
+            "3,5,7",          # Standard multi-scale (MODERATE)
         ]
         self.CNN_DILATION_RATES_OPTIONS = [
-            [1, 2, 4],          # Standard exponential dilation
-            [1, 2],             # Simple progression
+            "1,2",            # Simple progression (MEMORY SAFE)
+            "1,2,4",          # Standard exponential dilation (MODERATE)
         ]
         self.CNN_USE_RESIDUAL_OPTIONS = [True]    # Always use residual for stability
         self.CNN_BATCH_MULTIPLIER_RANGE = (1.0, 1.5)  # Conservative range
         
         # ================================================================
-        # ATTENTION MECHANISMS (CNN + Attention) - Simplified
+        # ATTENTION MECHANISMS - CONSERVATIVE for memory safety
         # ================================================================
-        self.ATTENTION_ENABLED_OPTIONS = [True]  # Always enabled for consistency
-        self.ATTENTION_TYPE_OPTIONS = ['boundary_aware']  # Only best performer
-        self.ATTENTION_HEADS = [4]                # Single option
-        self.ATTENTION_DIM = [128]                # Match hidden_dim
-        self.ATTENTION_DROPOUT_RANGE = (0.10, 0.15)  # Narrow range
+        self.ATTENTION_ENABLED_OPTIONS = [True, False]  # Test both attention and no-attention
+        self.ATTENTION_TYPE_OPTIONS = ['self', 'localized', 'boundary_aware']  # All three attention types
+        self.ATTENTION_HEADS = [4, 8]             # Safe options: 128÷4=32, 256÷8=32
+        self.ATTENTION_DIM = [128, 256]           # Will be matched to hidden_dim in sampling
+        self.ATTENTION_DROPOUT_RANGE = (0.10, 0.30)  # Around proven 0.20
+        self.WINDOW_SIZE_OPTIONS = [5, 7, 9]      # Window size for localized attention
         
         # ================================================================
-        # CNN-OPTIMIZED TRAINING PARAMETERS - Very fast
+        # CNN-OPTIMIZED TRAINING PARAMETERS - CONSERVATIVE for memory safety
         # ================================================================
-        self.MAX_EPOCHS_OPTIONS = [10, 12, 15]      # 10-15 epochs for proper training
-        self.PATIENCE = 5                        # Reasonable patience for 10-15 epochs
-        self.BATCH_SIZE = [32, 64]               # Only 2 options
-        self.LEARNING_RATE_RANGE = (0.001, 0.003)  # Narrow proven range
-        self.WEIGHT_DECAY_RANGE = (0.005, 0.015)   # Narrow range
-        self.SCHEDULER_OPTIONS = ['onecycle']    # Single best scheduler
+        self.MAX_EPOCHS_OPTIONS = [8, 12, 15]      # Speed-optimized but multiple options
+        self.PATIENCE = 4                        # Aggressive early stopping for speed
+        self.BATCH_SIZE = [32, 64]               # Focus on faster batches
+        self.LEARNING_RATE_RANGE = (1e-4, 1e-3)  # Around proven range
+        self.WEIGHT_DECAY_RANGE = (0.005, 0.025) # Around proven range
+        self.SCHEDULER_OPTIONS = ['cosine', 'onecycle']  # Multiple proven schedulers
         
-        # CNN-specific training parameters - minimal ranges
-        self.MIN_DELTA_RANGE = (1e-4, 5e-4)     # Narrow range
-        self.GRADIENT_CLIP_RANGE = (2.0, 2.5)   # Narrow range
-        self.CONVERGENCE_WINDOW_RANGE = (3, 4)  # Very short window
+        # CNN-specific training parameters - expanded ranges
+        self.MIN_DELTA_RANGE = (1e-5, 1e-3)     # Full range like BLSTM
+        self.GRADIENT_CLIP_RANGE = (0.3, 1.0)   # Around proven 0.5
+        self.CONVERGENCE_WINDOW_RANGE = (3, 5)  # Short window range
         
-        # CNN validation strategies - single option
-        self.VALIDATION_STRATEGY_OPTIONS = ['cnn_composite', 'boundary_f1', 'line_f1']  # Test all strategies
+        # CNN validation strategies - test all like BLSTM
+        self.VALIDATION_STRATEGY_OPTIONS = ['cnn_composite', 'boundary_f1', 'line_f1']  # Equal weight for all strategies
         
         # ================================================================
         # CNN LOSS PARAMETERS - Conservative ranges for speed
@@ -111,33 +114,47 @@ class CNNHyperparameterSpace:
         self.MAX_CONF_OVER_95_RATIO_RANGE = (0.05, 0.08)    # Narrow range
         
         # ================================================================
-        # FEATURE PARAMETERS - Minimal variation for speed
+        # FEATURE PARAMETERS - REDUCED for memory safety
         # ================================================================
-        self.OPTIMIZE_FEATURE_TOGGLES = False   # Keep features stable
-        self.HEAD_TAIL_WORDS_OPTIONS = [3]      # Fixed value
+        self.OPTIMIZE_FEATURE_TOGGLES = True   # Enable feature optimization like BLSTM
+        self.HEAD_TAIL_WORDS_OPTIONS = [2, 3, 4]  # Test different word counts like BLSTM
         
-        # Feature-specific parameters - single options
-        self.PHONETIC_MODE_OPTIONS = ['rhyme']  # Single best option
-        self.PHONETIC_SIMILARITY_OPTIONS = ['binary']  # Single option
-        self.PHONETIC_THRESHOLD_RANGE = (0.6, 0.7)     # Narrow range
+        # Feature toggles - REDUCED for memory efficiency
+        self.FEATURE_TOGGLES = {
+            'head_ssm_enabled': [True, False],
+            'tail_ssm_enabled': [True, False],
+            'phonetic_ssm_enabled': [True, False],
+            'pos_ssm_enabled': [True, False],
+            'string_ssm_enabled': [True, False],
+            'syllable_pattern_ssm_enabled': [True, False],
+            'line_syllable_ssm_enabled': [True, False],
+            'word2vec_enabled': [True, False],
+            'contextual_enabled': [True, False]
+        }
         
-        self.POS_TAGSET_OPTIONS = ['universal']      # Single option
-        self.POS_SIMILARITY_OPTIONS = ['cosine']     # Single option
-        self.POS_THRESHOLD_RANGE = (0.6, 0.8)        # Narrow range
+        # Feature-specific parameters like BLSTM
+        self.PHONETIC_MODE_OPTIONS = ["rhyme", "alliteration", "combined"]
+        self.PHONETIC_SIMILARITY_OPTIONS = ["binary", "edit_distance", "sequence_match"]
+        self.PHONETIC_THRESHOLD_RANGE = (0.25, 0.35)     # Like BLSTM
         
-        self.STRING_SIMILARITY_OPTIONS = ['jaccard'] # Single option
-        self.STRING_THRESHOLD_RANGE = (0.05, 0.10)   # Narrow range
+        self.POS_TAGSET_OPTIONS = ["simplified", "universal", "penn"]
+        self.POS_SIMILARITY_OPTIONS = ["combined", "lcs", "position", "jaccard"]
+        self.POS_THRESHOLD_RANGE = (0.22, 0.32)        # Like BLSTM
+        
+        self.STRING_SIMILARITY_OPTIONS = ["word_overlap", "jaccard", "levenshtein"]
+        self.STRING_THRESHOLD_RANGE = (0.045, 0.065)   # Like BLSTM
         
         # ================================================================
-        # FAST TESTING SUMMARY
+        # FAST TESTING SUMMARY -> COMPREHENSIVE OPTIMIZATION
         # ================================================================
-        print("✅ CNN FAST-TESTING Hyperparameter Space Loaded")
+        print("✅ CNN COMPREHENSIVE Hyperparameter Space Loaded")
         print(f"   🏗️  Architecture: {len(self.HIDDEN_DIM)} hidden_dim × {len(self.NUM_LAYERS)} layers")
         print(f"   🔧 CNN Kernels: {len(self.CNN_KERNEL_SIZES_OPTIONS)} configurations")
-        print(f"   🎯 Attention: Fixed boundary_aware with {self.ATTENTION_HEADS[0]} heads")
-        print(f"   ⚡ Training: {max(self.MAX_EPOCHS_OPTIONS)} max epochs, patience {self.PATIENCE}")
-        print(f"   📊 Validation: CNN-composite only")
-        print(f"   🚀 OPTIMIZED FOR SPEED: Minimal parameter space for quick trials")
+        print(f"   🎯 Attention: {len(self.ATTENTION_ENABLED_OPTIONS)} enable × {len(self.ATTENTION_TYPE_OPTIONS)} types × {len(self.ATTENTION_HEADS)} heads")
+        print(f"   ⚡ Training: {len(self.MAX_EPOCHS_OPTIONS)} epochs × {len(self.BATCH_SIZE)} batch × {len(self.SCHEDULER_OPTIONS)} schedulers")
+        print(f"   📊 Validation: {len(self.VALIDATION_STRATEGY_OPTIONS)} strategies")
+        print(f"   🎵 Features: {len(self.HEAD_TAIL_WORDS_OPTIONS)} head/tail × {'ON/OFF toggles' if self.OPTIMIZE_FEATURE_TOGGLES else 'static'}")
+        print(f"   🚀 COMPREHENSIVE OPTIMIZATION: Full parameter space like BLSTM")
         
         # ================================================================
         # DEFAULT CONFIGURATION
@@ -441,8 +458,13 @@ def create_cnn_trial_config(trial, base_config_path=None, hyperparams=None):
         layer_dropout = 0.0
     
     # CNN-specific architecture parameters
-    kernel_sizes = trial.suggest_categorical('cnn_kernel_sizes', hyperparams.CNN_KERNEL_SIZES_OPTIONS)
-    dilation_rates = trial.suggest_categorical('cnn_dilation_rates', hyperparams.CNN_DILATION_RATES_OPTIONS)
+    kernel_sizes_str = trial.suggest_categorical('cnn_kernel_sizes', hyperparams.CNN_KERNEL_SIZES_OPTIONS)
+    dilation_rates_str = trial.suggest_categorical('cnn_dilation_rates', hyperparams.CNN_DILATION_RATES_OPTIONS)
+    
+    # Convert string representations back to lists of integers
+    kernel_sizes = [int(x) for x in kernel_sizes_str.split(',')]
+    dilation_rates = [int(x) for x in dilation_rates_str.split(',')]
+    
     use_residual = trial.suggest_categorical('cnn_use_residual', hyperparams.CNN_USE_RESIDUAL_OPTIONS)
     batch_multiplier = trial.suggest_float('cnn_batch_multiplier', *hyperparams.CNN_BATCH_MULTIPLIER_RANGE)
     
@@ -457,11 +479,27 @@ def create_cnn_trial_config(trial, base_config_path=None, hyperparams=None):
         attention_dropout = trial.suggest_float('attention_dropout', *hyperparams.ATTENTION_DROPOUT_RANGE)
         # Match attention dim to hidden dim for compatibility
         attention_dim = hidden_dim
+        
+        # Window size for localized attention
+        if attention_type == 'localized':
+            window_size = trial.suggest_categorical('window_size', hyperparams.WINDOW_SIZE_OPTIONS)
+        else:
+            window_size = 7  # Default value for other attention types
+            
+        # Validate attention heads compatibility
+        if hidden_dim % attention_heads != 0:
+            # Force compatible heads
+            compatible_heads = [h for h in hyperparams.ATTENTION_HEADS if hidden_dim % h == 0]
+            if compatible_heads:
+                attention_heads = compatible_heads[0]  # Use first compatible option
+            else:
+                attention_heads = 4  # Safe fallback
     else:
         attention_type = 'self'
         attention_heads = 4
         attention_dropout = 0.1
         attention_dim = None
+        window_size = 7
     
     # ========================================================================
     # CNN-OPTIMIZED TRAINING PARAMETERS
@@ -501,31 +539,61 @@ def create_cnn_trial_config(trial, base_config_path=None, hyperparams=None):
     max_conf_over_95_ratio = trial.suggest_float('max_conf_over_95_ratio', *hyperparams.MAX_CONF_OVER_95_RATIO_RANGE)
     
     # ========================================================================
-    # FEATURE TOGGLES FOR CNN
+    # FEATURE TOGGLES FOR CNN - Full optimization like BLSTM
     # ========================================================================
     feature_toggles = {}
     if hyperparams.OPTIMIZE_FEATURE_TOGGLES:
+        # Feature toggles (ON/OFF like BLSTM)
+        for feature_name, options in hyperparams.FEATURE_TOGGLES.items():
+            feature_toggles[feature_name] = trial.suggest_categorical(feature_name, options)
+        
         # Head/tail words variation
         head_tail_words = trial.suggest_categorical('head_tail_words', hyperparams.HEAD_TAIL_WORDS_OPTIONS)
         
-        # Feature-specific parameters
+        # Feature-specific parameters like BLSTM
         phonetic_mode = trial.suggest_categorical('phonetic_mode', hyperparams.PHONETIC_MODE_OPTIONS)
         phonetic_similarity = trial.suggest_categorical('phonetic_similarity', hyperparams.PHONETIC_SIMILARITY_OPTIONS)
         phonetic_threshold = trial.suggest_float('phonetic_threshold', *hyperparams.PHONETIC_THRESHOLD_RANGE)
+        
+        pos_tagset = trial.suggest_categorical('pos_tagset', hyperparams.POS_TAGSET_OPTIONS)
+        pos_similarity = trial.suggest_categorical('pos_similarity', hyperparams.POS_SIMILARITY_OPTIONS)
+        pos_threshold = trial.suggest_float('pos_threshold', *hyperparams.POS_THRESHOLD_RANGE)
+        
+        string_similarity = trial.suggest_categorical('string_similarity', hyperparams.STRING_SIMILARITY_OPTIONS)
+        string_threshold = trial.suggest_float('string_threshold', *hyperparams.STRING_THRESHOLD_RANGE)
         
         feature_toggles.update({
             'head_tail_words': head_tail_words,
             'phonetic_mode': phonetic_mode,
             'phonetic_similarity': phonetic_similarity,
-            'phonetic_threshold': phonetic_threshold
+            'phonetic_threshold': phonetic_threshold,
+            'pos_tagset': pos_tagset,
+            'pos_similarity': pos_similarity,
+            'pos_threshold': pos_threshold,
+            'string_similarity': string_similarity,
+            'string_threshold': string_threshold
         })
     else:
-        # Use defaults
+        # Use defaults (fallback)
         feature_toggles = {
+            'head_ssm_enabled': True,
+            'tail_ssm_enabled': True,
+            'phonetic_ssm_enabled': True,
+            'pos_ssm_enabled': True,
+            'string_ssm_enabled': True,
+            'syllable_pattern_ssm_enabled': True,
+            'line_syllable_ssm_enabled': True,
+            'word2vec_enabled': True,
+            'contextual_enabled': True,
             'head_tail_words': 3,
             'phonetic_mode': 'rhyme',
             'phonetic_similarity': 'binary',
-            'phonetic_threshold': 0.7
+            'phonetic_threshold': 0.7,
+            'pos_tagset': 'universal',
+            'pos_similarity': 'combined',
+            'pos_threshold': 0.27,
+            'string_similarity': 'word_overlap',
+            'string_threshold': 0.055
         }
     
     # ========================================================================
@@ -549,6 +617,7 @@ def create_cnn_trial_config(trial, base_config_path=None, hyperparams=None):
         'attention_heads': attention_heads,
         'attention_dropout': attention_dropout,
         'attention_dim': attention_dim,
+        'window_size': window_size,
         
         # CNN Training parameters
         'batch_size': batch_size,
@@ -568,12 +637,57 @@ def create_cnn_trial_config(trial, base_config_path=None, hyperparams=None):
         'max_chorus_rate': max_chorus_rate,
         'max_conf_over_95_ratio': max_conf_over_95_ratio,
         
-        # Feature parameters
+        # Feature parameters - comprehensive like BLSTM
+        'head_ssm_enabled': feature_toggles.get('head_ssm_enabled', True),
         'head_ssm_words': feature_toggles['head_tail_words'],
+        'head_ssm_dimension': 12,
+        
+        'tail_ssm_enabled': feature_toggles.get('tail_ssm_enabled', True),
         'tail_ssm_words': feature_toggles['head_tail_words'],
+        'tail_ssm_dimension': 12,
+        
+        'phonetic_ssm_enabled': feature_toggles.get('phonetic_ssm_enabled', True),
         'phonetic_ssm_mode': feature_toggles['phonetic_mode'],
+        'phonetic_ssm_dimension': 12,
         'phonetic_ssm_similarity_method': feature_toggles['phonetic_similarity'],
+        'phonetic_ssm_normalize': True,
+        'phonetic_ssm_normalize_method': 'zscore',
         'phonetic_ssm_high_sim_threshold': feature_toggles['phonetic_threshold'],
+        
+        'pos_ssm_enabled': feature_toggles.get('pos_ssm_enabled', True),
+        'pos_ssm_tagset': feature_toggles.get('pos_tagset', 'universal'),
+        'pos_ssm_similarity_method': feature_toggles.get('pos_similarity', 'combined'),
+        'pos_ssm_high_sim_threshold': feature_toggles.get('pos_threshold', 0.27),
+        'pos_ssm_dimension': 12,
+        
+        'string_ssm_enabled': feature_toggles.get('string_ssm_enabled', True),
+        'string_ssm_case_sensitive': False,
+        'string_ssm_remove_punctuation': True,
+        'string_ssm_similarity_threshold': feature_toggles.get('string_threshold', 0.055),
+        'string_ssm_similarity_method': feature_toggles.get('string_similarity', 'word_overlap'),
+        'string_ssm_dimension': 12,
+        
+        'syllable_pattern_ssm_enabled': feature_toggles.get('syllable_pattern_ssm_enabled', True),
+        'syllable_pattern_ssm_similarity_method': 'cosine',
+        'syllable_pattern_ssm_dimension': 12,
+        
+        'line_syllable_ssm_enabled': feature_toggles.get('line_syllable_ssm_enabled', True),
+        'line_syllable_ssm_similarity_method': 'cosine',
+        'line_syllable_ssm_dimension': 12,
+        
+        'word2vec_enabled': feature_toggles.get('word2vec_enabled', True),
+        'word2vec_model': 'word2vec-google-news-300',
+        'word2vec_mode': 'complete',
+        'word2vec_normalize': True,
+        'word2vec_similarity_metric': 'cosine',
+        'word2vec_high_sim_threshold': 0.82,
+        
+        'contextual_enabled': feature_toggles.get('contextual_enabled', True),
+        'contextual_model': 'all-MiniLM-L6-v2',
+        'contextual_mode': 'complete',
+        'contextual_normalize': True,
+        'contextual_similarity_metric': 'cosine',
+        'contextual_high_sim_threshold': 0.72,
         
         # Loss configuration
         'loss': {
@@ -606,9 +720,18 @@ def create_cnn_trial_config(trial, base_config_path=None, hyperparams=None):
         print(f"   🧠 CNN Trial {trial.number} configuration:")
         print(f"      Architecture: CNN {num_layers} blocks, {hidden_dim}D")
         print(f"      Kernels: {kernel_sizes}, Dilations: {dilation_rates}")
-        print(f"      Residual: {use_residual}, Attention: {attention_enabled}")
+        print(f"      Residual: {use_residual}")
+        if attention_enabled:
+            print(f"      Attention: {attention_type} ({attention_heads} heads)")
+            if attention_type == 'localized':
+                print(f"      Window size: {window_size}")
+        else:
+            print(f"      Attention: DISABLED")
         print(f"      Training: {batch_size} batch, {max_epochs} epochs, {scheduler}")
         print(f"      Validation: {validation_strategy}")
+        if hyperparams.OPTIMIZE_FEATURE_TOGGLES:
+            enabled_features = [k for k, v in feature_toggles.items() if k.endswith('_enabled') and v]
+            print(f"      Features: {len(enabled_features)} enabled")
         
         return config
         
@@ -682,8 +805,8 @@ def cnn_objective(trial):
         )
         print(f"✅ CNN Model and training setup complete")
         
-        # Create CNN trainer
-        trial_output_dir = Path(f"cnn_optuna_results/trial_{trial.number}")
+        # Create CNN trainer - save to session trials directory
+        trial_output_dir = SESSION_DIR / "trials" / trial_id
         trial_output_dir.mkdir(parents=True, exist_ok=True)
         
         trainer = CNNTrainer(
@@ -698,20 +821,70 @@ def cnn_objective(trial):
         
         # Train CNN model
         print(f"🚀 Starting CNN training...")
-        results = trainer.train(train_loader, val_loader)
+        trained_model, calibration_info = trainer.train(train_loader, val_loader)
         
-        # Extract validation metrics
-        val_metrics = results.get('validation_metrics', {})
+        # Extract validation metrics from trainer
+        # The trainer stores the best metrics in training_metrics and best_val_score
+        if trainer.training_metrics:
+            # Use the last epoch metrics since trainer loads best model at the end
+            best_metrics = trainer.training_metrics[-1]
+            
+            # Extract validation metrics - build dictionary for compatibility
+            val_metrics = {
+                'line_f1': getattr(best_metrics, 'val_macro_f1', 0.0),
+                'boundary_f1': getattr(best_metrics, 'val_boundary_f1', 0.0),
+                'macro_f1': getattr(best_metrics, 'val_macro_f1', 0.0),
+                'verse_f1': getattr(best_metrics, 'val_verse_f1', 0.0),
+                'chorus_f1': getattr(best_metrics, 'val_chorus_f1', 0.0),
+                'boundary_precision': getattr(best_metrics, 'val_boundary_precision', 0.0),
+                'boundary_recall': getattr(best_metrics, 'val_boundary_recall', 0.0),
+                'window_diff': getattr(best_metrics, 'val_window_diff', 1.0),
+                'pk_metric': getattr(best_metrics, 'val_pk_metric', 1.0),
+                'confidence': getattr(best_metrics, 'val_max_prob', 0.0),
+                'val_loss': getattr(best_metrics, 'val_loss', 1.0),
+            }
+            
+            # Debug print to verify we're getting real values
+            print(f"🔍 Debug: Best epoch metrics extracted:")
+            print(f"   val_macro_f1: {getattr(best_metrics, 'val_macro_f1', 'MISSING')}")
+            print(f"   val_boundary_f1: {getattr(best_metrics, 'val_boundary_f1', 'MISSING')}")
+            print(f"   val_verse_f1: {getattr(best_metrics, 'val_verse_f1', 'MISSING')}")
+            print(f"   val_chorus_f1: {getattr(best_metrics, 'val_chorus_f1', 'MISSING')}")
+            
+        else:
+            # Fallback values if no metrics available
+            val_metrics = {
+                'line_f1': 0.0,
+                'boundary_f1': 0.0,
+                'macro_f1': 0.0,
+                'verse_f1': 0.0,
+                'chorus_f1': 0.0,
+                'boundary_precision': 0.0,
+                'boundary_recall': 0.0,
+                'window_diff': 1.0,
+                'pk_metric': 1.0,
+                'confidence': 0.0,
+                'val_loss': 1.0,
+            }
+            print(f"⚠️  Warning: No training metrics found, using fallback values")
         
-        # CNN-specific score computation
+        # CNN-specific score computation for training
         validation_score = compute_cnn_validation_score(val_metrics, config)
+        
+        # But for Optuna optimization, ALWAYS use boundary_f1 as objective
+        optuna_objective = val_metrics.get('boundary_f1', 0.0)
         
         # Log CNN trial results
         print(f"\n📊 CNN Trial {trial.number} Results:")
-        print(f"   Validation Score: {validation_score:.4f}")
+        print(f"   Training Score ({getattr(config, 'validation_strategy', 'unknown')}): {validation_score:.4f}")
+        print(f"   Optuna Objective (boundary_f1): {optuna_objective:.4f}")
         print(f"   Line F1: {val_metrics.get('line_f1', 0):.4f}")
         print(f"   Boundary F1: {val_metrics.get('boundary_f1', 0):.4f}")
         print(f"   Macro F1: {val_metrics.get('macro_f1', 0):.4f}")
+        print(f"   Verse F1: {val_metrics.get('verse_f1', 0):.4f}")
+        print(f"   Chorus F1: {val_metrics.get('chorus_f1', 0):.4f}")
+        print(f"   Window Diff: {val_metrics.get('window_diff', 1.0):.4f}")
+        print(f"   Pk Metric: {val_metrics.get('pk_metric', 1.0):.4f}")
         print(f"   Confidence: {val_metrics.get('confidence', 0):.3f}")
         
         # Save CNN trial results
@@ -732,19 +905,49 @@ def cnn_objective(trial):
             'trial_number': trial.number,
             'trial_id': trial_id,
             'model_type': 'CNN',
-            'validation_score': validation_score,
+            'training_score': validation_score,  # Score used during training
+            'optuna_objective': optuna_objective,  # Boundary F1 (what Optuna maximizes)
             'validation_metrics': val_metrics,
-            'all_results': results,
+            'all_results': val_metrics,  # Store the validation metrics
             'parameters': trial.params,
-            'duration_minutes': results.get('training_time_minutes', 0)
+            'duration_minutes': 0  # Training time not tracked in CNN trainer
         }
         
         with open(trial_dir / "cnn_results.json", 'w') as f:
             json.dump(trial_results, f, indent=2, default=str)
         
+        # Log all metrics to Optuna for visualization and analysis
+        trial.set_user_attr("val_macro_f1", val_metrics.get('macro_f1', 0.0))
+        trial.set_user_attr("val_boundary_f1", val_metrics.get('boundary_f1', 0.0))
+        trial.set_user_attr("val_verse_f1", val_metrics.get('verse_f1', 0.0))
+        trial.set_user_attr("val_chorus_f1", val_metrics.get('chorus_f1', 0.0))
+        trial.set_user_attr("val_line_f1", val_metrics.get('line_f1', 0.0))
+        trial.set_user_attr("val_boundary_precision", val_metrics.get('boundary_precision', 0.0))
+        trial.set_user_attr("val_boundary_recall", val_metrics.get('boundary_recall', 0.0))
+        
+        # Segmentation metrics (as-is, lower is better)
+        trial.set_user_attr("val_window_diff", val_metrics.get('window_diff', 1.0))
+        trial.set_user_attr("val_pk_metric", val_metrics.get('pk_metric', 1.0))
+        
+        trial.set_user_attr("val_confidence", val_metrics.get('confidence', 0.0))
+        trial.set_user_attr("val_loss", val_metrics.get('val_loss', 1.0))
+        trial.set_user_attr("training_score", validation_score)  # Score used during training
+        trial.set_user_attr("optuna_objective", optuna_objective)  # Boundary F1 (what Optuna maximizes)
+        trial.set_user_attr("model_type", "CNN")
+        trial.set_user_attr("trial_id", trial_id)
+        
+        # Log key hyperparameters for easy analysis
+        trial.set_user_attr("hidden_dim", getattr(config, 'hidden_dim', 0))
+        trial.set_user_attr("cnn_layers", getattr(config, 'cnn_layers', 0))
+        trial.set_user_attr("kernel_sizes", str(getattr(config, 'kernel_sizes', [])))
+        trial.set_user_attr("dilation_rates", str(getattr(config, 'dilation_rates', [])))
+        trial.set_user_attr("attention_enabled", getattr(config, 'attention_enabled', False))
+        trial.set_user_attr("attention_type", getattr(config, 'attention_type', 'none'))
+        trial.set_user_attr("validation_strategy", getattr(config, 'validation_strategy', 'unknown'))
+        
         print(f"✅ CNN Trial {trial.number} completed successfully")
         
-        return validation_score
+        return optuna_objective  # Always return boundary_f1 for Optuna to maximize
         
     except Exception as e:
         print(f"❌ CNN Trial {trial.number} failed: {str(e)}")
@@ -866,9 +1069,9 @@ def create_best_cnn_config(study, session_dir: Path):
             'dropout': best_params['dropout'],
             'layer_dropout': best_params.get('layer_dropout', 0.0),
             
-            # CNN-specific parameters  
-            'cnn_kernel_sizes': best_params['cnn_kernel_sizes'],
-            'cnn_dilation_rates': best_params['cnn_dilation_rates'],
+            # CNN-specific parameters - convert string representations back to lists
+            'cnn_kernel_sizes': [int(x) for x in best_params['cnn_kernel_sizes'].split(',')],
+            'cnn_dilation_rates': [int(x) for x in best_params['cnn_dilation_rates'].split(',')],
             'cnn_use_residual': best_params['cnn_use_residual'],
             'cnn_batch_multiplier': best_params['cnn_batch_multiplier'],
             'cnn_weight_decay': best_params.get('weight_decay', 0.01),
@@ -881,7 +1084,7 @@ def create_best_cnn_config(study, session_dir: Path):
             'attention_dim': None,  # Will be auto-sized
             'positional_encoding': True,
             'max_seq_length': 1000,
-            'window_size': 7,
+            'window_size': best_params.get('window_size', 7),
             'boundary_temperature': 2.0,
             
             # Training

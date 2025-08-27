@@ -1,0 +1,199 @@
+# Enhanced BiLSTM Configuration with BOUNDARY-AWARE LOSS (Tuned)
+
+# =============================================================================
+# LOSS CONFIGURATION - BOUNDARY-AWARE CROSS-ENTROPY
+# =============================================================================
+loss:
+  type: "boundary_aware_cross_entropy"
+  
+  # Core parameters
+  num_classes: 2
+  ignore_index: -100
+
+  boundary_weight: 1.933011168683694
+  label_smoothing: 0.19134343069390083
+  segment_consistency_lambda: 0.02998016982793507
+  conf_penalty_lambda: 0.008408050899214996
+  conf_threshold: 0.9380197096114414
+  entropy_lambda: 0.03210226714119728
+  
+  # Advanced options
+  use_boundary_as_primary: true
+
+# =============================================================================
+# DATA CONFIGURATION
+# =============================================================================
+data:
+  train_file: "data/train.jsonl"
+  val_file: "data/val.jsonl"
+  test_file: "data/test.jsonl"
+
+# =============================================================================
+# MODEL ARCHITECTURE
+# =============================================================================
+model:
+  hidden_dim: 256
+  num_layers: 1
+  layer_dropout: 0.30
+  num_classes: 2
+  dropout: 0.16160864979184558
+
+  attention_enabled: true
+  attention_type: "localized"
+  attention_heads: 8
+  attention_dropout: 0.1801791433282895
+  attention_dim: 256
+  positional_encoding: true
+  max_seq_length: 1000
+
+# =============================================================================
+# TRAINING PARAMETERS
+# =============================================================================
+training:
+  batch_size: 32
+  learning_rate: 0.0009364363515835176
+  weight_decay: 0.018187351635761986
+  max_epochs: 15
+  patience: 8
+  min_delta: 0.0005181153062950438
+  gradient_clip_norm: 0.34503498859907583
+
+  scheduler: "cosine"
+  min_lr: 1e-6
+  cosine_t_max: 45
+
+# =============================================================================
+# ANTI-COLLAPSE SYSTEM
+# =============================================================================
+anti_collapse:
+  weighted_sampling: true
+
+# =============================================================================
+# EMERGENCY MONITORING
+# =============================================================================
+emergency_monitoring:
+  enabled: true
+  
+  max_confidence_threshold: 0.9270275228071398
+  min_chorus_rate: 0.07803255289087262
+  max_chorus_rate: 0.7767445670763158
+  max_conf_over_95_ratio: 0.1898817588024302
+
+  val_overconf_threshold: 0.93
+  val_f1_collapse_threshold: 0.10
+  emergency_overconf_threshold: 0.95
+  emergency_conf95_ratio: 0.65
+  emergency_f1_threshold: 0.05
+
+  skip_batches: 30
+  skip_epochs: 3
+  print_batch_every: 10
+
+# =============================================================================
+# CALIBRATION & VALIDATION
+# =============================================================================
+calibration:
+  methods: ['temperature', 'platt']
+  enabled: true
+
+validation_strategy: "composite"
+
+# =============================================================================
+# FEATURE CONFIGURATION
+# =============================================================================
+features:
+  head_ssm:
+    enabled: true
+    dimension: 12
+    head_words: 4
+  
+  tail_ssm:
+    enabled: true
+    dimension: 12
+    tail_words: 4
+  
+  phonetic_ssm:
+    enabled: true
+    dimension: 12
+    mode: "rhyme"
+    similarity_method: "binary"
+    normalize: false
+    normalize_method: "minmax"
+    high_sim_threshold: 0.3408132908118695
+  
+  pos_ssm:
+    enabled: true
+    dimension: 12
+    tagset: "universal"
+    similarity_method: "combined"
+    high_sim_threshold: 0.22920050586956564
+  
+  string_ssm:
+    enabled: true
+    dimension: 12
+    case_sensitive: false
+    remove_punctuation: false
+    similarity_threshold: 0.05482346859350815
+    similarity_method: "word_overlap"
+
+  syllable_pattern_ssm:
+    enabled: true
+    dimension: 12
+    similarity_method: "cosine"
+    levenshtein_weight: 0.6707021122065293
+    cosine_weight: 0.211065194432499
+    normalize: false
+    normalize_method: "zscore"
+
+  line_syllable_ssm:
+    enabled: false
+    dimension: 12
+    similarity_method: "cosine"
+    ratio_threshold: 0.09766340365571138
+    normalize: true
+    normalize_method: "minmax"
+
+# =============================================================================
+# EMBEDDINGS CONFIGURATION
+# =============================================================================
+embeddings:
+  word2vec:
+    enabled: true
+    model: "word2vec-google-news-300"
+    mode: "summary"
+    normalize: true
+    similarity_metric: "cosine"
+    high_sim_threshold: 0.7751548030252033
+
+  contextual:
+    enabled: false
+    model: "all-MiniLM-L6-v2"
+    mode: "summary"
+    normalize: false
+    similarity_metric: "dot"
+    high_sim_threshold: 0.6520090621350382
+
+# =============================================================================
+# OUTPUT & SYSTEM CONFIGURATION
+# =============================================================================
+output:
+  base_dir: "training_sessions"
+  save_best_model: true
+  save_final_model: true
+  save_training_metrics: true
+  save_config_snapshot: true
+
+system:
+  seed: 42
+  device: "auto"
+  num_workers: 0
+  deterministic: true
+
+# =============================================================================
+# EXPERIMENT METADATA
+# =============================================================================
+experiment:
+  name: "all_features_boundary_aware_loss_tuned_best_optuna_lite"
+  description: "BiLSTM with boundary-aware loss (tuned for less overfitting, better calibration)"
+  tags: ["boundary_aware", "segmentation", "tuned"]
+  notes: "Adjustments focus on calibration, regularization, and boundary sensitivity"

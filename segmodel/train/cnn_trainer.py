@@ -491,7 +491,8 @@ class CNNTrainer:
                 param_count += 1
         
         total_norm = total_norm ** (1. / 2)
-        self.gradient_history.append(total_norm)
+        # Store as float to avoid device issues
+        self.gradient_history.append(float(total_norm))
         
         return total_norm
     
@@ -537,7 +538,30 @@ class CNNTrainer:
             
             # Forward pass
             logits = self.model(features, mask)
-            loss = self.loss_function(logits, labels, mask)
+            
+            # Check for invalid logits with detailed statistics
+            if torch.isnan(logits).any() or torch.isinf(logits).any():
+                nan_count = torch.isnan(logits).sum().item()
+                inf_count = torch.isinf(logits).sum().item()
+                print(f"⚠️ Invalid logits in batch {batch_idx}: nan={nan_count}, inf={inf_count}")
+                print(f"   Shape: {logits.shape}, Mask shape: {mask.shape}")
+                
+                # Try to recover by zeroing logits and using a very slight bias toward class 1
+                logits = torch.zeros_like(logits)
+                logits[:, :, 1] = 0.01  # Very slight bias to prevent collapse
+                
+            try:
+                # Use label smoothing to prevent overconfident predictions
+                # This is crucial for preventing NaN in CrossEntropyLoss
+                loss = self.loss_function(logits, labels, mask)
+                
+                # Check for invalid loss values before backprop
+                if torch.isnan(loss) or torch.isinf(loss):
+                    print(f"⚠️ Invalid loss detected: skipping batch {batch_idx}")
+                    continue
+            except Exception as e:
+                print(f"⚠️ Exception in loss computation: {e}")
+                continue
             
             # Backward pass
             self.optimizer.zero_grad()
@@ -545,10 +569,38 @@ class CNNTrainer:
             
             # Gradient monitoring (CNN-specific)
             gradient_norm = self._compute_gradient_norm()
-            gradient_norms.append(gradient_norm)
             
-            # Gradient clipping
-            nn.utils.clip_grad_norm_(self.model.parameters(), self.config.gradient_clip_norm)
+            # More robust gradient handling
+            try:
+                # First check for NaN gradients before clipping
+                has_nan_grad = False
+                for param in self.model.parameters():
+                    if param.grad is not None and (torch.isnan(param.grad).any() or torch.isinf(param.grad).any()):
+                        has_nan_grad = True
+                        print(f"⚠️ NaN/Inf gradient detected in parameter of shape {param.shape}")
+                        param.grad = torch.zeros_like(param.grad)  # Zero out NaN gradients
+                
+                if has_nan_grad:
+                    print(f"⚠️ NaN gradients found and zeroed, skipping optimizer step")
+                    self.optimizer.zero_grad()  # Clear all gradients
+                    continue
+                
+                # Use a much lower gradient clip norm (0.5 instead of default)
+                clip_value = min(0.5, self.config.gradient_clip_norm)
+                gradient_norm = nn.utils.clip_grad_norm_(self.model.parameters(), clip_value)
+                
+                # Final check after clipping
+                if torch.isnan(gradient_norm) or torch.isinf(gradient_norm):
+                    print(f"⚠️ NaN/Inf gradient norm after clipping: {gradient_norm}")
+                    self.optimizer.zero_grad()  # Clear all gradients
+                    continue
+            except Exception as e:
+                print(f"⚠️ Exception during gradient handling: {e}")
+                self.optimizer.zero_grad()  # Clear all gradients
+                continue
+                
+            # Store gradient norm as Python float to avoid device issues
+            gradient_norms.append(float(gradient_norm) if isinstance(gradient_norm, torch.Tensor) else gradient_norm)
             
             self.optimizer.step()
             
@@ -594,6 +646,7 @@ class CNNTrainer:
             avg_metrics[key] = np.mean([g[key] for g in all_guardrails])
         
         avg_metrics['loss'] = total_loss / num_batches
+        # gradient_norms are now Python floats, no need for CPU conversion
         avg_metrics['avg_gradient_norm'] = np.mean(gradient_norms)
         avg_metrics['gradient_stability'] = 1.0 / (1.0 + np.std(gradient_norms))
         
@@ -843,14 +896,20 @@ class CNNTrainer:
                         print(f"🛑 CNN EMERGENCY STOP at epoch {epoch}")
                         break
                     
-                    # CNN-optimized early stopping
+                    # CNN-optimized early stopping with safety checks
                     stopper_metrics = {
                         'val_loss': metrics.val_loss,
                         'val_f1': metrics.val_macro_f1,
                         'val_ece': metrics.val_conf_over_95
                     }
                     
-                    should_early_stop = self.early_stopper.step(stopper_metrics)
+                    # Safety check: don't do early stopping if any metrics are NaN
+                    has_nan = any(np.isnan(val) or np.isinf(val) for val in stopper_metrics.values())
+                    if has_nan:
+                        print("⚠️ NaN/Inf detected in early stopping metrics, skipping early stopping check")
+                        should_early_stop = False
+                    else:
+                        should_early_stop = self.early_stopper.step(stopper_metrics)
                     
                     # Best model tracking
                     if current_val_score > self.best_val_score:

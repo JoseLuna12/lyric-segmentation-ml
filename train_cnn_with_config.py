@@ -76,20 +76,16 @@ def setup_cnn_model_and_training(config: TrainingConfig, train_dataset: SongsDat
     # Create CNN model using YAML configuration
     from segmodel.models.cnn_tagger import CNNTagger
     
-        # CNN-specific architecture parameters from config
-    # Try multiple config locations for compatibility
     kernel_sizes = None
     dilation_rates = None
     use_residual = None
     
-    # First try the dedicated cnn section
     if hasattr(config, 'cnn') and config.cnn is not None:
         cnn_config = config.cnn
         kernel_sizes = getattr(cnn_config, 'kernel_sizes', None)
         dilation_rates = getattr(cnn_config, 'dilation_rates', None) 
         use_residual = getattr(cnn_config, 'use_residual', None)
     
-    # Fallback to flattened config with cnn_ prefix
     if kernel_sizes is None:
         kernel_sizes = getattr(config, 'cnn_kernel_sizes', [3, 5, 7])
     if dilation_rates is None:
@@ -105,7 +101,6 @@ def setup_cnn_model_and_training(config: TrainingConfig, train_dataset: SongsDat
         num_classes=config.num_classes,
         dropout=config.dropout,
         layer_dropout=config.layer_dropout,
-        # Attention parameters (same as BiLSTM)
         attention_enabled=config.attention_enabled,
         attention_type=config.attention_type,
         attention_heads=config.attention_heads,
@@ -121,7 +116,6 @@ def setup_cnn_model_and_training(config: TrainingConfig, train_dataset: SongsDat
         use_residual=use_residual
     ).to(device)
     
-    # Print detailed CNN model information
     print(f"\n🤖 CNN Architecture Details:")
     model.print_model_info()
     
@@ -167,7 +161,7 @@ def setup_cnn_model_and_training(config: TrainingConfig, train_dataset: SongsDat
     print(f"   Output dropout: {config.dropout}")
     print(f"   Output classes: {config.num_classes}")
     
-    # Loss Function Configuration (same as BiLSTM)
+    # Loss Function Configuration
     print(f"\n🎯 CNN Loss Function Configuration:")
     print(f"=" * 70)
     
@@ -187,7 +181,6 @@ def setup_cnn_model_and_training(config: TrainingConfig, train_dataset: SongsDat
     print(f"   ✅ CNN Loss Configuration Found")
     print(f"      Loss Type: {loss_type}")
     
-    # Extract parameters from loss config
     class_weights = train_dataset.get_class_weights().to(device)
     label_smoothing = loss_config.get('label_smoothing', 0.2)
     
@@ -200,7 +193,6 @@ def setup_cnn_model_and_training(config: TrainingConfig, train_dataset: SongsDat
         conf_threshold = loss_config.get('conf_threshold', 0.95)
         use_boundary_as_primary = loss_config.get('use_boundary_as_primary', True)
         
-        # Create boundary-aware loss function
         from segmodel.losses.boundary_aware_cross_entropy import BoundaryAwareCrossEntropy
         loss_function = BoundaryAwareCrossEntropy(
             num_classes=config.num_classes,
@@ -230,7 +222,6 @@ def setup_cnn_model_and_training(config: TrainingConfig, train_dataset: SongsDat
         print(f"      • Improved confidence calibration")
             
     elif loss_type == 'cross_entropy':
-        # Legacy cross-entropy loss
         entropy_lambda = loss_config.get('entropy_lambda', 0.0)
         
         from segmodel.losses.cross_entropy import create_loss_function as create_legacy_loss
@@ -254,8 +245,6 @@ def setup_cnn_model_and_training(config: TrainingConfig, train_dataset: SongsDat
     
     print(f"=" * 70)
     
-    # CNN-optimized optimizer
-    # CNNs often benefit from slightly different optimization
     weight_decay = getattr(config, 'weight_decay', 0.01)
     if hasattr(config, 'cnn_weight_decay'):
         weight_decay = config.cnn_weight_decay
@@ -268,6 +257,10 @@ def setup_cnn_model_and_training(config: TrainingConfig, train_dataset: SongsDat
     )
     
     print(f"⚙️  CNN Training setup:")
+    if config.learning_rate > 0.0005:
+        print(f"   ⚠️ WARNING: Learning rate {config.learning_rate} may be too high for CNN models!")
+        print(f"   ⚠️ Consider using a lower learning rate (1e-4 to 5e-4) for stability")
+        
     print(f"   Optimizer: AdamW (lr={config.learning_rate}, wd={weight_decay})")
     print(f"   Scheduler: {getattr(config, 'scheduler', 'onecycle')} (CNN-optimized)")
     print(f"   Gradient clipping: {config.gradient_clip_norm}")
@@ -297,9 +290,9 @@ def print_cnn_experiment_header(config: TrainingConfig):
     print(f"📄 Description: {config.experiment_description}")
     
     if config.experiment_tags:
-        tags = list(config.experiment_tags)  # Create a copy to avoid modifying original
+        tags = list(config.experiment_tags)
         if 'CNN' not in tags:
-            tags.append('CNN')  # Add CNN tag only if not already present
+            tags.append('CNN')
         print(f"🏷️  Tags: {', '.join(tags)}")
     else:
         print(f"🏷️  Tags: CNN")
@@ -333,11 +326,9 @@ CNN Training Examples:
         """
     )
     
-    # Required config file argument
     parser.add_argument('config', 
                        help='Path to YAML configuration file')
     
-    # Optional overrides
     parser.add_argument('--batch-size', type=int,
                        help='Override batch size from config')
     parser.add_argument('--learning-rate', type=float,
@@ -351,7 +342,6 @@ CNN Training Examples:
     parser.add_argument('--disable-emergency-monitoring', action='store_true',
                        help='Disable emergency monitoring (overrides config)')
     
-    # CNN-specific overrides
     parser.add_argument('--cnn-kernel-sizes', nargs='+', type=int,
                        help='Override CNN kernel sizes (e.g., --cnn-kernel-sizes 3 5 7)')
     parser.add_argument('--cnn-layers', type=int,
@@ -359,7 +349,6 @@ CNN Training Examples:
     parser.add_argument('--cnn-scheduler', choices=['onecycle', 'cosine', 'cosine_restarts', 'plateau'],
                        help='Override CNN scheduler type')
     
-    # Data file overrides
     parser.add_argument('--train',
                        help='Override training data file')
     parser.add_argument('--val', 
@@ -373,20 +362,16 @@ CNN Training Examples:
         # Load configuration
         config = load_training_config(args.config)
         
-        # Load raw YAML to access CNN-specific configuration
         import yaml
         with open(args.config, 'r') as f:
             raw_config = yaml.safe_load(f)
         
-        # Apply command line overrides
         config = merge_with_args(config, args)
         
-        # Extract and apply CNN-specific configuration from YAML
         if 'cnn' in raw_config and raw_config['cnn']:
             cnn_config = raw_config['cnn']
             print(f"🔧 Loading CNN-specific configuration...")
             
-            # Apply CNN parameters from config file
             if 'kernel_sizes' in cnn_config:
                 config.cnn_kernel_sizes = cnn_config['kernel_sizes']
                 print(f"   Kernel sizes: {cnn_config['kernel_sizes']}")
@@ -407,7 +392,6 @@ CNN Training Examples:
                 config.cnn_weight_decay = cnn_config['weight_decay']
                 print(f"   Weight decay: {cnn_config['weight_decay']}")
         else:
-            # Set CNN defaults if no cnn section in config
             print(f"⚠️  No CNN section in config, using defaults")
             config.cnn_kernel_sizes = getattr(config, 'cnn_kernel_sizes', [3, 5, 7])
             config.cnn_dilation_rates = getattr(config, 'cnn_dilation_rates', [1, 2, 4])
@@ -415,7 +399,6 @@ CNN Training Examples:
             config.cnn_batch_multiplier = getattr(config, 'cnn_batch_multiplier', 1.5)
             config.cnn_weight_decay = getattr(config, 'cnn_weight_decay', 0.005)
         
-        # Apply CNN-specific overrides from command line (highest priority)
         if args.cnn_kernel_sizes:
             config.cnn_kernel_sizes = args.cnn_kernel_sizes
             print(f"🏃‍♂️ CNN kernel sizes override: {args.cnn_kernel_sizes}")
@@ -428,10 +411,8 @@ CNN Training Examples:
             config.scheduler = args.cnn_scheduler
             print(f"🏃‍♂️ CNN scheduler override: {args.cnn_scheduler}")
         
-        # Set random seed
         torch.manual_seed(config.seed)
         
-        # Print CNN-specific configuration summary
         print(f"\n📋 CNN Configuration Summary:")
         print(f"   Experiment: {config.experiment_name}")
         print(f"   Model: hidden_dim={config.hidden_dim}, layers={config.num_layers}, dropout={config.dropout}")
@@ -458,7 +439,6 @@ CNN Training Examples:
         if hasattr(config, 'calibration_methods') and config.calibration_methods:
             print(f"   🎯 Calibration: {', '.join(config.calibration_methods)}")
         
-        # Print CNN-specific parameters
         print(f"   🏗️  CNN Architecture:")
         print(f"      Kernel sizes: {getattr(config, 'cnn_kernel_sizes', [3, 5, 7])}")
         print(f"      Dilation rates: {getattr(config, 'cnn_dilation_rates', [1, 2, 4])}")
@@ -467,23 +447,17 @@ CNN Training Examples:
         
         print(f"   Device: {config.device}")
         
-        # Print CNN experiment info
         print_cnn_experiment_header(config)
         
-        # Create CNN session directory
         session_dir = create_cnn_session_directory(config)
         
-        # Save config snapshot for reproducibility with CNN-specific enhancements
         save_config_snapshot(config, session_dir)
         
-        # Save an enhanced CNN config snapshot with explicit CNN parameters
         enhanced_config_path = session_dir / "cnn_enhanced_config_snapshot.yaml"
         import yaml
         
-        # Create enhanced config dict with explicit CNN parameters
         enhanced_config = config.__dict__.copy()
         
-        # Add explicit CNN-specific parameters that might be derived
         enhanced_config['model_type'] = 'CNN'
         enhanced_config['architecture'] = 'CNNTagger'
         enhanced_config['cnn_kernel_sizes'] = getattr(config, 'cnn_kernel_sizes', [3, 5, 7])
@@ -578,7 +552,6 @@ CNN Training Examples:
         feature_dim = feature_extractor.get_feature_dimension()
         print(f"✅ CNN Feature dimension: {feature_dim}")
         
-        # Show CNN-optimized feature configuration
         print(f"🔧 CNN Feature configuration details:")
         enabled_features = []
         if config.head_ssm_enabled:
@@ -607,10 +580,8 @@ CNN Training Examples:
         else:
             print(f"   ⚠️ No features enabled for CNN!")
         
-        # Setup CNN data loaders
         train_loader, val_loader, test_loader, train_dataset = setup_data_loaders(config, feature_extractor)
         
-        # Setup CNN model and training components
         model, loss_function, optimizer = setup_cnn_model_and_training(
             config, train_dataset, config.device, feature_dim
         )
@@ -636,10 +607,8 @@ CNN Training Examples:
         training_time = time.time() - start_time
         print(f"⏱️  Total CNN training time: {training_time/60:.1f} minutes")
         
-        # Final evaluation
         print(f"📊 Final CNN evaluation on test set...")
         
-        # Load calibration if available
         calibrator = None
         if calibration_info:
             try:
@@ -655,7 +624,6 @@ CNN Training Examples:
         
         test_results = trainer.evaluate(test_loader, calibrator=calibrator)
         
-        # Print final CNN results
         print(f"\n🎯 Final CNN Test Results:")
         print(f"   Macro F1: {test_results['macro_f1']:.4f}")
         print(f"   Verse F1: {test_results['verse_f1']:.4f}")  
@@ -666,7 +634,6 @@ CNN Training Examples:
         print(f"   Chorus rate: {test_results['chorus_rate']:.2%}")
         print(f"   CNN Calibration: {list(calibration_info.keys()) if calibration_info else 'none'}")
         
-        # Save final CNN results
         results_file = session_dir / "final_cnn_results.txt"
         with open(results_file, 'w') as f:
             f.write(f"CNN Training Results - {config.experiment_name}\n")
@@ -675,7 +642,6 @@ CNN Training Examples:
             f.write(f"Training time: {training_time/60:.1f} minutes\n")
             f.write(f"Feature dimension: {feature_dim}\n\n")
             
-            # CNN Architecture Summary
             f.write("CNN Model Architecture:\n")
             f.write("-" * 22 + "\n")
             f.write(f"  Architecture: CNN (Convolutional Neural Network)\n")
@@ -688,7 +654,6 @@ CNN Training Examples:
             f.write(f"  Output dropout: {config.dropout}\n")
             f.write(f"  Total parameters: {sum(p.numel() for p in model.parameters()):,}\n")
             
-            # Attention Configuration
             if config.attention_enabled:
                 f.write(f"  Attention type: {config.attention_type}\n")
                 f.write(f"  Attention heads: {config.attention_heads}\n")
@@ -696,7 +661,6 @@ CNN Training Examples:
             else:
                 f.write(f"  Attention: disabled\n")
             
-            # Training Configuration
             f.write(f"\nCNN Training Configuration:\n")
             f.write("-" * 27 + "\n")
             f.write(f"  Batch size: {config.batch_size}\n")
@@ -719,7 +683,6 @@ CNN Training Examples:
             f.write(f"  Chorus rate: {test_results['chorus_rate']:.2%}\n")
             f.write(f"  Calibration: {list(calibration_info.keys()) if calibration_info else 'none'}\n")
             
-            # Add CNN-specific metrics if available
             if 'receptive_field_usage' in test_results:
                 f.write(f"\nCNN-Specific Metrics:\n")
                 f.write("-" * 21 + "\n")
@@ -731,18 +694,15 @@ CNN Training Examples:
         print(f"📁 All CNN files saved to: {session_dir}")
         print(f"🏆 Best CNN model: {session_dir}/best_cnn_model.pt")
         
-        # Save a final CNN model with descriptive name including experiment info
         final_model_name = f"cnn_{config.experiment_name}_{config.hidden_dim}d_{config.num_layers}layers_final.pt"
         final_model_path = session_dir / final_model_name
         
-        # Copy the best model to the final descriptive name
         import shutil
         best_model_path = session_dir / "best_cnn_model.pt"
         if best_model_path.exists():
             shutil.copy2(best_model_path, final_model_path)
             print(f"🎯 Final CNN model also saved as: {final_model_name}")
         
-        # Save a comprehensive CNN metadata file
         metadata_file = session_dir / "cnn_model_metadata.json"
         import json
         metadata = {

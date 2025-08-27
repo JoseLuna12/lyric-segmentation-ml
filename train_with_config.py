@@ -12,7 +12,6 @@ from pathlib import Path
 import time
 from datetime import datetime
 
-# Import our modules
 from segmodel.utils import TrainingConfig, load_training_config, merge_with_args, save_config_snapshot
 from segmodel.data import SongsDataset, create_dataloader
 from segmodel.features import FeatureExtractor
@@ -67,7 +66,6 @@ def setup_data_loaders(config: TrainingConfig, feature_extractor):
 def setup_model_and_training(config: TrainingConfig, train_dataset: SongsDataset, device: str, feature_dim: int):
     """Setup model, loss function, and optimizer from configuration."""
     
-    # Create model using YAML configuration directly
     from segmodel.models import BLSTMTagger
     
     # Create model
@@ -110,7 +108,6 @@ def setup_model_and_training(config: TrainingConfig, train_dataset: SongsDataset
     else:
         print(f"   Single-layer BiLSTM (backward compatible)")
     
-    # NEW: Attention information in summary
     if config.attention_enabled:
         print(f"   🎯 Attention mechanism:")
         print(f"      Heads: {config.attention_heads}")
@@ -130,11 +127,9 @@ def setup_model_and_training(config: TrainingConfig, train_dataset: SongsDataset
     print(f"   Output dropout: {config.dropout}")
     print(f"   Output classes: {config.num_classes}")
     
-    # Enhanced Loss Function Configuration
     print(f"\n🎯 Loss Function Configuration:")
     print(f"=" * 70)
     
-    # Require new loss configuration format
     if not hasattr(config, 'loss'):
         raise ValueError(
             "❌ Config must include 'loss' section!\n"
@@ -152,7 +147,6 @@ def setup_model_and_training(config: TrainingConfig, train_dataset: SongsDataset
     print(f"   ✅ Loss Configuration Found")
     print(f"      Loss Type: {loss_type}")
     
-    # Extract parameters from loss config
     class_weights = train_dataset.get_class_weights().to(device)
     
     label_smoothing = loss_config.get('label_smoothing', 0.2)
@@ -188,27 +182,8 @@ def setup_model_and_training(config: TrainingConfig, train_dataset: SongsDataset
         print(f"      ├── Confidence Penalty: λ={conf_penalty_lambda:.3f} (threshold={conf_threshold:.2f}) {'✅ ACTIVE' if conf_penalty_lambda > 0 else '❌ DISABLED'}")
         print(f"      ├── Entropy Regularization: λ={entropy_lambda:.3f} {'✅ ACTIVE' if entropy_lambda > 0 else '❌ DISABLED'}")
         print(f"      └── Architecture: {'🎯 Boundary-Primary' if use_boundary_as_primary else '📊 Cross-Entropy Primary'}")
-        
-        # Expected improvements
-        print(f"\n   📈 Expected Improvements:")
-        active_components = []
-        if boundary_weight > 1.0:
-            active_components.append("Better boundary detection (+5-15% boundary F1)")
-        if segment_consistency_lambda > 0:
-            active_components.append("Reduced fragmentation (+10-20% segment quality)")
-        if conf_penalty_lambda > 0:
-            active_components.append("Improved confidence calibration")
-        if entropy_lambda > 0:
-            active_components.append("Enhanced prediction diversity")
-        
-        if active_components:
-            for improvement in active_components:
-                print(f"      • {improvement}")
-        else:
-            print(f"      • Using minimal settings - consider enabling boundary components")
             
     elif loss_type == 'cross_entropy':
-        # Legacy cross-entropy loss
         entropy_lambda = loss_config.get('entropy_lambda', 0.0)
         
         from segmodel.losses.cross_entropy import create_loss_function as create_legacy_loss
@@ -233,14 +208,11 @@ def setup_model_and_training(config: TrainingConfig, train_dataset: SongsDataset
     
     print(f"=" * 70)
     
-    # Create optimizer
     optimizer = AdamW(
         model.parameters(),
         lr=config.learning_rate,
         weight_decay=config.weight_decay
     )
-    
-    # Note: Scheduler is created by Trainer from config, not here
     
     print(f"⚙️  Training setup:")
     print(f"   Optimizer: AdamW (lr={config.learning_rate}, wd={config.weight_decay})")
@@ -331,25 +303,19 @@ Examples:
     args = parser.parse_args()
     
     try:
-        # Load configuration
+        
         config = load_training_config(args.config)
         
-        # Apply command line overrides
         config = merge_with_args(config, args)
         
-        # Set random seed
         torch.manual_seed(config.seed)
         
-        # Print experiment info
         print_experiment_header(config)
         
-        # Create session directory
         session_dir = create_session_directory(config)
         
-        # Save config snapshot for reproducibility
         save_config_snapshot(config, session_dir)
         
-        # Setup feature extractor first
         print(f"🧩 Setting up feature extraction...")
         feature_config = {
             'head_ssm': {
@@ -386,7 +352,6 @@ Examples:
                 'similarity_method': config.string_ssm_similarity_method,
                 'output_dim': config.string_ssm_dimension
             },
-            # NEW: Syllable SSM features
             'syllable_pattern_ssm': {
                 'enabled': config.syllable_pattern_ssm_enabled,
                 'similarity_method': config.syllable_pattern_ssm_similarity_method,
@@ -404,7 +369,7 @@ Examples:
                 'normalize_method': config.line_syllable_ssm_normalize_method,
                 'dimension': config.line_syllable_ssm_dimension
             },
-            # NEW: Embedding features in flattened format expected by FeatureExtractor
+            # Embedding features in flattened format expected by FeatureExtractor
             'word2vec_enabled': config.word2vec_enabled,
             'word2vec_model': config.word2vec_model,
             'word2vec_mode': config.word2vec_mode,
@@ -422,7 +387,6 @@ Examples:
         feature_dim = feature_extractor.get_feature_dimension()
         print(f"✅ Feature dimension: {feature_dim}")
         
-        # Show detailed feature configuration
         print(f"🔧 Feature configuration details:")
         enabled_features = []
         if config.head_ssm_enabled:
@@ -449,7 +413,7 @@ Examples:
             string_desc += ")"
             enabled_features.append(string_desc)
         
-        # NEW: Syllable SSM features
+        # Syllable SSM features
         if config.syllable_pattern_ssm_enabled:
             syl_desc = f"SyllablePattern-SSM({config.syllable_pattern_ssm_dimension}D,{config.syllable_pattern_ssm_similarity_method}"
             if config.syllable_pattern_ssm_similarity_method == "combined":
@@ -466,7 +430,7 @@ Examples:
             line_syl_desc += f",ratio={config.line_syllable_ssm_ratio_threshold})"
             enabled_features.append(line_syl_desc)
         
-        # NEW: Embedding features
+        # Embedding features
         if config.word2vec_enabled:
             w2v_dim = 12 if config.word2vec_mode == "summary" else 300
             w2v_desc = f"Word2Vec({w2v_dim}D,{config.word2vec_model},{config.word2vec_mode}"
@@ -492,13 +456,11 @@ Examples:
             print(f"   🧩 POS-SSM config: {config.pos_ssm_tagset} tags, {config.pos_ssm_similarity_method} similarity, threshold={config.pos_ssm_high_sim_threshold}")
         if config.string_ssm_enabled:
             print(f"   🧩 String-SSM config: case_sensitive={config.string_ssm_case_sensitive}, remove_punctuation={config.string_ssm_remove_punctuation}, threshold={config.string_ssm_similarity_threshold}")
-        # NEW: Show embedding details
         if config.word2vec_enabled:
             print(f"   🔤 Word2Vec config: {config.word2vec_model}, mode={config.word2vec_mode}, normalize={config.word2vec_normalize}, {config.word2vec_similarity_metric}, threshold={config.word2vec_high_sim_threshold}")
         if config.contextual_enabled:
             print(f"   🤖 Contextual config: {config.contextual_model}, mode={config.contextual_mode}, normalize={config.contextual_normalize}, {config.contextual_similarity_metric}, threshold={config.contextual_high_sim_threshold}")
         
-        # NEW: Syllable SSM details
         if config.syllable_pattern_ssm_enabled:
             print(f"   🎵 SyllablePattern-SSM config: method={config.syllable_pattern_ssm_similarity_method}, normalize={config.syllable_pattern_ssm_normalize}")
             if config.syllable_pattern_ssm_similarity_method == "combined":
@@ -506,27 +468,23 @@ Examples:
         if config.line_syllable_ssm_enabled:
             print(f"   🎼 LineSyllable-SSM config: method={config.line_syllable_ssm_similarity_method}, ratio_threshold={config.line_syllable_ssm_ratio_threshold}, normalize={config.line_syllable_ssm_normalize}")
         
-        # Setup data loaders
         train_loader, val_loader, test_loader, train_dataset = setup_data_loaders(config, feature_extractor)
         
-        # Setup model and training components
         model, loss_function, optimizer = setup_model_and_training(
             config, train_dataset, config.device, feature_dim
         )
         
-        # Create trainer
         print(f"🚀 Setting up trainer...")
         trainer = Trainer(
             model=model,
             loss_function=loss_function,
             optimizer=optimizer,
             device=config.device,
-            config=config,  # Use YAML config directly
+            config=config,
             output_dir=session_dir,
             disable_emergency_monitoring=not config.emergency_monitoring_enabled
         )
         
-        # Start training
         print(f"🎓 Starting training...")
         start_time = time.time()
         
@@ -535,10 +493,8 @@ Examples:
         training_time = time.time() - start_time
         print(f"⏱️  Total training time: {training_time/60:.1f} minutes")
         
-        # Final evaluation
         print(f"📊 Final evaluation on test set...")
         
-        # Load calibration if available for final test evaluation
         calibrator = None
         if calibration_info:
             try:
@@ -554,7 +510,6 @@ Examples:
         
         test_results = trainer.evaluate(test_loader, calibrator=calibrator)
         
-        # Print final results
         print(f"\n🎯 Final Test Results:")
         print(f"   Macro F1: {test_results['macro_f1']:.4f}")
         print(f"   Verse F1: {test_results['verse_f1']:.4f}")  
@@ -563,7 +518,6 @@ Examples:
         print(f"   Chorus rate: {test_results['chorus_rate']:.2%}")
         print(f"   Calibration: {list(calibration_info.keys()) if calibration_info else 'none'}")
         
-        # Save final results
         results_file = session_dir / "final_results.txt"
         with open(results_file, 'w') as f:
             f.write(f"BLSTM Training Results - {config.experiment_name}\n")
@@ -572,25 +526,21 @@ Examples:
             f.write(f"Training time: {training_time/60:.1f} minutes\n")
             f.write(f"Feature dimension: {feature_dim}\n\n")
             
-            # Feature Configuration Summary
             f.write("Feature Configuration:\n")
             f.write("-" * 25 + "\n")
             
-            # Head-SSM
             if config.head_ssm_enabled:
                 f.write(f"  Head-SSM: Enabled ({config.head_ssm_dimension}D)\n")
                 f.write(f"    Head words: {config.head_ssm_words}\n")
             else:
                 f.write(f"  Head-SSM: Disabled\n")
             
-            # Tail-SSM  
             if config.tail_ssm_enabled:
                 f.write(f"  Tail-SSM: Enabled ({config.tail_ssm_dimension}D)\n")
                 f.write(f"    Tail words: {config.tail_ssm_words}\n")
             else:
                 f.write(f"  Tail-SSM: Disabled\n")
             
-            # Phonetic-SSM
             if config.phonetic_ssm_enabled:
                 f.write(f"  Phonetic-SSM: Enabled ({config.phonetic_ssm_dimension}D)\n")
                 f.write(f"    Mode: {config.phonetic_ssm_mode}\n")
@@ -603,7 +553,6 @@ Examples:
             else:
                 f.write(f"  Phonetic-SSM: Disabled\n")
             
-            # POS-SSM
             if config.pos_ssm_enabled:
                 f.write(f"  POS-SSM: Enabled ({config.pos_ssm_dimension}D)\n")
                 f.write(f"    Tagset: {config.pos_ssm_tagset}\n")
@@ -612,7 +561,6 @@ Examples:
             else:
                 f.write(f"  POS-SSM: Disabled\n")
             
-            # String-SSM
             if config.string_ssm_enabled:
                 f.write(f"  String-SSM: Enabled ({config.string_ssm_dimension}D)\n")
                 f.write(f"    Case sensitive: {config.string_ssm_case_sensitive}\n")
@@ -622,8 +570,6 @@ Examples:
             else:
                 f.write(f"  String-SSM: Disabled\n")
             
-            # NEW: Syllable SSM Features
-            # Syllable Pattern SSM
             if config.syllable_pattern_ssm_enabled:
                 f.write(f"  SyllablePattern-SSM: Enabled ({config.syllable_pattern_ssm_dimension}D)\n")
                 f.write(f"    Similarity method: {config.syllable_pattern_ssm_similarity_method}\n")
@@ -637,7 +583,6 @@ Examples:
             else:
                 f.write(f"  SyllablePattern-SSM: Disabled\n")
             
-            # Line Syllable SSM
             if config.line_syllable_ssm_enabled:
                 f.write(f"  LineSyllable-SSM: Enabled ({config.line_syllable_ssm_dimension}D)\n")
                 f.write(f"    Similarity method: {config.line_syllable_ssm_similarity_method}\n")
@@ -649,10 +594,8 @@ Examples:
             else:
                 f.write(f"  LineSyllable-SSM: Disabled\n")
             
-            # NEW: Embedding Features
             f.write(f"\n")
             
-            # Word2Vec Embeddings
             if config.word2vec_enabled:
                 w2v_dim = 12 if config.word2vec_mode == "summary" else 300
                 f.write(f"  Word2Vec Embeddings: Enabled ({w2v_dim}D)\n")
@@ -664,7 +607,6 @@ Examples:
             else:
                 f.write(f"  Word2Vec Embeddings: Disabled\n")
             
-            # Contextual Embeddings
             if config.contextual_enabled:
                 ctx_dim = 12 if config.contextual_mode == "summary" else 384
                 f.write(f"  Contextual Embeddings: Enabled ({ctx_dim}D)\n")
@@ -676,7 +618,6 @@ Examples:
             else:
                 f.write(f"  Contextual Embeddings: Disabled\n")
             
-            # Feature dimension breakdown
             f.write(f"\n")
             enabled_feature_dims = []
             if config.head_ssm_enabled:
@@ -721,7 +662,6 @@ Examples:
                 total_params = sum(p.numel() for p in model.parameters())
                 f.write(f"      Total parameters: {total_params:,}\n")
             
-            # Attention Configuration
             f.write(f"  Attention type: {config.attention_type}\n")
             if config.attention_type == 'localized':
                 f.write(f"    Window size: {config.window_size}\n")
@@ -734,7 +674,7 @@ Examples:
             f.write(f"  Output dropout: {config.dropout}\n")
             f.write(f"  Batch size: {config.batch_size}\n")
             f.write(f"  Learning rate: {config.learning_rate}\n")
-            # Write loss configuration in summary
+
             if config.loss_config.loss_type == 'cross_entropy':
                 f.write(f"  Loss type: {config.loss_config.loss_type}\n")
                 f.write(f"  Label smoothing: {config.loss_config.label_smoothing}\n")
@@ -754,7 +694,6 @@ Examples:
             f.write(f"  Chorus rate: {test_results['chorus_rate']:.2%}\n")
             f.write(f"  Calibration: {list(calibration_info.keys()) if calibration_info else 'none'}\n")
             
-            # Add calibration details if available
             if calibration_info:
                 f.write(f"\nCalibration Details:\n")
                 f.write("-" * 20 + "\n")

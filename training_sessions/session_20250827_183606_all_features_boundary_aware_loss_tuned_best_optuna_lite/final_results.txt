@@ -1,0 +1,77 @@
+BLSTM Training Results - all_features_boundary_aware_loss_tuned_best_optuna_lite
+==================================================
+
+Configuration: configs/training/best_optuna_features_config_lite.yaml
+Training time: 14.4 minutes
+Feature dimension: 84
+
+Feature Configuration:
+-------------------------
+  Head-SSM: Enabled (12D)
+    Head words: 4
+  Tail-SSM: Enabled (12D)
+    Tail words: 4
+  Phonetic-SSM: Enabled (12D)
+    Mode: rhyme
+    Similarity: binary
+    Normalize: False
+    High sim threshold: 0.3408132908118695
+  POS-SSM: Enabled (12D)
+    Tagset: universal
+    Similarity: combined
+    High sim threshold: 0.22920050586956564
+  String-SSM: Enabled (12D)
+    Case sensitive: False
+    Remove punctuation: False
+    Similarity threshold: 0.05482346859350815
+    Similarity method: word_overlap
+  SyllablePattern-SSM: Enabled (12D)
+    Similarity method: cosine
+    Normalize: False
+  LineSyllable-SSM: Disabled
+
+  Word2Vec Embeddings: Enabled (12D)
+    Model: word2vec-google-news-300
+    Mode: summary (12D statistical features)
+    Normalize: True
+    Similarity metric: cosine
+    High similarity threshold: 0.7751548030252033
+  Contextual Embeddings: Disabled
+
+  Total Feature Dimension: 84D (Head-SSM: 12D + Tail-SSM: 12D + Phonetic-SSM: 12D + POS-SSM: 12D + String-SSM: 12D + SyllablePattern-SSM: 12D + Word2Vec: 12D)
+
+Model Architecture:
+------------------
+  Input dimension: 84D
+  Hidden dimension: 256D
+  LSTM layers: 1
+  Single-layer BiLSTM (backward compatible)
+      Total parameters: 1,228,034
+  Attention type: localized
+    Window size: 7
+  Positional encoding: True
+    PE max length: 1000
+  Output dropout: 0.16160864979184558
+  Batch size: 32
+  Learning rate: 0.0009364363515835176
+  Loss type: boundary_aware_cross_entropy
+  Boundary weight: 1.933011168683694
+  Entropy lambda: 0.03210226714119728
+  Segment consistency lambda: 0.02998016982793507
+  Weighted sampling: True
+
+Test Results:
+-------------
+  Macro F1: 0.7628
+  Verse F1: 0.8847
+  Chorus F1: 0.6408
+  Confidence: 0.855
+  Chorus rate: 20.86%
+  Calibration: ['temperature', 'platt']
+
+Calibration Details:
+--------------------
+  temperature: ECE 0.1447 → 0.0201 (Δ+0.1246)
+    T = 0.416
+  platt: ECE 0.1447 → 0.0791 (Δ+0.0656)
+    A = 1.500, B = 0.000

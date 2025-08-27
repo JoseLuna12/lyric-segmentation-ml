@@ -1,0 +1,145 @@
+anti_collapse: !!python/object:segmodel.utils.config_loader.AntiCollapseConfig
+  weighted_sampling: false
+attention_dim: null
+attention_dropout: 0.1
+attention_enabled: false
+attention_heads: 4
+attention_type: self
+batch_size: 64
+boundary_temperature: 2.0
+calibration_enabled: true
+calibration_methods:
+- temperature
+- platt
+cnn_batch_multiplier: 1.285221300157942
+cnn_dilation_rates:
+- 1
+- 2
+- 4
+- 8
+cnn_kernel_sizes:
+- 5
+- 7
+- 9
+cnn_use_residual: true
+cnn_weight_decay: 0.016194692405111077
+contextual_enabled: false
+contextual_high_sim_threshold: 0.72
+contextual_mode: complete
+contextual_model: all-MiniLM-L6-v2
+contextual_normalize: true
+contextual_similarity_metric: cosine
+cosine_t0: 10
+cosine_t_max: 15
+cosine_t_mult: 2
+device: mps
+dropout: 0.28098494851746336
+emergency_conf95_ratio: 0.65
+emergency_f1_threshold: 0.05
+emergency_monitoring_enabled: true
+emergency_overconf_threshold: 0.94
+experiment_description: BiLSTM training experiment
+experiment_name: blstm_experiment
+experiment_notes: ''
+experiment_tags: []
+gradient_clip_norm: 0.6505550113515695
+head_ssm_dimension: 12
+head_ssm_enabled: false
+head_ssm_words: 4
+hidden_dim: 128
+layer_dropout: 0.0
+learning_rate: 0.00025003308878196587
+line_syllable_ssm_dimension: 12
+line_syllable_ssm_enabled: true
+line_syllable_ssm_normalize: false
+line_syllable_ssm_normalize_method: minmax
+line_syllable_ssm_ratio_threshold: 0.1
+line_syllable_ssm_similarity_method: cosine
+loss:
+  boundary_weight: 2.4049382349969917
+  conf_penalty_lambda: 0.006468491700683438
+  conf_threshold: 0.9271599916381283
+  entropy_lambda: 0.0362486225164217
+  label_smoothing: 0.17069539231446393
+  segment_consistency_lambda: 0.01779557626070636
+  type: boundary_aware_cross_entropy
+  use_boundary_as_primary: true
+loss_config: !!python/object:segmodel.utils.config_loader.LossConfig
+  boundary_weight: 1.0
+  conf_penalty_lambda: 0.01
+  conf_threshold: 0.7
+  entropy_lambda: 0.05
+  label_smoothing: 0.0
+  loss_type: CrossEntropyWithLabelSmoothing
+  segment_consistency_lambda: 0.0
+  use_boundary_as_primary: false
+lr_factor: 0.3
+lr_patience: 2
+max_chorus_rate: 0.8469504893956652
+max_conf_over_95_ratio: 0.06486108094623642
+max_confidence_threshold: 0.9077413548283023
+max_epochs: 15
+max_seq_length: 1000
+min_chorus_rate: 0.054437918499780906
+min_delta: 0.000279133722314374
+min_lr: 1.0e-06
+num_classes: 2
+num_layers: 1
+num_workers: 0
+output_base_dir: results
+patience: 4
+phonetic_ssm_dimension: 12
+phonetic_ssm_enabled: true
+phonetic_ssm_high_sim_threshold: 0.2860967126198152
+phonetic_ssm_mode: combined
+phonetic_ssm_normalize: true
+phonetic_ssm_normalize_method: zscore
+phonetic_ssm_similarity_method: binary
+pos_ssm_dimension: 12
+pos_ssm_enabled: true
+pos_ssm_high_sim_threshold: 0.31697600549670335
+pos_ssm_similarity_method: combined
+pos_ssm_tagset: universal
+positional_encoding: true
+print_batch_every: 10
+save_best_model: true
+save_final_model: true
+save_training_metrics: true
+scheduler: cosine
+seed: 42
+skip_batches: 15
+skip_epochs: 2
+step_gamma: 0.5
+step_size: 0
+string_ssm_case_sensitive: false
+string_ssm_dimension: 12
+string_ssm_enabled: true
+string_ssm_remove_punctuation: true
+string_ssm_similarity_method: word_overlap
+string_ssm_similarity_threshold: 0.05462669594380264
+syllable_pattern_ssm_cosine_weight: 0.3
+syllable_pattern_ssm_dimension: 12
+syllable_pattern_ssm_enabled: false
+syllable_pattern_ssm_levenshtein_weight: 0.7
+syllable_pattern_ssm_normalize: false
+syllable_pattern_ssm_normalize_method: zscore
+syllable_pattern_ssm_similarity_method: cosine
+tail_ssm_dimension: 12
+tail_ssm_enabled: true
+tail_ssm_words: 4
+test_file: data/test.jsonl
+train_file: data/train.jsonl
+val_f1_collapse_threshold: 0.1
+val_file: data/val.jsonl
+val_overconf_threshold: 0.92
+validation_strategy: boundary_f1
+warmup_epochs: 5
+weight_decay: 0.016194692405111077
+weighted_sampling: true
+window_size: 7
+word2vec_enabled: true
+word2vec_high_sim_threshold: 0.82
+word2vec_mode: complete
+word2vec_model: word2vec-google-news-300
+word2vec_normalize: true
+word2vec_similarity_metric: cosine

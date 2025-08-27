@@ -37,7 +37,6 @@ class CNNTagger(nn.Module):
         num_classes: int = 2,
         dropout: float = 0.4,
         layer_dropout: float = 0.0,
-        # NEW: Attention parameters (same as BiLSTM)
         attention_enabled: bool = False,
         attention_type: str = 'self',
         attention_heads: int = 8,
@@ -47,7 +46,6 @@ class CNNTagger(nn.Module):
         max_seq_length: int = 1000,
         window_size: int = 7,
         boundary_temperature: float = 2.0,
-        # CNN-specific parameters
         kernel_sizes: Tuple[int, ...] = (3, 5, 7),
         dilation_rates: Tuple[int, ...] = (1, 2, 4),
         use_residual: bool = True
@@ -84,12 +82,10 @@ class CNNTagger(nn.Module):
         self.dropout_p = dropout
         self.layer_dropout_p = layer_dropout
         
-        # CNN-specific parameters
         self.kernel_sizes = kernel_sizes
         self.dilation_rates = dilation_rates
         self.use_residual = use_residual
         
-        # Attention configuration (same as BiLSTM)
         self.attention_enabled = attention_enabled
         self.attention_type = attention_type
         self.attention_heads = attention_heads
@@ -100,13 +96,10 @@ class CNNTagger(nn.Module):
         self.window_size = window_size
         self.boundary_temperature = boundary_temperature
         
-        # CNN output dimension (same as BiLSTM for compatibility)
         self.cnn_output_dim = hidden_dim
         
-        # Input projection to match hidden dimension
         self.input_projection = nn.Linear(feat_dim, hidden_dim)
         
-        # Multi-scale CNN blocks
         self.cnn_blocks = nn.ModuleList()
         for layer_idx in range(num_layers):
             block = CNNBlock(
@@ -139,36 +132,59 @@ class CNNTagger(nn.Module):
         # Dropout for regularization
         self.dropout = nn.Dropout(dropout)
         
-        # Single classification head (same as BiLSTM)
+        # Single classification head
         classifier_input_dim = self.cnn_output_dim
         self.classifier = nn.Linear(classifier_input_dim, num_classes)
         
-        # Initialize parameters properly to prevent overconfidence
         self._initialize_parameters()
     
     def _initialize_parameters(self):
         """
-        Initialize parameters to prevent overconfidence.
-        Based on lessons from BiLSTM architecture.
+        Initialize parameters with much smaller values to prevent NaN and collapse.
+        Uses consistent normal initialization with small std values.
         """
-        # Initialize input projection
-        nn.init.xavier_uniform_(self.input_projection.weight)
-        nn.init.zeros_(self.input_projection.bias)
+        nn.init.normal_(self.input_projection.weight, mean=0.0, std=0.01)
+        nn.init.constant_(self.input_projection.bias, 0.01)
         
-        # Initialize CNN blocks
         for block in self.cnn_blocks:
             block._initialize_parameters()
         
-        # Initialize classifier with small weights and proper bias
-        nn.init.xavier_uniform_(self.classifier.weight, gain=0.1)  # Small gain for stability
+        nn.init.normal_(self.classifier.weight, mean=0.0, std=0.01)
         
-        # Initialize bias to log prior probabilities
         with torch.no_grad():
-            self.classifier.bias.fill_(0.0)  # Start neutral, let class weights handle imbalance
+            self.classifier.bias.fill_(0.0) 
+            
+    
+    def check_tensor(self, x: torch.Tensor, name: str) -> bool:
+        """
+        Comprehensive tensor checking with detailed statistics.
+        
+        Args:
+            x: Tensor to check
+            name: Name of the tensor for logging
+            
+        Returns:
+            bool: True if NaN/Inf detected, False otherwise
+        """
+        if torch.isnan(x).any() or torch.isinf(x).any():
+            nan_count = torch.isnan(x).sum().item()
+            inf_count = torch.isinf(x).sum().item()
+            try:
+                min_val = x.min().item() if not torch.isnan(x).all() else "all NaN"
+                max_val = x.max().item() if not torch.isnan(x).all() else "all NaN"
+                mean_val = x.mean().item() if not torch.isnan(x).all() else "all NaN"
+                std_val = x.std().item() if not torch.isnan(x).all() else "all NaN"
+            except:
+                min_val = max_val = mean_val = std_val = "error"
+                
+            print(f"⚠️ NaN/Inf detected in {name}: nan={nan_count}, inf={inf_count}")
+            print(f"  Shape: {x.shape}, Min: {min_val}, Max: {max_val}, Mean: {mean_val}, Std: {std_val}")
+            return True
+        return False
     
     def forward(self, features: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         """
-        Forward pass.
+        Forward pass with comprehensive NaN detection and gradient stabilization.
         
         Args:
             features: Input features (batch_size, seq_len, feat_dim)
@@ -179,26 +195,66 @@ class CNNTagger(nn.Module):
         """
         batch_size, seq_len = features.shape[:2]
         
-        # Project input features to hidden dimension
-        x = self.input_projection(features)  # (batch_size, seq_len, hidden_dim)
+        if self.check_tensor(features, "input_features"):
+            # Replace NaN/Inf with zeros to prevent propagation
+            features = torch.where(torch.isnan(features) | torch.isinf(features), 
+                                torch.zeros_like(features), features)
+            print("⚠️ Input features fixed - replaced NaN/Inf with zeros")
+            
+        x = self.input_projection(features)
         
-        # Apply CNN blocks sequentially
-        for block in self.cnn_blocks:
-            x = block(x, mask)  # (batch_size, seq_len, hidden_dim)
+        if self.check_tensor(x, "input_projection_output"):
+            x = torch.nan_to_num(x, nan=0.0, posinf=10.0, neginf=-10.0)
+            
+        x = torch.clamp(x, min=-10.0, max=10.0)
         
-        # Apply attention if enabled
+        for i, block in enumerate(self.cnn_blocks):
+            x_prev = x
+            x = block(x, mask)
+            
+            if self.check_tensor(x, f"cnn_block_{i}_output"):
+                print(f"⚠️ NaN/Inf detected in CNN block {i}, falling back to previous block output")
+                x = x_prev
+                x = torch.nan_to_num(x, nan=0.0, posinf=5.0, neginf=-5.0)
+                break
+                
         if self.attention_enabled and self.attention is not None:
-            x, attention_weights = self.attention(x, mask)
-            # Store attention weights for potential visualization
-            self._last_attention_weights = attention_weights
+            try:
+                x_prev = x
+                x, attention_weights = self.attention(x, mask)
+                
+                if self.check_tensor(x, "attention_output"):
+                    print("⚠️ NaN/Inf detected in attention output, disabling attention")
+                    x = x_prev
+                    attention_weights = None
+                    x = torch.nan_to_num(x, nan=0.0, posinf=5.0, neginf=-5.0)
+                
+                self._last_attention_weights = attention_weights
+            except Exception as e:
+                print(f"⚠️ Attention error: {e}, falling back to non-attention path")
+                x = x_prev
+                self._last_attention_weights = None
         else:
             self._last_attention_weights = None
         
-        # Apply dropout
         x = self.dropout(x)
         
-        # Classification
-        logits = self.classifier(x)  # (batch_size, seq_len, num_classes)
+        if self.check_tensor(x, "pre_classification"):
+            x = torch.nan_to_num(x, nan=0.0, posinf=5.0, neginf=-5.0)
+        
+        x = torch.clamp(x, min=-5.0, max=5.0)
+        
+        logits = self.classifier(x)
+        
+        if self.check_tensor(logits, "output_logits"):
+            logits = torch.zeros_like(logits)
+            logits[:, :, 1] = 0.1
+            print("⚠️ Returning safe logits after NaN detection")
+
+        if self.training:
+            logits.register_hook(lambda grad: torch.clamp(grad, -1.0, 1.0))
+            
+        logits = torch.clamp(logits, min=-10.0, max=10.0)
         
         return logits
     
@@ -263,29 +319,24 @@ class CNNTagger(nn.Module):
             return None
         
         with torch.no_grad():
-            # Run forward pass to get attention weights
             self.forward(features, mask)
             attention_weights = self.get_last_attention_weights()
             
             if attention_weights is None:
                 return None
             
-            # Calculate statistics (same as BiLSTM implementation)
             batch_size, num_heads, seq_len, _ = attention_weights.shape
             
-            # Apply mask to get valid sequence lengths
-            valid_lengths = mask.sum(dim=1)  # (batch_size,)
+            valid_lengths = mask.sum(dim=1)
             
             stats = {}
             for i in range(batch_size):
                 seq_len_i = valid_lengths[i].item()
-                weights_i = attention_weights[i, :, :seq_len_i, :seq_len_i]  # (num_heads, seq_len_i, seq_len_i)
+                weights_i = attention_weights[i, :, :seq_len_i, :seq_len_i]
                 
-                # Attention entropy (diversity measure)
-                entropy = -(weights_i * torch.log(weights_i + 1e-9)).sum(dim=-1)  # (num_heads, seq_len_i)
+                entropy = -(weights_i * torch.log(weights_i + 1e-9)).sum(dim=-1)
                 
-                # Attention concentration (how focused the attention is)
-                max_attention = weights_i.max(dim=-1)[0]  # (num_heads, seq_len_i)
+                max_attention = weights_i.max(dim=-1)[0]
                 
                 stats[f'batch_{i}'] = {
                     'sequence_length': seq_len_i,
@@ -439,7 +490,12 @@ class CNNBlock(nn.Module):
         conv_output_dim = hidden_dim // len(kernel_sizes)
         
         for kernel_size in kernel_sizes:
-            padding = (kernel_size - 1) * dilation_rate // 2  # Same padding
+            # Proper padding calculation for odd and even kernel sizes
+            padding = (kernel_size - 1) * dilation_rate // 2
+            # Ensure odd kernel sizes work correctly
+            if (kernel_size - 1) * dilation_rate % 2 != 0:
+                padding += 1
+                
             conv = nn.Conv1d(
                 in_channels=input_dim,
                 out_channels=conv_output_dim,
@@ -462,32 +518,60 @@ class CNNBlock(nn.Module):
         else:
             self.residual_projection = None
         
-        # Layer normalization and dropout
         self.layer_norm = nn.LayerNorm(hidden_dim)
         self.dropout = nn.Dropout(dropout)
         
-        # Activation function
-        self.activation = nn.GELU()
+        self.activation = nn.ReLU()
     
     def _initialize_parameters(self):
-        """Initialize CNN block parameters."""
-        # Initialize convolutions
+        """Initialize CNN block parameters with much smaller values for stability."""
         for conv in self.convs:
-            nn.init.xavier_uniform_(conv.weight)
-            nn.init.zeros_(conv.bias)
+            nn.init.normal_(conv.weight, mean=0.0, std=0.01)
+            nn.init.constant_(conv.bias, 0.01)
         
-        # Initialize projections
         if self.conv_projection is not None:
-            nn.init.xavier_uniform_(self.conv_projection.weight)
-            nn.init.zeros_(self.conv_projection.bias)
+            nn.init.normal_(self.conv_projection.weight, mean=0.0, std=0.01)
+            nn.init.constant_(self.conv_projection.bias, 0.01)
         
         if self.residual_projection is not None:
-            nn.init.xavier_uniform_(self.residual_projection.weight)
-            nn.init.zeros_(self.residual_projection.bias)
+            nn.init.normal_(self.residual_projection.weight, mean=0.0, std=0.01)
+            nn.init.constant_(self.residual_projection.bias, 0.01)
+            
+        if hasattr(self.layer_norm, 'weight') and self.layer_norm.weight is not None:
+            nn.init.ones_(self.layer_norm.weight)
+        if hasattr(self.layer_norm, 'bias') and self.layer_norm.bias is not None:
+            nn.init.zeros_(self.layer_norm.bias)
+    
+    def check_tensor(self, x: torch.Tensor, name: str) -> bool:
+        """
+        Comprehensive tensor checking with detailed statistics.
+        
+        Args:
+            x: Tensor to check
+            name: Name of the tensor for logging
+            
+        Returns:
+            bool: True if NaN/Inf detected, False otherwise
+        """
+        if torch.isnan(x).any() or torch.isinf(x).any():
+            nan_count = torch.isnan(x).sum().item()
+            inf_count = torch.isinf(x).sum().item()
+            try:
+                min_val = x.min().item() if not torch.isnan(x).all() else "all NaN"
+                max_val = x.max().item() if not torch.isnan(x).all() else "all NaN"
+                mean_val = x.mean().item() if not torch.isnan(x).all() else "all NaN"
+                std_val = x.std().item() if not torch.isnan(x).all() else "all NaN"
+            except:
+                min_val = max_val = mean_val = std_val = "error"
+                
+            print(f"⚠️ Block NaN/Inf in {name}: nan={nan_count}, inf={inf_count}")
+            print(f"  Shape: {x.shape}, Min: {min_val}, Max: {max_val}, Mean: {mean_val}, Std: {std_val}")
+            return True
+        return False
     
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         """
-        Forward pass through CNN block.
+        Forward pass through CNN block with comprehensive stability safeguards.
         
         Args:
             x: Input tensor (batch_size, seq_len, input_dim)
@@ -499,42 +583,95 @@ class CNNBlock(nn.Module):
         batch_size, seq_len, _ = x.shape
         residual = x
         
-        # Transpose for conv1d: (batch_size, input_dim, seq_len)
+        if self.check_tensor(x, "cnn_block_input"):
+            x = torch.nan_to_num(x, nan=0.0, posinf=5.0, neginf=-5.0)
+            print("⚠️ NaN/Inf in CNN block input fixed")
+        
+        x = x - x.mean(dim=-1, keepdim=True)
+        x = x / (x.std(dim=-1, keepdim=True) + 1e-5)
+        
         x_conv = x.transpose(1, 2)
         
-        # Apply parallel convolutions
         conv_outputs = []
-        for conv in self.convs:
-            conv_out = conv(x_conv)  # (batch_size, conv_output_dim, seq_len)
-            conv_outputs.append(conv_out)
+        for i, conv in enumerate(self.convs):
+            try:
+                conv_out = conv(x_conv)
+            
+                if self.check_tensor(conv_out, f"conv_{i}_output"):
+                    conv_out = torch.zeros_like(conv_out)
+                
+                conv_out = torch.clamp(conv_out, min=-5.0, max=5.0)
+                
+                conv_outputs.append(conv_out)
+            except Exception as e:
+                print(f"⚠️ Exception in convolution {i}: {e}")
+                safe_shape = (x_conv.shape[0], self.hidden_dim // len(self.convs), x_conv.shape[2])
+                conv_outputs.append(torch.zeros(safe_shape, device=x_conv.device))
         
-        # Concatenate conv outputs
-        x_conv = torch.cat(conv_outputs, dim=1)  # (batch_size, total_conv_dim, seq_len)
+        x_conv = torch.cat(conv_outputs, dim=1)
         
-        # Transpose back: (batch_size, seq_len, total_conv_dim)
+        if self.check_tensor(x_conv, "concatenated_conv_output"):
+            x_conv = torch.nan_to_num(x_conv, nan=0.0, posinf=5.0, neginf=-5.0)
+        
         x = x_conv.transpose(1, 2)
         
-        # Project if needed
         if self.conv_projection is not None:
-            x = self.conv_projection(x)
+            try:
+                x_proj = self.conv_projection(x)
+                
+                if self.check_tensor(x_proj, "projection_output"):
+                    print("⚠️ Using alternative projection")
+                    x = torch.nn.functional.linear(x, 
+                                             torch.ones((self.hidden_dim, x.shape[-1]), device=x.device) / x.shape[-1])
+                else:
+                    x = x_proj
+            except Exception as e:
+                print(f"⚠️ Exception in projection: {e}")
+                x = torch.nn.functional.linear(x, 
+                                        torch.ones((self.hidden_dim, x.shape[-1]), device=x.device) / x.shape[-1])
+            
+            x = torch.clamp(x, min=-5.0, max=5.0)
         
-        # Apply activation
         x = self.activation(x)
         
-        # Residual connection
         if self.use_residual:
-            if self.residual_projection is not None:
-                residual = self.residual_projection(residual)
-            x = x + residual
+            try:
+                if self.residual_projection is not None:
+                    residual = self.residual_projection(residual)
+                    
+                    if self.check_tensor(residual, "residual_projection"):
+                        residual = torch.zeros_like(x)
+                
+                x = x + residual
+            except Exception as e:
+                print(f"⚠️ Exception in residual connection: {e}")
+                pass
         
-        # Layer normalization
-        x = self.layer_norm(x)
+        try:
+            x = self.layer_norm(x)
+            
         
-        # Apply mask to zero out padded positions
+            if self.check_tensor(x, "layer_norm_output"):
+                x = x - x.mean(dim=-1, keepdim=True)
+                x = x / (x.std(dim=-1, keepdim=True) + 1e-5)
+        except Exception as e:
+            print(f"⚠️ Exception in layer norm: {e}")
+            x = x - x.mean(dim=-1, keepdim=True)
+            x = x / (x.std(dim=-1, keepdim=True) + 1e-5)
+        
         x = torch.where(mask.unsqueeze(-1), x, torch.zeros_like(x))
+        
+        if self.check_tensor(x, "cnn_block_final_output"):
+            x = torch.nan_to_num(x, nan=0.0, posinf=5.0, neginf=-5.0)
+        
+        x = torch.clamp(x, min=-5.0, max=5.0)
         
         # Dropout
         x = self.dropout(x)
+        
+        # Add gradient clipping hook during training
+        if self.training:
+            x.register_hook(lambda grad: torch.clamp(grad, -1.0, 1.0))
         
         return x
 
@@ -549,7 +686,7 @@ def create_model(config) -> CNNTagger:
     Returns:
         Initialized CNN model (with optional attention)
     """
-    # Extract attention parameters with safe defaults (same as BiLSTM)
+    # Extract attention parameters with safe defaults
     attention_enabled = getattr(config, 'attention_enabled', False)
     attention_type = getattr(config, 'attention_type', 'self')
     attention_heads = getattr(config, 'attention_heads', 8)
@@ -560,7 +697,6 @@ def create_model(config) -> CNNTagger:
     window_size = getattr(config, 'window_size', 7)
     boundary_temperature = getattr(config, 'boundary_temperature', 2.0)
     
-    # CNN-specific parameters with defaults
     kernel_sizes = getattr(config, 'kernel_sizes', (3, 5, 7))
     dilation_rates = getattr(config, 'dilation_rates', (1, 2, 4))
     use_residual = getattr(config, 'use_residual', True)
@@ -593,7 +729,7 @@ def create_model(config) -> CNNTagger:
 
 
 if __name__ == "__main__":
-    # Test the CNN model (same tests as BiLSTM)
+
     print("🧪 Testing CNN model...")
     
     # Create test data
