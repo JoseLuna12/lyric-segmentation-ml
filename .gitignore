@@ -236,6 +236,7 @@ data/external/
 
 # Metrics and results
 metrics/
+!segmodel/metrics/
 outputs/
 checkpoints/
 
