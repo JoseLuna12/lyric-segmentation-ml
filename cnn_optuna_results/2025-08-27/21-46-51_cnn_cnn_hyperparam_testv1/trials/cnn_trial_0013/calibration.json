@@ -1,0 +1,30 @@
+{
+  "method": "temperature",
+  "params": {
+    "temperature": 0.5994042383103928
+  },
+  "ece_before": 0.0944520787634175,
+  "ece_after": 0.028501948067270688,
+  "improvement": 0.06595013069614682,
+  "all_results": [
+    {
+      "method": "temperature",
+      "params": {
+        "temperature": 0.5994042383103928
+      },
+      "ece_before": 0.0944520787634175,
+      "ece_after": 0.028501948067270688,
+      "improvement": 0.06595013069614682
+    },
+    {
+      "method": "platt",
+      "params": {
+        "A": 1.4999956515673183,
+        "B": 0.0
+      },
+      "ece_before": 0.0944520787634175,
+      "ece_after": 0.0402538689888999,
+      "improvement": 0.05419820977451761
+    }
+  ]
+}

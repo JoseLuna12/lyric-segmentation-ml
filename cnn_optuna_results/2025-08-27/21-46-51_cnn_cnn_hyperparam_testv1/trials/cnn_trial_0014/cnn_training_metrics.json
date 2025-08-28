@@ -1,0 +1,57 @@
+{
+  "metadata": {
+    "model_info": {
+      "architecture": "CNN",
+      "hidden_dim": 128,
+      "num_layers": 2,
+      "dropout": 0.3365467594205061,
+      "layer_dropout": 0.10173581685258053,
+      "kernel_sizes": [
+        3,
+        5
+      ],
+      "dilation_rates": [
+        1,
+        2,
+        4
+      ],
+      "use_residual": true,
+      "attention_enabled": false,
+      "attention_type": "self",
+      "attention_heads": 4,
+      "total_params": 135298,
+      "cnn_params": 131840,
+      "attention_params": 0
+    },
+    "training_info": {
+      "batch_size": 32,
+      "learning_rate": 0.00010241143203021517,
+      "scheduler": "onecycle",
+      "scheduler_type": "step",
+      "validation_strategy": "line_f1",
+      "total_epochs": 0,
+      "early_stopping_mode": "uninitialized",
+      "convergence_window": 5
+    },
+    "calibration_info": {
+      "temperature": {
+        "ece_before": 0.06934967402859145,
+        "ece_after": 0.08006165091731461,
+        "improvement": -0.010711976888723163,
+        "params": {
+          "temperature": 0.2837155724185404
+        }
+      },
+      "platt": {
+        "ece_before": 0.06934967402859145,
+        "ece_after": 0.08653559929495473,
+        "improvement": -0.017185925266363283,
+        "params": {
+          "A": 0.9999493707710332,
+          "B": -0.07505364859622636
+        }
+      }
+    }
+  },
+  "metrics": []
+}
