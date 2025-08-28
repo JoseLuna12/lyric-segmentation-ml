@@ -4,7 +4,7 @@ Model Validation Summary (CNN)
 Session: training_sessions/cnn_session_20250826_145422_cnn_quick_test
 Model: training_sessions/cnn_session_20250826_145422_cnn_quick_test/best_cnn_model.pt
 Validation data: data/val.jsonl
-Date: 2025-08-28 01:58:54
+Date: 2025-08-28 03:25:58
 
 Basic Metrics:
   Accuracy: 0.7242
@@ -29,4 +29,4 @@ Class Distribution:
   Ground Truth: 2851 Verse, 1221 Chorus
   Predicted:    2302 Verse, 1770 Chorus
 
-Full metrics saved to: training_sessions/cnn_session_20250826_145422_cnn_quick_test/validation/validation_metrics_cnn_20250828_015854.json
+Full metrics saved to: training_sessions/cnn_session_20250826_145422_cnn_quick_test/validation/validation_metrics_cnn_20250828_032558.json

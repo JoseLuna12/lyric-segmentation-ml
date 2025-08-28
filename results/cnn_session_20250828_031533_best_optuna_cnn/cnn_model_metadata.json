@@ -1,0 +1,62 @@
+{
+  "model_type": "CNN",
+  "architecture": "CNNTagger",
+  "experiment_name": "best_optuna_cnn",
+  "model_files": {
+    "best_model": "best_cnn_model.pt",
+    "final_model": "cnn_best_optuna_cnn_128d_2layers_final.pt",
+    "config_snapshot": "training_config_snapshot.yaml"
+  },
+  "architecture_config": {
+    "hidden_dim": 128,
+    "num_layers": 2,
+    "dropout": 0.3842810256530799,
+    "kernel_sizes": [
+      3,
+      5
+    ],
+    "dilation_rates": [
+      1,
+      2,
+      4
+    ],
+    "use_residual": true,
+    "batch_multiplier": 1.1212352518173647
+  },
+  "attention_config": {
+    "enabled": false,
+    "type": "self",
+    "heads": 4,
+    "dropout": 0.1
+  },
+  "training_config": {
+    "scheduler": "onecycle",
+    "validation_strategy": "line_f1",
+    "emergency_monitoring": true
+  },
+  "feature_dimension": 696,
+  "total_parameters": 221314,
+  "final_results": {
+    "loss": 0.5724911093711853,
+    "chorus_rate": 0.24932519793510438,
+    "max_prob_mean": 0.7792455554008484,
+    "confidence_over_90": 0.14912505596876144,
+    "confidence_over_95": 0.0018739830702543259,
+    "verse_f1": 0.8280561122244489,
+    "chorus_f1": 0.5217391304347827,
+    "macro_f1": 0.6748976213296158,
+    "boundary_f1": 0.3260484347312463,
+    "boundary_precision": 0.24842484248424843,
+    "boundary_recall": 0.4742268041237113,
+    "complete_segments": 0.2101194036470626,
+    "avg_segment_overlap": 0.5692582145110461,
+    "verse_to_chorus_acc": 0.4563106796116505,
+    "chorus_to_verse_acc": 0.3956043956043956,
+    "window_diff": 0.4458822128853389,
+    "pk_metric": 0.32361846184981824,
+    "receptive_field_usage": 0.4,
+    "effective_layers": 2,
+    "gradient_stability": 0.34816678970556186
+  },
+  "training_time_minutes": 7.9458342830340065
+}

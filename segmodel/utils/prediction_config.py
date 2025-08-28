@@ -216,9 +216,22 @@ def create_prediction_config_from_training_session(session_dir: str) -> tuple[Pr
     if not os.path.exists(config_snapshot_path):
         raise FileNotFoundError(f"No training config snapshot found in {session_dir}")
     
-    model_path = os.path.join(session_dir, 'best_model.pt')
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(f"No trained model found in {session_dir}")
+    # Search for model with CNN priority
+    model_candidates = [
+        os.path.join(session_dir, 'best_cnn_model.pt'),
+        os.path.join(session_dir, 'final_cnn_model.pt'),
+        os.path.join(session_dir, 'best_model.pt'),
+        os.path.join(session_dir, 'final_model.pt')
+    ]
+    
+    model_path = None
+    for candidate in model_candidates:
+        if os.path.exists(candidate):
+            model_path = candidate
+            break
+    
+    if not model_path:
+        raise FileNotFoundError(f"No trained model found in {session_dir}. Looked for: {[os.path.basename(c) for c in model_candidates]}")
     
     import yaml
     with open(config_snapshot_path, 'r') as f:

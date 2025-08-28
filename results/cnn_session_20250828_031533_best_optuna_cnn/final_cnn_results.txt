@@ -1,0 +1,46 @@
+CNN Training Results - best_optuna_cnn
+==================================================
+
+Configuration: configs/training/best_optuna_cnn.yaml
+Training time: 7.9 minutes
+Feature dimension: 696
+
+CNN Model Architecture:
+----------------------
+  Architecture: CNN (Convolutional Neural Network)
+  Input dimension: 696D
+  Hidden dimension: 128D
+  CNN layers: 2
+  Kernel sizes: [3, 5]
+  Dilation rates: [1, 2, 4]
+  Residual connections: True
+  Output dropout: 0.3842810256530799
+  Total parameters: 221,314
+  Attention: disabled
+
+CNN Training Configuration:
+---------------------------
+  Batch size: 32
+  Learning rate: 0.0007771901374109088
+  Scheduler: onecycle
+  Max epochs: 12
+  Validation strategy: line_f1
+
+CNN Test Results:
+-----------------
+  Macro F1: 0.6749
+  Verse F1: 0.8281
+  Chorus F1: 0.5217
+  Boundary F1: 0.3260
+  Segment Overlap: 0.5693
+  WindowDiff: 0.4459
+  Pk metric: 0.3236
+  Confidence: 0.779
+  Chorus rate: 24.93%
+  Calibration: ['temperature', 'platt']
+
+CNN-Specific Metrics:
+---------------------
+  Receptive field usage: 40.0%
+  Effective layers: 2
+  Gradient stability: 0.348

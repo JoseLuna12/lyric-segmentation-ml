@@ -1,0 +1,226 @@
+# Best Optuna CNN Configuration with Boundary-Aware Loss
+# Based on optimal parameters from CNN hyperparameter optimization trial
+
+# =============================================================================
+# LOSS CONFIGURATION - BOUNDARY-AWARE CROSS-ENTROPY
+# =============================================================================
+loss:
+  type: "boundary_aware_cross_entropy"
+  
+  # Core parameters
+  num_classes: 2
+  
+  # Phase 1: Enhanced safety mechanisms
+  label_smoothing: 0.15637901513977817
+  entropy_lambda: 0.03141556609337824
+  
+  # Phase 2: Boundary awareness
+  boundary_weight: 2.2158297731148395
+  
+  # Phase 3: Segment consistency
+  segment_consistency_lambda: 0.017837759057987245
+  
+  # Phase 4: Confidence control &amp; calibration
+  conf_penalty_lambda: 0.006815411481993176
+  conf_threshold: 0.939377517239948
+  
+  # Advanced options
+  use_boundary_as_primary: true
+
+# =============================================================================
+# DATA CONFIGURATION
+# =============================================================================
+data:
+  train_file: "data/train.jsonl"
+  val_file: "data/val.jsonl"
+  test_file: "data/test.jsonl"
+
+# =============================================================================
+# MODEL ARCHITECTURE
+# =============================================================================
+model:
+  hidden_dim: 128
+  num_layers: 2
+  num_classes: 2
+  dropout: 0.3842810256530799
+  layer_dropout: 0.17675161631734992
+
+  attention_enabled: false
+  attention_type: "self"
+  attention_heads: 4
+  attention_dropout: 0.1
+  attention_dim: null
+  positional_encoding: true
+  max_seq_length: 1000
+  window_size: 7
+  boundary_temperature: 2.0
+
+# =============================================================================
+# CNN-SPECIFIC PARAMETERS
+# =============================================================================
+cnn:
+  kernel_sizes: [3, 5]
+  dilation_rates: [1, 2, 4]
+  use_residual: true
+  batch_multiplier: 1.1212352518173647
+  weight_decay: 0.012997903974336108
+
+# =============================================================================
+# TRAINING PARAMETERS
+# =============================================================================
+training:
+  batch_size: 32
+  learning_rate: 0.0007771901374109088
+  weight_decay: 0.012997903974336108
+  max_epochs: 12
+  patience: 4
+  min_delta: 0.0005034577769397667
+  gradient_clip_norm: 0.3608442016611966
+
+  scheduler: "onecycle"
+  min_lr: 1.0e-06
+  cosine_t0: 10
+  cosine_t_max: 12
+  cosine_t_mult: 2
+  lr_factor: 0.3
+  lr_patience: 2
+  warmup_epochs: 5
+
+  weighted_sampling: true
+  num_workers: 0
+
+# =============================================================================
+# ANTI-COLLAPSE SYSTEM
+# =============================================================================
+anti_collapse:
+  weighted_sampling: false
+
+# =============================================================================
+# EMERGENCY MONITORING
+# =============================================================================
+emergency_monitoring:
+  enabled: true
+  
+  max_confidence_threshold: 0.907121934517957
+  min_chorus_rate: 0.0697303049758596
+  max_chorus_rate: 0.8563464891614132
+  max_conf_over_95_ratio: 0.05711680375207984
+
+  val_overconf_threshold: 0.92
+  val_f1_collapse_threshold: 0.1
+  emergency_overconf_threshold: 0.94
+  emergency_conf95_ratio: 0.65
+  emergency_f1_threshold: 0.05
+
+  skip_batches: 15
+  skip_epochs: 2
+  print_batch_every: 10
+
+# =============================================================================
+# CALIBRATION &amp; VALIDATION
+# =============================================================================
+calibration:
+  methods: ["temperature", "platt"]
+  enabled: true
+
+validation_strategy: "line_f1"
+
+# =============================================================================
+# FEATURE CONFIGURATION
+# =============================================================================
+features:
+  head_ssm:
+    enabled: false
+    dimension: 12
+    head_words: 4
+  
+  tail_ssm:
+    enabled: true
+    dimension: 12
+    tail_words: 4
+  
+  phonetic_ssm:
+    enabled: false
+    dimension: 12
+    mode: "alliteration"
+    similarity_method: "binary"
+    normalize: true
+    normalize_method: "zscore"
+    high_sim_threshold: 0.29254364386164167
+  
+  pos_ssm:
+    enabled: false
+    dimension: 12
+    tagset: "simplified"
+    similarity_method: "combined"
+    high_sim_threshold: 0.26811401018548175
+  
+  string_ssm:
+    enabled: false
+    dimension: 12
+    case_sensitive: false
+    remove_punctuation: true
+    similarity_method: "word_overlap"
+    similarity_threshold: 0.047688293538779486
+
+  syllable_pattern_ssm:
+    enabled: false
+    dimension: 12
+    similarity_method: "cosine"
+    levenshtein_weight: 0.7
+    cosine_weight: 0.3
+    normalize: false
+    normalize_method: "zscore"
+
+  line_syllable_ssm:
+    enabled: false
+    dimension: 12
+    similarity_method: "cosine"
+    ratio_threshold: 0.1
+    normalize: false
+    normalize_method: "minmax"
+
+  head_ssm_enabled: false  # Legacy flat keys if needed, but prefer structured
+
+# =============================================================================
+# EMBEDDINGS CONFIGURATION
+# =============================================================================
+embeddings:
+  word2vec:
+    enabled: true
+    model: "word2vec-google-news-300"
+    mode: "complete"
+    normalize: true
+    similarity_metric: "cosine"
+    high_sim_threshold: 0.82
+
+  contextual:
+    enabled: true
+    model: "all-MiniLM-L6-v2"
+    mode: "complete"
+    normalize: true
+    similarity_metric: "cosine"
+    high_sim_threshold: 0.72
+
+# =============================================================================
+# OUTPUT &amp; SYSTEM CONFIGURATION
+# =============================================================================
+output:
+  base_dir: "results"
+  save_best_model: true
+  save_final_model: true
+  save_training_metrics: true
+
+system:
+  seed: 42
+  device: "mps"
+  num_workers: 0
+
+# =============================================================================
+# EXPERIMENT METADATA
+# =============================================================================
+experiment:
+  name: "best_optuna_cnn"
+  description: "Best CNN configuration from Optuna optimization with boundary-aware loss"
+  tags: ["cnn", "optuna", "boundary_aware"]
+  notes: "Parameters from successful Optuna trial, adapted for CNN training"

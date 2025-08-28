@@ -1,0 +1,138 @@
+anti_collapse:
+  weighted_sampling: false
+attention_dim: null
+attention_dropout: 0.1
+attention_enabled: false
+attention_heads: 4
+attention_type: self
+batch_size: 32
+boundary_temperature: 2.0
+calibration_enabled: true
+calibration_methods:
+- temperature
+- platt
+contextual_enabled: true
+contextual_high_sim_threshold: 0.72
+contextual_mode: complete
+contextual_model: all-MiniLM-L6-v2
+contextual_normalize: true
+contextual_similarity_metric: cosine
+cosine_t0: 10
+cosine_t_max: 12
+cosine_t_mult: 2
+device: mps
+dropout: 0.3842810256530799
+emergency_conf95_ratio: 0.65
+emergency_f1_threshold: 0.05
+emergency_monitoring_enabled: true
+emergency_overconf_threshold: 0.94
+experiment_description: Best CNN configuration from Optuna optimization with boundary-aware
+  loss
+experiment_name: best_optuna_cnn
+experiment_notes: Parameters from successful Optuna trial, adapted for CNN training
+experiment_tags:
+- cnn
+- optuna
+- boundary_aware
+gradient_clip_norm: 0.3608442016611966
+head_ssm_dimension: 12
+head_ssm_enabled: false
+head_ssm_words: 4
+hidden_dim: 128
+layer_dropout: 0.17675161631734992
+learning_rate: 0.0007771901374109088
+line_syllable_ssm_dimension: 12
+line_syllable_ssm_enabled: false
+line_syllable_ssm_normalize: false
+line_syllable_ssm_normalize_method: minmax
+line_syllable_ssm_ratio_threshold: 0.1
+line_syllable_ssm_similarity_method: cosine
+loss:
+  boundary_weight: 2.2158297731148395
+  conf_penalty_lambda: 0.006815411481993176
+  conf_threshold: 0.939377517239948
+  entropy_lambda: 0.03141556609337824
+  label_smoothing: 0.15637901513977817
+  num_classes: 2
+  segment_consistency_lambda: 0.017837759057987245
+  type: boundary_aware_cross_entropy
+  use_boundary_as_primary: true
+loss_config:
+  boundary_weight: 2.2158297731148395
+  conf_penalty_lambda: 0.006815411481993176
+  conf_threshold: 0.939377517239948
+  entropy_lambda: 0.03141556609337824
+  label_smoothing: 0.15637901513977817
+  loss_type: boundary_aware_cross_entropy
+  segment_consistency_lambda: 0.017837759057987245
+  use_boundary_as_primary: true
+lr_factor: 0.3
+lr_patience: 2
+max_chorus_rate: 0.8563464891614132
+max_conf_over_95_ratio: 0.05711680375207984
+max_confidence_threshold: 0.907121934517957
+max_epochs: 12
+max_seq_length: 1000
+min_chorus_rate: 0.0697303049758596
+min_delta: 0.0
+min_lr: 1.0e-06
+num_classes: 2
+num_layers: 2
+num_workers: 0
+output_base_dir: results
+patience: 4
+phonetic_ssm_dimension: 12
+phonetic_ssm_enabled: false
+phonetic_ssm_high_sim_threshold: 0.29254364386164167
+phonetic_ssm_mode: alliteration
+phonetic_ssm_normalize: true
+phonetic_ssm_normalize_method: zscore
+phonetic_ssm_similarity_method: binary
+pos_ssm_dimension: 12
+pos_ssm_enabled: false
+pos_ssm_high_sim_threshold: 0.26811401018548175
+pos_ssm_similarity_method: combined
+pos_ssm_tagset: simplified
+positional_encoding: true
+print_batch_every: 10
+save_best_model: true
+save_final_model: true
+save_training_metrics: true
+scheduler: onecycle
+seed: 42
+skip_batches: 15
+skip_epochs: 2
+step_gamma: 0.5
+step_size: 3
+string_ssm_case_sensitive: false
+string_ssm_dimension: 12
+string_ssm_enabled: false
+string_ssm_remove_punctuation: true
+string_ssm_similarity_method: word_overlap
+string_ssm_similarity_threshold: 0.047688293538779486
+syllable_pattern_ssm_cosine_weight: 0.3
+syllable_pattern_ssm_dimension: 12
+syllable_pattern_ssm_enabled: false
+syllable_pattern_ssm_levenshtein_weight: 0.7
+syllable_pattern_ssm_normalize: false
+syllable_pattern_ssm_normalize_method: zscore
+syllable_pattern_ssm_similarity_method: cosine
+tail_ssm_dimension: 12
+tail_ssm_enabled: true
+tail_ssm_words: 4
+test_file: data/test.jsonl
+train_file: data/train.jsonl
+val_f1_collapse_threshold: 0.1
+val_file: data/val.jsonl
+val_overconf_threshold: 0.92
+validation_strategy: line_f1
+warmup_epochs: 5
+weight_decay: 0.012997903974336108
+weighted_sampling: false
+window_size: 7
+word2vec_enabled: true
+word2vec_high_sim_threshold: 0.82
+word2vec_mode: complete
+word2vec_model: word2vec-google-news-300
+word2vec_normalize: true
+word2vec_similarity_metric: cosine

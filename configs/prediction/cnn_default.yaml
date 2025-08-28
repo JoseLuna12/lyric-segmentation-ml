@@ -1,0 +1,31 @@
+# Default Prediction Configuration - Session-Based
+# ================================================
+# Uses training session as single source of truth for features
+# No feature specifications needed - they're loaded from training session!
+
+# Training session directory (contains model + exact config + results)
+training_session: "training_sessions/cnn_session_20250826_145422_cnn_quick_test"
+
+prediction:
+  # Calibration configuration
+  calibration:
+    method: "auto"          # auto | temperature | platt | isotonic | none
+                           # auto: use best method from training (requires calibration.json)
+                           # none: no calibration (if no calibration.json available)
+    temperature: 1.0        # fallback temperature if no calibration.json
+    platt_A: 1.0           # fallback Platt A if no calibration.json
+    platt_B: 0.0           # fallback Platt B if no calibration.json
+    isotonic_knots: 0      # fallback isotonic knots if no calibration.json (informational)
+  
+  # Core prediction parameters
+  input_file: "prediction_results/predict_lyric.txt"  # Single default location
+  output_dir: "prediction_results"    # Base directory for organized results
+  quiet: false                        # Set to true for silent operation (AI-less machines)
+
+# Device configuration
+device: "mps"  # auto, cpu, cuda, mps
+
+# Metadata
+config_version: "3.0"
+description: "Session-based prediction configuration"
+note: "Features automatically loaded from training_session/training_config_snapshot.yaml"
