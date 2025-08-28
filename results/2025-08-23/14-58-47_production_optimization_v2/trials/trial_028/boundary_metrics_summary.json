@@ -1,0 +1,137 @@
+{
+  "boundary_metrics": {
+    "description": "Boundary-aware evaluation metrics for structural understanding",
+    "line_level_metrics": {
+      "macro_f1": 0.7711843333672552,
+      "verse_f1": 0.8688468158347676,
+      "chorus_f1": 0.6735218508997429
+    },
+    "boundary_detection": {
+      "f1": 0.41975308641975306,
+      "precision": 0.3722627737226277,
+      "recall": 0.4811320754716981
+    },
+    "segment_quality": {
+      "complete_segments_detected": 0.2776848238937316,
+      "avg_segment_overlap_iou": 0.6674909234985682
+    },
+    "transition_accuracy": {
+      "verse_to_chorus": 0.43805309734513276,
+      "chorus_to_verse": 0.4444444444444444
+    }
+  },
+  "historical_progression": [
+    {
+      "epoch": 1,
+      "boundary_f1": 0.08424908424908424,
+      "complete_segments": 0.02883621577948195,
+      "verse_to_chorus_acc": 0.05752212389380531,
+      "chorus_to_verse_acc": 0.0
+    },
+    {
+      "epoch": 2,
+      "boundary_f1": 0.0736842105263158,
+      "complete_segments": 0.012481114655027698,
+      "verse_to_chorus_acc": 0.048672566371681415,
+      "chorus_to_verse_acc": 0.015151515151515152
+    },
+    {
+      "epoch": 3,
+      "boundary_f1": 0.06908462867012091,
+      "complete_segments": 0.029151670986241503,
+      "verse_to_chorus_acc": 0.06637168141592921,
+      "chorus_to_verse_acc": 0.005050505050505051
+    },
+    {
+      "epoch": 4,
+      "boundary_f1": 0.31898238747553814,
+      "complete_segments": 0.18154246694808732,
+      "verse_to_chorus_acc": 0.3053097345132743,
+      "chorus_to_verse_acc": 0.3838383838383838
+    },
+    {
+      "epoch": 5,
+      "boundary_f1": 0.36194029850746273,
+      "complete_segments": 0.2400892029736144,
+      "verse_to_chorus_acc": 0.415929203539823,
+      "chorus_to_verse_acc": 0.41919191919191917
+    },
+    {
+      "epoch": 6,
+      "boundary_f1": 0.28014842300556586,
+      "complete_segments": 0.15102995928817772,
+      "verse_to_chorus_acc": 0.2743362831858407,
+      "chorus_to_verse_acc": 0.37373737373737376
+    },
+    {
+      "epoch": 7,
+      "boundary_f1": 0.29775784753363227,
+      "complete_segments": 0.18676780476886523,
+      "verse_to_chorus_acc": 0.35398230088495575,
+      "chorus_to_verse_acc": 0.3686868686868687
+    },
+    {
+      "epoch": 8,
+      "boundary_f1": 0.3627546071774976,
+      "complete_segments": 0.24483532729821172,
+      "verse_to_chorus_acc": 0.36283185840707965,
+      "chorus_to_verse_acc": 0.4444444444444444
+    },
+    {
+      "epoch": 9,
+      "boundary_f1": 0.2831379621280433,
+      "complete_segments": 0.16236625013136147,
+      "verse_to_chorus_acc": 0.3230088495575221,
+      "chorus_to_verse_acc": 0.3787878787878788
+    },
+    {
+      "epoch": 10,
+      "boundary_f1": 0.3202911737943585,
+      "complete_segments": 0.1941177012491965,
+      "verse_to_chorus_acc": 0.37168141592920356,
+      "chorus_to_verse_acc": 0.4090909090909091
+    },
+    {
+      "epoch": 11,
+      "boundary_f1": 0.41975308641975306,
+      "complete_segments": 0.2776848238937316,
+      "verse_to_chorus_acc": 0.43805309734513276,
+      "chorus_to_verse_acc": 0.4444444444444444
+    },
+    {
+      "epoch": 12,
+      "boundary_f1": 0.36397400185701023,
+      "complete_segments": 0.239622477347822,
+      "verse_to_chorus_acc": 0.41150442477876104,
+      "chorus_to_verse_acc": 0.45454545454545453
+    },
+    {
+      "epoch": 13,
+      "boundary_f1": 0.36194029850746273,
+      "complete_segments": 0.2467484451577771,
+      "verse_to_chorus_acc": 0.41150442477876104,
+      "chorus_to_verse_acc": 0.45454545454545453
+    },
+    {
+      "epoch": 14,
+      "boundary_f1": 0.3869767441860465,
+      "complete_segments": 0.26910258614924576,
+      "verse_to_chorus_acc": 0.42920353982300885,
+      "chorus_to_verse_acc": 0.48484848484848486
+    },
+    {
+      "epoch": 15,
+      "boundary_f1": 0.3723502304147465,
+      "complete_segments": 0.25575864836204176,
+      "verse_to_chorus_acc": 0.415929203539823,
+      "chorus_to_verse_acc": 0.4797979797979798
+    }
+  ],
+  "export_timestamp": 1756069177.0122821,
+  "model_config": {
+    "experiment_name": "hyperopt_trial_028",
+    "batch_size": 32,
+    "learning_rate": 0.0009623753550721938,
+    "scheduler": "cosine"
+  }
+}

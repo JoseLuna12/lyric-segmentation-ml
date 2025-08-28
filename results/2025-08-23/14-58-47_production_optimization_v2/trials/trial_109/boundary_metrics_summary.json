@@ -1,0 +1,116 @@
+{
+  "boundary_metrics": {
+    "description": "Boundary-aware evaluation metrics for structural understanding",
+    "line_level_metrics": {
+      "macro_f1": 0.7522533994836114,
+      "verse_f1": 0.8474095102909865,
+      "chorus_f1": 0.6570972886762361
+    },
+    "boundary_detection": {
+      "f1": 0.40674789128397376,
+      "precision": 0.33748055987558323,
+      "recall": 0.5117924528301887
+    },
+    "segment_quality": {
+      "complete_segments_detected": 0.3055489817950051,
+      "avg_segment_overlap_iou": 0.6637928698312019
+    },
+    "transition_accuracy": {
+      "verse_to_chorus": 0.4557522123893805,
+      "chorus_to_verse": 0.4898989898989899
+    }
+  },
+  "historical_progression": [
+    {
+      "epoch": 1,
+      "boundary_f1": 0.17534942820838625,
+      "complete_segments": 0.04609890529826903,
+      "verse_to_chorus_acc": 0.13274336283185842,
+      "chorus_to_verse_acc": 0.1414141414141414
+    },
+    {
+      "epoch": 2,
+      "boundary_f1": 0.24078624078624078,
+      "complete_segments": 0.10476946231188013,
+      "verse_to_chorus_acc": 0.2168141592920354,
+      "chorus_to_verse_acc": 0.1919191919191919
+    },
+    {
+      "epoch": 3,
+      "boundary_f1": 0.25383304940374785,
+      "complete_segments": 0.12938535793784997,
+      "verse_to_chorus_acc": 0.252212389380531,
+      "chorus_to_verse_acc": 0.398989898989899
+    },
+    {
+      "epoch": 4,
+      "boundary_f1": 0.35762876579203107,
+      "complete_segments": 0.2258701418431005,
+      "verse_to_chorus_acc": 0.3672566371681416,
+      "chorus_to_verse_acc": 0.398989898989899
+    },
+    {
+      "epoch": 5,
+      "boundary_f1": 0.3727530747398297,
+      "complete_segments": 0.2450479452335232,
+      "verse_to_chorus_acc": 0.37610619469026546,
+      "chorus_to_verse_acc": 0.46464646464646464
+    },
+    {
+      "epoch": 6,
+      "boundary_f1": 0.3675464320625611,
+      "complete_segments": 0.2532854529275526,
+      "verse_to_chorus_acc": 0.3893805309734513,
+      "chorus_to_verse_acc": 0.4444444444444444
+    },
+    {
+      "epoch": 7,
+      "boundary_f1": 0.38257575757575757,
+      "complete_segments": 0.2665840283549722,
+      "verse_to_chorus_acc": 0.4336283185840708,
+      "chorus_to_verse_acc": 0.43434343434343436
+    },
+    {
+      "epoch": 8,
+      "boundary_f1": 0.3869767441860465,
+      "complete_segments": 0.26623071715860686,
+      "verse_to_chorus_acc": 0.40707964601769914,
+      "chorus_to_verse_acc": 0.5050505050505051
+    },
+    {
+      "epoch": 9,
+      "boundary_f1": 0.40674789128397376,
+      "complete_segments": 0.3055489817950051,
+      "verse_to_chorus_acc": 0.4557522123893805,
+      "chorus_to_verse_acc": 0.4898989898989899
+    },
+    {
+      "epoch": 10,
+      "boundary_f1": 0.39413382218148485,
+      "complete_segments": 0.3049415458482267,
+      "verse_to_chorus_acc": 0.49557522123893805,
+      "chorus_to_verse_acc": 0.45454545454545453
+    },
+    {
+      "epoch": 11,
+      "boundary_f1": 0.4071294559099437,
+      "complete_segments": 0.29546760250630877,
+      "verse_to_chorus_acc": 0.4911504424778761,
+      "chorus_to_verse_acc": 0.45454545454545453
+    },
+    {
+      "epoch": 12,
+      "boundary_f1": 0.3658088235294118,
+      "complete_segments": 0.2814568943280502,
+      "verse_to_chorus_acc": 0.46017699115044247,
+      "chorus_to_verse_acc": 0.41414141414141414
+    }
+  ],
+  "export_timestamp": 1756244278.2072399,
+  "model_config": {
+    "experiment_name": "hyperopt_trial_109",
+    "batch_size": 32,
+    "learning_rate": 0.000951636484328313,
+    "scheduler": "cosine"
+  }
+}

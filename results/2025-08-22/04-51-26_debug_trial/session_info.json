@@ -1,0 +1,11 @@
+{
+  "session_start": "2025-08-22T04:51:26.365469",
+  "study_name": "debug_trial",
+  "session_directory": "results/2025-08-22/04-51-26_debug_trial",
+  "script_version": "hyperopt_organized_v1.0",
+  "subdirectories": {
+    "trials": "Individual trial results and configurations",
+    "configs": "Best configuration files",
+    "logs": "Training and optimization logs"
+  }
+}

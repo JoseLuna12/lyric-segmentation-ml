@@ -1,0 +1,11 @@
+{
+  "session_start": "2025-08-22T04:58:19.892058",
+  "study_name": "production_optimization",
+  "session_directory": "results/2025-08-22/04-58-19_production_optimization",
+  "script_version": "hyperopt_organized_v1.0",
+  "subdirectories": {
+    "trials": "Individual trial results and configurations",
+    "configs": "Best configuration files",
+    "logs": "Training and optimization logs"
+  }
+}

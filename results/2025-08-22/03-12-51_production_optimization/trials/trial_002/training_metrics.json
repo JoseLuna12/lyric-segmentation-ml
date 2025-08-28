@@ -1,0 +1,53 @@
+{
+  "metadata": {
+    "model_info": {
+      "hidden_dim": 512,
+      "num_layers": 1,
+      "dropout": 0.16035183485331758,
+      "layer_dropout": 0.0,
+      "attention_enabled": true,
+      "attention_heads": 8,
+      "attention_dropout": 0.20465199241881016,
+      "attention_dim": 512,
+      "positional_encoding": true,
+      "max_seq_length": 1000,
+      "total_params": 5716995,
+      "lstm_params": 3481600,
+      "attention_params": 2233345,
+      "classifier_params": 2050
+    },
+    "training_info": {
+      "batch_size": 16,
+      "learning_rate": 0.004410288125903214,
+      "scheduler": "plateau",
+      "label_smoothing": 0.0,
+      "weighted_sampling": true,
+      "total_epochs": 0,
+      "validation_strategy": "line_f1",
+      "weight_decay": 1.3117657880669798e-06,
+      "gradient_clip_norm": 1.3157447138310987,
+      "max_epochs": 27,
+      "patience": 8
+    },
+    "calibration_info": {
+      "temperature": {
+        "ece_before": 0.6863119772000491,
+        "ece_after": 0.4019380977673709,
+        "improvement": 0.2843738794326782,
+        "params": {
+          "temperature": 4.999995948501476
+        }
+      },
+      "platt": {
+        "ece_before": 0.6863119772000491,
+        "ece_after": 0.19890769033862943,
+        "improvement": 0.4874042868614197,
+        "params": {
+          "A": 0.0,
+          "B": -0.004958260441463793
+        }
+      }
+    }
+  },
+  "metrics": []
+}

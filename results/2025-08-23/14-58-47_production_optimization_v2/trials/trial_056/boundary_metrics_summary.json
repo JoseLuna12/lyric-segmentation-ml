@@ -1,0 +1,137 @@
+{
+  "boundary_metrics": {
+    "description": "Boundary-aware evaluation metrics for structural understanding",
+    "line_level_metrics": {
+      "macro_f1": 0.7308752689103782,
+      "verse_f1": 0.8358947182476595,
+      "chorus_f1": 0.625855819573097
+    },
+    "boundary_detection": {
+      "f1": 0.3412228796844181,
+      "precision": 0.29322033898305083,
+      "recall": 0.4080188679245283
+    },
+    "segment_quality": {
+      "complete_segments_detected": 0.2094404035151649,
+      "avg_segment_overlap_iou": 0.5999188952859222
+    },
+    "transition_accuracy": {
+      "verse_to_chorus": 0.27876106194690264,
+      "chorus_to_verse": 0.46464646464646464
+    }
+  },
+  "historical_progression": [
+    {
+      "epoch": 1,
+      "boundary_f1": 0.0,
+      "complete_segments": 0.0,
+      "verse_to_chorus_acc": 0.0,
+      "chorus_to_verse_acc": 0.0
+    },
+    {
+      "epoch": 2,
+      "boundary_f1": 0.0692167577413479,
+      "complete_segments": 0.01407377874769179,
+      "verse_to_chorus_acc": 0.05309734513274336,
+      "chorus_to_verse_acc": 0.0
+    },
+    {
+      "epoch": 3,
+      "boundary_f1": 0.0,
+      "complete_segments": 0.05708388095715773,
+      "verse_to_chorus_acc": 0.0,
+      "chorus_to_verse_acc": 0.0
+    },
+    {
+      "epoch": 4,
+      "boundary_f1": 0.16999999999999998,
+      "complete_segments": 0.08591810072456944,
+      "verse_to_chorus_acc": 0.11946902654867257,
+      "chorus_to_verse_acc": 0.08585858585858586
+    },
+    {
+      "epoch": 5,
+      "boundary_f1": 0.17886178861788618,
+      "complete_segments": 0.07733286043201207,
+      "verse_to_chorus_acc": 0.1592920353982301,
+      "chorus_to_verse_acc": 0.08080808080808081
+    },
+    {
+      "epoch": 6,
+      "boundary_f1": 0.22172949002217296,
+      "complete_segments": 0.06373612856910842,
+      "verse_to_chorus_acc": 0.14601769911504425,
+      "chorus_to_verse_acc": 0.2474747474747475
+    },
+    {
+      "epoch": 7,
+      "boundary_f1": 0.22597864768683273,
+      "complete_segments": 0.09901023391214271,
+      "verse_to_chorus_acc": 0.20353982300884957,
+      "chorus_to_verse_acc": 0.3282828282828283
+    },
+    {
+      "epoch": 8,
+      "boundary_f1": 0.33751205400192863,
+      "complete_segments": 0.19314305026128992,
+      "verse_to_chorus_acc": 0.2920353982300885,
+      "chorus_to_verse_acc": 0.4292929292929293
+    },
+    {
+      "epoch": 9,
+      "boundary_f1": 0.16307403936269915,
+      "complete_segments": 0.04433507890559853,
+      "verse_to_chorus_acc": 0.13716814159292035,
+      "chorus_to_verse_acc": 0.25252525252525254
+    },
+    {
+      "epoch": 10,
+      "boundary_f1": 0.2645698427382054,
+      "complete_segments": 0.11971005621588866,
+      "verse_to_chorus_acc": 0.2610619469026549,
+      "chorus_to_verse_acc": 0.3484848484848485
+    },
+    {
+      "epoch": 11,
+      "boundary_f1": 0.3412228796844181,
+      "complete_segments": 0.2094404035151649,
+      "verse_to_chorus_acc": 0.27876106194690264,
+      "chorus_to_verse_acc": 0.46464646464646464
+    },
+    {
+      "epoch": 12,
+      "boundary_f1": 0.266173752310536,
+      "complete_segments": 0.14046196249271542,
+      "verse_to_chorus_acc": 0.2610619469026549,
+      "chorus_to_verse_acc": 0.37373737373737376
+    },
+    {
+      "epoch": 13,
+      "boundary_f1": 0.319626168224299,
+      "complete_segments": 0.2022786610273355,
+      "verse_to_chorus_acc": 0.3141592920353982,
+      "chorus_to_verse_acc": 0.4393939393939394
+    },
+    {
+      "epoch": 14,
+      "boundary_f1": 0.29916897506925205,
+      "complete_segments": 0.1959338845738634,
+      "verse_to_chorus_acc": 0.2920353982300885,
+      "chorus_to_verse_acc": 0.41414141414141414
+    },
+    {
+      "epoch": 15,
+      "boundary_f1": 0.2788550323176362,
+      "complete_segments": 0.1637664611286032,
+      "verse_to_chorus_acc": 0.2610619469026549,
+      "chorus_to_verse_acc": 0.3939393939393939
+    }
+  ],
+  "export_timestamp": 1756170770.121771,
+  "model_config": {
+    "experiment_name": "hyperopt_trial_056",
+    "batch_size": 32,
+    "learning_rate": 0.000742572091878156,
+    "scheduler": "cosine"
+  }
+}

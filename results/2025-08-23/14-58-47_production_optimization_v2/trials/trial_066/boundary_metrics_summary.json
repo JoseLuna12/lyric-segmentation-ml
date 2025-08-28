@@ -1,0 +1,130 @@
+{
+  "boundary_metrics": {
+    "description": "Boundary-aware evaluation metrics for structural understanding",
+    "line_level_metrics": {
+      "macro_f1": 0.734553913820208,
+      "verse_f1": 0.8203414996288048,
+      "chorus_f1": 0.648766328011611
+    },
+    "boundary_detection": {
+      "f1": 0.35483870967741943,
+      "precision": 0.2968253968253968,
+      "recall": 0.4410377358490566
+    },
+    "segment_quality": {
+      "complete_segments_detected": 0.22690286484029853,
+      "avg_segment_overlap_iou": 0.6305710255533571
+    },
+    "transition_accuracy": {
+      "verse_to_chorus": 0.3805309734513274,
+      "chorus_to_verse": 0.45454545454545453
+    }
+  },
+  "historical_progression": [
+    {
+      "epoch": 1,
+      "boundary_f1": 0.0784313725490196,
+      "complete_segments": 0.028467004726283624,
+      "verse_to_chorus_acc": 0.0752212389380531,
+      "chorus_to_verse_acc": 0.0
+    },
+    {
+      "epoch": 2,
+      "boundary_f1": 0.09763313609467457,
+      "complete_segments": 0.016767081427738903,
+      "verse_to_chorus_acc": 0.07079646017699115,
+      "chorus_to_verse_acc": 0.050505050505050504
+    },
+    {
+      "epoch": 3,
+      "boundary_f1": 0.10749185667752444,
+      "complete_segments": 0.03476061844301505,
+      "verse_to_chorus_acc": 0.10176991150442478,
+      "chorus_to_verse_acc": 0.030303030303030304
+    },
+    {
+      "epoch": 4,
+      "boundary_f1": 0.14795244385733156,
+      "complete_segments": 0.054566739137258756,
+      "verse_to_chorus_acc": 0.11504424778761062,
+      "chorus_to_verse_acc": 0.11616161616161616
+    },
+    {
+      "epoch": 5,
+      "boundary_f1": 0.1712403951701427,
+      "complete_segments": 0.05596394758642903,
+      "verse_to_chorus_acc": 0.16371681415929204,
+      "chorus_to_verse_acc": 0.17676767676767677
+    },
+    {
+      "epoch": 6,
+      "boundary_f1": 0.28378378378378377,
+      "complete_segments": 0.1400389955930783,
+      "verse_to_chorus_acc": 0.3230088495575221,
+      "chorus_to_verse_acc": 0.3333333333333333
+    },
+    {
+      "epoch": 7,
+      "boundary_f1": 0.28960155490767736,
+      "complete_segments": 0.13020141979579944,
+      "verse_to_chorus_acc": 0.26991150442477874,
+      "chorus_to_verse_acc": 0.41919191919191917
+    },
+    {
+      "epoch": 8,
+      "boundary_f1": 0.32979749276759884,
+      "complete_segments": 0.1824692648261047,
+      "verse_to_chorus_acc": 0.33185840707964603,
+      "chorus_to_verse_acc": 0.43434343434343436
+    },
+    {
+      "epoch": 9,
+      "boundary_f1": 0.33849129593810445,
+      "complete_segments": 0.1999578790273382,
+      "verse_to_chorus_acc": 0.34513274336283184,
+      "chorus_to_verse_acc": 0.41919191919191917
+    },
+    {
+      "epoch": 10,
+      "boundary_f1": 0.3333333333333333,
+      "complete_segments": 0.21088278666486512,
+      "verse_to_chorus_acc": 0.36283185840707965,
+      "chorus_to_verse_acc": 0.3939393939393939
+    },
+    {
+      "epoch": 11,
+      "boundary_f1": 0.35483870967741943,
+      "complete_segments": 0.22690286484029853,
+      "verse_to_chorus_acc": 0.3805309734513274,
+      "chorus_to_verse_acc": 0.45454545454545453
+    },
+    {
+      "epoch": 12,
+      "boundary_f1": 0.34619188921859545,
+      "complete_segments": 0.18243349014823032,
+      "verse_to_chorus_acc": 0.3274336283185841,
+      "chorus_to_verse_acc": 0.4444444444444444
+    },
+    {
+      "epoch": 13,
+      "boundary_f1": 0.33595284872298625,
+      "complete_segments": 0.1994195016862037,
+      "verse_to_chorus_acc": 0.3672566371681416,
+      "chorus_to_verse_acc": 0.3939393939393939
+    },
+    {
+      "epoch": 14,
+      "boundary_f1": 0.33791748526522597,
+      "complete_segments": 0.19378767686031736,
+      "verse_to_chorus_acc": 0.3407079646017699,
+      "chorus_to_verse_acc": 0.4090909090909091
+    }
+  ],
+  "export_timestamp": 1756187771.2681868,
+  "model_config": {
+    "experiment_name": "hyperopt_trial_066",
+    "batch_size": 32,
+    "learning_rate": 0.000910926575990696,
+    "scheduler": "cosine"
+  }
+}

@@ -1,0 +1,289 @@
+{
+  "optimization_summary": {
+    "study_name": "cnn_cnn_hyperparam_testv1",
+    "model_type": "CNN",
+    "completion_date": "2025-08-27T21:45:23.526720",
+    "total_trials": 73,
+    "completed_trials": 72,
+    "best_score": 0.45013723696248864,
+    "optimization_duration_hours": 7.367568804999999
+  },
+  "best_trial": {
+    "trial_number": 15,
+    "validation_score": 0.45013723696248864,
+    "parameters": {
+      "hidden_dim": 128,
+      "num_layers": 2,
+      "dropout": 0.2907305918349628,
+      "layer_dropout": 0.13213801995376015,
+      "cnn_kernel_sizes": "3,7,11",
+      "cnn_dilation_rates": "1,2,4,8",
+      "cnn_use_residual": true,
+      "cnn_batch_multiplier": 1.0165686577777948,
+      "attention_enabled": false,
+      "max_epochs": 15,
+      "batch_size": 64,
+      "learning_rate": 0.0005143177369180814,
+      "weight_decay": 0.01376448813165231,
+      "scheduler": "cosine",
+      "min_delta": 0.0001533279709318542,
+      "gradient_clip_norm": 0.49039159275805416,
+      "validation_strategy": "cnn_composite",
+      "boundary_weight": 2.337320481959756,
+      "label_smoothing": 0.1626237280023707,
+      "segment_consistency_lambda": 0.02002362015370223,
+      "conf_penalty_lambda": 0.006036607773733913,
+      "conf_threshold": 0.9394419374975324,
+      "entropy_lambda": 0.035556836463973965,
+      "max_confidence_threshold": 0.9053565027297454,
+      "min_chorus_rate": 0.06135911356401585,
+      "max_chorus_rate": 0.8381493150063617,
+      "max_conf_over_95_ratio": 0.056912067466361994,
+      "head_ssm_enabled": false,
+      "tail_ssm_enabled": true,
+      "phonetic_ssm_enabled": true,
+      "pos_ssm_enabled": true,
+      "string_ssm_enabled": true,
+      "syllable_pattern_ssm_enabled": false,
+      "line_syllable_ssm_enabled": true,
+      "word2vec_enabled": true,
+      "contextual_enabled": false,
+      "head_tail_words": 2,
+      "phonetic_mode": "combined",
+      "phonetic_similarity": "binary",
+      "phonetic_threshold": 0.26501174358705154,
+      "pos_tagset": "universal",
+      "pos_similarity": "position",
+      "pos_threshold": 0.2822614861997215,
+      "string_similarity": "word_overlap",
+      "string_threshold": 0.05798707865510839
+    },
+    "duration_minutes": 11.432646633333333
+  },
+  "top_10_trials": [
+    {
+      "rank": 1,
+      "trial_number": 15,
+      "validation_score": 0.45013723696248864,
+      "key_parameters": {
+        "hidden_dim": 128,
+        "num_layers": 2,
+        "cnn_kernel_sizes": "3,7,11",
+        "attention_enabled": false,
+        "learning_rate": 0.0005143177369180814,
+        "validation_strategy": "cnn_composite"
+      }
+    },
+    {
+      "rank": 2,
+      "trial_number": 12,
+      "validation_score": 0.4413665743305632,
+      "key_parameters": {
+        "hidden_dim": 128,
+        "num_layers": 2,
+        "cnn_kernel_sizes": "3,7,11",
+        "attention_enabled": false,
+        "learning_rate": 0.00044613549870196976,
+        "validation_strategy": "cnn_composite"
+      }
+    },
+    {
+      "rank": 3,
+      "trial_number": 21,
+      "validation_score": 0.440251572327044,
+      "key_parameters": {
+        "hidden_dim": 128,
+        "num_layers": 1,
+        "cnn_kernel_sizes": "5,7,9",
+        "attention_enabled": false,
+        "learning_rate": 0.00025003308878196587,
+        "validation_strategy": "boundary_f1"
+      }
+    },
+    {
+      "rank": 4,
+      "trial_number": 19,
+      "validation_score": 0.43946188340807174,
+      "key_parameters": {
+        "hidden_dim": 128,
+        "num_layers": 1,
+        "cnn_kernel_sizes": "5,7,9",
+        "attention_enabled": false,
+        "learning_rate": 0.00026415416485417616,
+        "validation_strategy": "boundary_f1"
+      }
+    },
+    {
+      "rank": 5,
+      "trial_number": 16,
+      "validation_score": 0.4383561643835616,
+      "key_parameters": {
+        "hidden_dim": 128,
+        "num_layers": 1,
+        "cnn_kernel_sizes": "3,7,11",
+        "attention_enabled": false,
+        "learning_rate": 0.0005829350976742147,
+        "validation_strategy": "cnn_composite"
+      }
+    },
+    {
+      "rank": 6,
+      "trial_number": 10,
+      "validation_score": 0.43830570902394106,
+      "key_parameters": {
+        "hidden_dim": 128,
+        "num_layers": 2,
+        "cnn_kernel_sizes": "3,7,11",
+        "attention_enabled": false,
+        "learning_rate": 0.0003894706089427724,
+        "validation_strategy": "cnn_composite"
+      }
+    },
+    {
+      "rank": 7,
+      "trial_number": 20,
+      "validation_score": 0.43825441039925717,
+      "key_parameters": {
+        "hidden_dim": 128,
+        "num_layers": 2,
+        "cnn_kernel_sizes": "3,7,11",
+        "attention_enabled": false,
+        "learning_rate": 0.0006633504878681281,
+        "validation_strategy": "cnn_composite"
+      }
+    },
+    {
+      "rank": 8,
+      "trial_number": 17,
+      "validation_score": 0.4376163873370577,
+      "key_parameters": {
+        "hidden_dim": 128,
+        "num_layers": 2,
+        "cnn_kernel_sizes": "3,7,11",
+        "attention_enabled": false,
+        "learning_rate": 0.0005957386072095597,
+        "validation_strategy": "cnn_composite"
+      }
+    },
+    {
+      "rank": 9,
+      "trial_number": 14,
+      "validation_score": 0.4361313868613139,
+      "key_parameters": {
+        "hidden_dim": 128,
+        "num_layers": 2,
+        "cnn_kernel_sizes": "3,7,11",
+        "attention_enabled": false,
+        "learning_rate": 0.00033015657998638136,
+        "validation_strategy": "line_f1"
+      }
+    },
+    {
+      "rank": 10,
+      "trial_number": 11,
+      "validation_score": 0.42936802973977695,
+      "key_parameters": {
+        "hidden_dim": 128,
+        "num_layers": 2,
+        "cnn_kernel_sizes": "3,7,11",
+        "attention_enabled": false,
+        "learning_rate": 0.0004046268582328232,
+        "validation_strategy": "cnn_composite"
+      }
+    }
+  ],
+  "parameter_analysis": {
+    "hidden_dim": {
+      "128": {
+        "count": 14,
+        "mean_score": 0.41210324929957104,
+        "max_score": 0.45013723696248864,
+        "min_score": 0.22490706319702605
+      },
+      "256": {
+        "count": 8,
+        "mean_score": 0.3600313702137941,
+        "max_score": 0.4179372197309417,
+        "min_score": 0.19672131147540986
+      },
+      "None": {
+        "count": 50,
+        "mean_score": 0.0,
+        "max_score": 0.0,
+        "min_score": 0.0
+      }
+    },
+    "num_layers": {
+      "2": {
+        "count": 13,
+        "mean_score": 0.3944815260789898,
+        "max_score": 0.45013723696248864,
+        "min_score": 0.22490706319702605
+      },
+      "1": {
+        "count": 5,
+        "mean_score": 0.3848361205911179,
+        "max_score": 0.440251572327044,
+        "min_score": 0.19672131147540986
+      },
+      "3": {
+        "count": 4,
+        "mean_score": 0.39931400248047244,
+        "max_score": 0.414703110273327,
+        "min_score": 0.3708961845607809
+      },
+      "None": {
+        "count": 50,
+        "mean_score": 0.0,
+        "max_score": 0.0,
+        "min_score": 0.0
+      }
+    },
+    "attention_enabled": {
+      "False": {
+        "count": 17,
+        "mean_score": 0.39892978995332146,
+        "max_score": 0.45013723696248864,
+        "min_score": 0.19672131147540986
+      },
+      "True": {
+        "count": 5,
+        "mean_score": 0.3735780045395764,
+        "max_score": 0.40816326530612246,
+        "min_score": 0.3254113345521024
+      },
+      "None": {
+        "count": 50,
+        "mean_score": 0.0,
+        "max_score": 0.0,
+        "min_score": 0.0
+      }
+    },
+    "validation_strategy": {
+      "cnn_composite": {
+        "count": 13,
+        "mean_score": 0.3966981682002776,
+        "max_score": 0.45013723696248864,
+        "min_score": 0.19672131147540986
+      },
+      "boundary_f1": {
+        "count": 5,
+        "mean_score": 0.3832554468039847,
+        "max_score": 0.440251572327044,
+        "min_score": 0.22490706319702605
+      },
+      "line_f1": {
+        "count": 4,
+        "mean_score": 0.39408575782020355,
+        "max_score": 0.4361313868613139,
+        "min_score": 0.35992578849721707
+      },
+      "None": {
+        "count": 50,
+        "mean_score": 0.0,
+        "max_score": 0.0,
+        "min_score": 0.0
+      }
+    }
+  }
+}

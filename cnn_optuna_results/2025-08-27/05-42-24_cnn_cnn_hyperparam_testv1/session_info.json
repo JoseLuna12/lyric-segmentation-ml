@@ -1,0 +1,13 @@
+{
+  "session_start": "2025-08-27T05:42:24.664318",
+  "study_name": "cnn_hyperparam_testv1",
+  "session_directory": "cnn_optuna_results/2025-08-27/05-42-24_cnn_cnn_hyperparam_testv1",
+  "script_version": "cnn_hyperopt_v1.0",
+  "model_type": "CNN",
+  "architecture": "CNNTagger",
+  "subdirectories": {
+    "trials": "Individual CNN trial results and configurations",
+    "configs": "Best CNN configuration files",
+    "logs": "CNN training and optimization logs"
+  }
+}

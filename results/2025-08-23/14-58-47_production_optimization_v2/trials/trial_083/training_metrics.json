@@ -1,0 +1,63 @@
+{
+  "metadata": {
+    "model_info": {
+      "hidden_dim": 256,
+      "num_layers": 2,
+      "dropout": 0.20012233481918754,
+      "layer_dropout": 0.23269972485432366,
+      "attention_enabled": true,
+      "attention_heads": 4,
+      "attention_dropout": 0.18529738960423578,
+      "attention_dim": 256,
+      "positional_encoding": true,
+      "max_seq_length": 1000,
+      "total_params": 2764291,
+      "lstm_params": 2203648,
+      "attention_params": 559617,
+      "classifier_params": 1026
+    },
+    "training_info": {
+      "batch_size": 32,
+      "learning_rate": 0.0009929479607125034,
+      "scheduler": "cosine",
+      "label_smoothing": 0.0,
+      "weighted_sampling": true,
+      "total_epochs": 1,
+      "validation_strategy": "composite",
+      "weight_decay": 0.016659257284555404,
+      "gradient_clip_norm": 0.39429450780730413,
+      "max_epochs": 15,
+      "patience": 4
+    },
+    "calibration_info": null
+  },
+  "metrics": [
+    {
+      "epoch": 1,
+      "train_loss": 0.5975961297750473,
+      "train_chorus_rate": 0.5371737308800221,
+      "train_max_prob": 0.5846868187189103,
+      "train_conf_over_90": 0.026107010245323182,
+      "train_conf_over_95": 0.0,
+      "val_loss": 0.5958933681249619,
+      "val_macro_f1": 0.3440837386411823,
+      "val_verse_f1": 0.20281690140845068,
+      "val_chorus_f1": 0.4853505758739139,
+      "val_chorus_rate": 0.9155838340520859,
+      "val_max_prob": 0.6270720511674881,
+      "val_conf_over_90": 0.0,
+      "val_conf_over_95": 0.0,
+      "learning_rate": 0.000982109739268115,
+      "epoch_time": 124.7851049900055,
+      "val_boundary_f1": 0.003642987249544627,
+      "val_boundary_precision": 0.008,
+      "val_boundary_recall": 0.0023584905660377358,
+      "val_complete_segments": 0.0036231884057971015,
+      "val_avg_segment_overlap": 0.13842387471186435,
+      "val_verse_to_chorus_acc": 0.004424778761061947,
+      "val_chorus_to_verse_acc": 0.0,
+      "val_window_diff": 0.4181047517042751,
+      "val_pk_metric": 0.40614238392292373
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "boundary_metrics": {
+    "description": "Boundary-aware evaluation metrics for structural understanding",
+    "line_level_metrics": {
+      "macro_f1": 0.7424089068825912,
+      "verse_f1": 0.8269230769230771,
+      "chorus_f1": 0.6578947368421052
+    },
+    "boundary_detection": {
+      "f1": 0.36460176991150445,
+      "precision": 0.29178470254957506,
+      "recall": 0.4858490566037736
+    },
+    "segment_quality": {
+      "complete_segments_detected": 0.24675044116984735,
+      "avg_segment_overlap_iou": 0.6342024093973637
+    },
+    "transition_accuracy": {
+      "verse_to_chorus": 0.42035398230088494,
+      "chorus_to_verse": 0.4696969696969697
+    }
+  },
+  "historical_progression": [
+    {
+      "epoch": 1,
+      "boundary_f1": 0.15827338129496404,
+      "complete_segments": 0.042954759789330305,
+      "verse_to_chorus_acc": 0.11504424778761062,
+      "chorus_to_verse_acc": 0.1111111111111111
+    },
+    {
+      "epoch": 2,
+      "boundary_f1": 0.292910447761194,
+      "complete_segments": 0.12894876015236567,
+      "verse_to_chorus_acc": 0.2920353982300885,
+      "chorus_to_verse_acc": 0.35858585858585856
+    },
+    {
+      "epoch": 3,
+      "boundary_f1": 0.29385574354407834,
+      "complete_segments": 0.15601415496696514,
+      "verse_to_chorus_acc": 0.3053097345132743,
+      "chorus_to_verse_acc": 0.41919191919191917
+    },
+    {
+      "epoch": 4,
+      "boundary_f1": 0.29974597798475866,
+      "complete_segments": 0.16246077921581634,
+      "verse_to_chorus_acc": 0.3185840707964602,
+      "chorus_to_verse_acc": 0.4393939393939394
+    },
+    {
+      "epoch": 5,
+      "boundary_f1": 0.35614035087719303,
+      "complete_segments": 0.2600203217912656,
+      "verse_to_chorus_acc": 0.43805309734513276,
+      "chorus_to_verse_acc": 0.4444444444444444
+    },
+    {
+      "epoch": 6,
+      "boundary_f1": 0.29830508474576267,
+      "complete_segments": 0.18287493295446638,
+      "verse_to_chorus_acc": 0.33185840707964603,
+      "chorus_to_verse_acc": 0.4494949494949495
+    },
+    {
+      "epoch": 7,
+      "boundary_f1": 0.31901840490797545,
+      "complete_segments": 0.18324614001973494,
+      "verse_to_chorus_acc": 0.35398230088495575,
+      "chorus_to_verse_acc": 0.4595959595959596
+    },
+    {
+      "epoch": 8,
+      "boundary_f1": 0.3581560283687943,
+      "complete_segments": 0.24233966393298312,
+      "verse_to_chorus_acc": 0.4247787610619469,
+      "chorus_to_verse_acc": 0.4393939393939394
+    },
+    {
+      "epoch": 9,
+      "boundary_f1": 0.278503046127067,
+      "complete_segments": 0.1604242668664726,
+      "verse_to_chorus_acc": 0.27876106194690264,
+      "chorus_to_verse_acc": 0.43434343434343436
+    },
+    {
+      "epoch": 10,
+      "boundary_f1": 0.33895297249334516,
+      "complete_segments": 0.21970193568814989,
+      "verse_to_chorus_acc": 0.37168141592920356,
+      "chorus_to_verse_acc": 0.4494949494949495
+    },
+    {
+      "epoch": 11,
+      "boundary_f1": 0.36460176991150445,
+      "complete_segments": 0.24675044116984735,
+      "verse_to_chorus_acc": 0.42035398230088494,
+      "chorus_to_verse_acc": 0.4696969696969697
+    },
+    {
+      "epoch": 12,
+      "boundary_f1": 0.34829443447037706,
+      "complete_segments": 0.2328488312581632,
+      "verse_to_chorus_acc": 0.3805309734513274,
+      "chorus_to_verse_acc": 0.4494949494949495
+    },
+    {
+      "epoch": 13,
+      "boundary_f1": 0.35103510351035105,
+      "complete_segments": 0.2402384944405093,
+      "verse_to_chorus_acc": 0.3938053097345133,
+      "chorus_to_verse_acc": 0.4444444444444444
+    },
+    {
+      "epoch": 14,
+      "boundary_f1": 0.34735899731423464,
+      "complete_segments": 0.22910124182658648,
+      "verse_to_chorus_acc": 0.3938053097345133,
+      "chorus_to_verse_acc": 0.4393939393939394
+    }
+  ],
+  "export_timestamp": 1756043743.1854231,
+  "model_config": {
+    "experiment_name": "hyperopt_trial_016",
+    "batch_size": 32,
+    "learning_rate": 0.0007034038160416916,
+    "scheduler": "cosine"
+  }
+}

@@ -14,9 +14,7 @@ import torch
 class LossConfig:
     """Loss function configuration."""
     loss_type: str = "CrossEntropyWithLabelSmoothing"
-    # For CrossEntropyWithLabelSmoothing
     label_smoothing: float = 0.0
-    # For BoundaryAwareCrossEntropy  
     boundary_weight: float = 1.0
     entropy_lambda: float = 0.05
     segment_consistency_lambda: float = 0.0
@@ -35,31 +33,26 @@ class AntiCollapseConfig:
 class TrainingConfig:
     """Complete training configuration dataclass."""
     
-    # Data paths
     train_file: str
     val_file: str  
     test_file: str
     
-    # Model architecture
     hidden_dim: int = 128
-    num_layers: int = 1              # NEW: Number of LSTM layers
-    layer_dropout: float = 0.0       # NEW: Inter-layer dropout
+    num_layers: int = 1
+    layer_dropout: float = 0.0
     num_classes: int = 2
     dropout: float = 0.4
     
-    # NEW: Attention mechanism parameters
     attention_enabled: bool = False
-    attention_type: str = 'self'  # NEW: 'self', 'localized', 'boundary_aware'
+    attention_type: str = 'self'
     attention_heads: int = 8
     attention_dropout: float = 0.1
-    attention_dim: int = None  # If None, uses LSTM output dimension
+    attention_dim: int = None
     positional_encoding: bool = True
     max_seq_length: int = 1000
-    # NEW: Attention type-specific parameters
-    window_size: int = 7  # For localized attention
-    boundary_temperature: float = 2.0  # For boundary-aware attention
+    window_size: int = 7
+    boundary_temperature: float = 2.0
     
-    # Training parameters
     batch_size: int = 16
     learning_rate: float = 0.001
     weight_decay: float = 0.01
@@ -68,7 +61,6 @@ class TrainingConfig:
     min_delta: float = 0.0
     gradient_clip_norm: float = 1.0
     
-    # Advanced Learning Rate Scheduling
     scheduler: str = "plateau"
     min_lr: float = 1e-6
     cosine_t_max: int = 60
@@ -80,43 +72,34 @@ class TrainingConfig:
     cosine_t0: int = 10
     cosine_t_mult: int = 2
     
-    # Anti-collapse settings (non-loss parameters only)
     weighted_sampling: bool = True
-    # Note: label_smoothing and entropy_lambda moved to loss configuration
     
-    # NEW: Loss function configuration
-    loss: Optional[Any] = None  # Will hold loss configuration dict
+    loss: Optional[Any] = None
     
-    # Enhanced Emergency Monitoring (all configurable)
     emergency_monitoring_enabled: bool = True
-    # Batch-level monitoring thresholds
     max_confidence_threshold: float = 0.95
     min_chorus_rate: float = 0.05
     max_chorus_rate: float = 0.85
     max_conf_over_95_ratio: float = 0.1
-    # Epoch-level monitoring thresholds
+    
     val_overconf_threshold: float = 0.96
     val_f1_collapse_threshold: float = 0.1
     emergency_overconf_threshold: float = 0.98
     emergency_conf95_ratio: float = 0.8
     emergency_f1_threshold: float = 0.05
-    # Timing parameters
+
     skip_batches: int = 50
     skip_epochs: int = 3
     print_batch_every: int = 10
     
-    # Calibration Configuration - Clean implementation
     calibration_enabled: bool = True
     calibration_methods: list = None
     
-    # Loss and Anti-collapse Configuration
     loss_config: LossConfig = None
     anti_collapse: AntiCollapseConfig = None
     
-    # Validation Strategy (Phase 3) - Simplified
-    validation_strategy: str = "line_f1"  # Simple strategy selection
+    validation_strategy: str = "line_f1"
     
-    # Features
     head_ssm_enabled: bool = True
     head_ssm_dimension: int = 12
     head_ssm_words: int = 2
@@ -142,7 +125,7 @@ class TrainingConfig:
     string_ssm_similarity_threshold: float = 0.0
     string_ssm_similarity_method: str = "word_overlap"
     
-    # NEW: Syllable SSM features
+    # Syllable SSM features
     syllable_pattern_ssm_enabled: bool = False
     syllable_pattern_ssm_dimension: int = 12
     syllable_pattern_ssm_similarity_method: str = "levenshtein"
@@ -200,7 +183,6 @@ class TrainingConfig:
         if self.anti_collapse is None:
             self.anti_collapse = AntiCollapseConfig()
         
-        # Auto-fix num_workers for MPS compatibility
         if (self.device == "auto" and torch.backends.mps.is_available()) or self.device == "mps":
             if self.num_workers > 0:
                 print(f"🍎 MPS detected: Setting num_workers=0 for compatibility (was {self.num_workers})")
@@ -262,9 +244,7 @@ def validate_config(config: Dict[str, Any]) -> Dict[str, Any]:
     if training.get('max_epochs', 1) < 1:
         raise ValueError("max_epochs must be >= 1")
     
-    # Validate anti-collapse settings (non-loss parameters only)
     anti_collapse = config.get('anti_collapse', {})
-    # Note: label_smoothing and entropy_lambda validation moved to loss section
     
     print("✅ Configuration validation passed")
     return config
@@ -280,14 +260,14 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
     loss = config.get('loss', {})
     anti_collapse = config.get('anti_collapse', {})
     emergency = config.get('emergency_monitoring', {})
-    calibration = config.get('calibration', {})  # New clean calibration config
+    calibration = config.get('calibration', {}) 
     features = config.get('features', {})
     head_ssm = features.get('head_ssm', {})
     tail_ssm = features.get('tail_ssm', {})
     phonetic_ssm = features.get('phonetic_ssm', {})
     pos_ssm = features.get('pos_ssm', {})
     string_ssm = features.get('string_ssm', {})
-    # NEW: Syllable SSM features
+    # Syllable SSM features
     syllable_pattern_ssm = features.get('syllable_pattern_ssm', {})
     line_syllable_ssm = features.get('line_syllable_ssm', {})
     # New embedding features
@@ -311,7 +291,7 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         num_classes=model.get('num_classes', 2),
         dropout=model.get('dropout', 0.4),
         
-        # NEW: Attention parameters
+        # Attention parameters
         attention_enabled=model.get('attention_enabled', False),
         attention_type=model.get('attention_type', 'self'),
         attention_heads=model.get('attention_heads', 8),
@@ -330,7 +310,7 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         patience=training.get('patience', 8),
         gradient_clip_norm=training.get('gradient_clip_norm', 1.0),
         
-        # ✅ NEW: Advanced Learning Rate Scheduling
+        # Advanced Learning Rate Scheduling
         scheduler=training.get('scheduler', 'plateau'),
         min_lr=training.get('min_lr', 1e-6),
         cosine_t_max=training.get('cosine_t_max', training.get('max_epochs', 60)),
@@ -342,14 +322,13 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         cosine_t0=training.get('cosine_t0', 10),
         cosine_t_mult=training.get('cosine_t_mult', 2),
         
-        # Anti-collapse (non-loss parameters only)
+        # Anti-collapse
         weighted_sampling=anti_collapse.get('weighted_sampling', True),
-        # Note: label_smoothing and entropy_lambda are now handled in loss section
         
-        # NEW: Loss function configuration
+        # Loss function configuration
         loss=config.get('loss', None),
         
-        # ✅ UPDATED: Enhanced Emergency Monitoring
+        # Enhanced Emergency Monitoring
         emergency_monitoring_enabled=emergency.get('enabled', True),
         # Batch-level monitoring thresholds
         max_confidence_threshold=emergency.get('max_confidence_threshold', 0.95),
@@ -367,13 +346,11 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         skip_epochs=emergency.get('skip_epochs', 3),
         print_batch_every=emergency.get('print_batch_every', 10),
         
-        # Calibration Configuration - Clean implementation
         calibration_enabled=calibration.get('enabled', True),
         calibration_methods=calibration.get('methods', ['temperature', 'platt', 'isotonic']),
         
-        # Loss and Anti-collapse Configuration
         loss_config=LossConfig(
-            loss_type=loss.get('type', 'CrossEntropyWithLabelSmoothing'),  # Use 'type' not 'loss_type'
+            loss_type=loss.get('type', 'CrossEntropyWithLabelSmoothing'),
             label_smoothing=loss.get('label_smoothing', 0.0),
             boundary_weight=loss.get('boundary_weight', 1.0),
             entropy_lambda=loss.get('entropy_lambda', 0.05),
@@ -386,10 +363,8 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
             weighted_sampling=anti_collapse.get('weighted_sampling', False)
         ),
         
-        # 🎯 NEW: Validation Strategy (Phase 3) - Simplified
         validation_strategy=training.get('validation_strategy', config.get('validation_strategy', 'line_f1')),
         
-        # Features
         head_ssm_enabled=head_ssm.get('enabled', True),
         head_ssm_dimension=head_ssm.get('dimension', 12),
         head_ssm_words=head_ssm.get('head_words', 2),
@@ -415,7 +390,7 @@ def flatten_config(config: Dict[str, Any]) -> TrainingConfig:
         string_ssm_similarity_threshold=string_ssm.get('similarity_threshold', 0.0),
         string_ssm_similarity_method=string_ssm.get('similarity_method', 'word_overlap'),
         
-        # NEW: Syllable SSM features
+        # Syllable SSM features
         syllable_pattern_ssm_enabled=syllable_pattern_ssm.get('enabled', False),
         syllable_pattern_ssm_dimension=syllable_pattern_ssm.get('dimension', 12),
         syllable_pattern_ssm_similarity_method=syllable_pattern_ssm.get('similarity_method', 'levenshtein'),
@@ -502,7 +477,7 @@ def load_training_config(config_path: str) -> TrainingConfig:
     if training_config.num_layers > 1:
         print(f"   ✅ Multi-layer LSTM: {training_config.num_layers} layers, layer_dropout={training_config.layer_dropout}")
     
-    # NEW: Attention information
+    # Attention information
     if training_config.attention_enabled:
         print(f"   🎯 Attention: {training_config.attention_type} type, {training_config.attention_heads} heads, dropout={training_config.attention_dropout}")
         if training_config.attention_type == 'localized':
@@ -556,7 +531,7 @@ def load_training_config(config_path: str) -> TrainingConfig:
         enabled_features.append(string_desc)
         total_dim += training_config.string_ssm_dimension
     
-    # NEW: Syllable SSM features
+    # Syllable SSM features
     if training_config.syllable_pattern_ssm_enabled:
         syl_desc = f"SyllablePattern-SSM({training_config.syllable_pattern_ssm_dimension}D,{training_config.syllable_pattern_ssm_similarity_method}"
         if training_config.syllable_pattern_ssm_normalize:
@@ -573,7 +548,7 @@ def load_training_config(config_path: str) -> TrainingConfig:
         enabled_features.append(line_syl_desc)
         total_dim += training_config.line_syllable_ssm_dimension
     
-    # NEW: Add embedding features to summary
+    # Add embedding features to summary
     if training_config.word2vec_enabled:
         w2v_dim = 12 if training_config.word2vec_mode == "summary" else 300
         w2v_desc = f"Word2Vec({w2v_dim}D,{training_config.word2vec_model},{training_config.word2vec_mode}"
@@ -619,9 +594,6 @@ def merge_with_args(config: TrainingConfig, args: argparse.Namespace) -> Trainin
     if hasattr(args, 'epochs') and args.epochs is not None:
         config.max_epochs = args.epochs
         overrides.append(f"max_epochs={args.epochs}")
-    
-    # Note: label_smoothing and entropy_lambda command-line overrides are deprecated
-    # These should now be specified in the loss section of the config file
     
     if hasattr(args, 'disable_emergency_monitoring') and args.disable_emergency_monitoring:
         config.emergency_monitoring_enabled = False

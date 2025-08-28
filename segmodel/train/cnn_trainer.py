@@ -74,7 +74,6 @@ class CNNEarlyStopper:
             bool: True if training should stop
         """
         
-        # --- Priority: CNN-optimized calibration-aware stopping ---
         if "val_f1" in metrics and "val_ece" in metrics:
             if self.mode != "cnn_calibration":
                 self.mode = "cnn_calibration"
@@ -83,14 +82,12 @@ class CNNEarlyStopper:
             self.f1_hist.append(metrics["val_f1"])
             self.ece_hist.append(metrics["val_ece"])
             
-            # CNN convergence detection: faster decisions with shorter history
             if len(self.f1_hist) == self.f1_hist.maxlen:
                 ece_increasing = all(self.ece_hist[i] <= self.ece_hist[i+1] 
                                    for i in range(len(self.ece_hist)-1))
                 f1_gain = max(self.f1_hist) - min(self.f1_hist)
                 
-                # More aggressive stopping for CNNs (faster convergence)
-                if ece_increasing and f1_gain < 0.003:  # Tighter threshold than BiLSTM
+                if ece_increasing and f1_gain < 0.003:
                     self.should_stop = True
                     print(f"  🛑 CNN calibration-aware early stop:")
                     print(f"     ECE trend: increasing")
@@ -102,7 +99,6 @@ class CNNEarlyStopper:
             
             return False
         
-        # --- Fallback: CNN-optimized traditional stopping ---
         if self.mode != "cnn_traditional":
             self.mode = "cnn_traditional"
             print(f"  📉 CNN EarlyStopper: Using CNN-optimized traditional mode")
@@ -110,14 +106,12 @@ class CNNEarlyStopper:
         score = -metrics.get("val_loss", 0.0)
         self.score_history.append(score)
         
-        # Check for convergence plateau (CNN-specific)
         if len(self.score_history) == self.convergence_window:
             score_variance = np.var(list(self.score_history))
-            if score_variance < 1e-6:  # Very low variance indicates convergence
+            if score_variance < 1e-6:
                 print(f"  🛑 CNN convergence plateau detected (variance: {score_variance:.2e})")
                 return True
         
-        # Traditional patience logic with CNN adjustments
         if self.best_score is None:
             self.best_score = score
             self.counter = 0
@@ -163,7 +157,6 @@ class CNNTrainingMetrics:
     val_conf_over_95: float
     learning_rate: float
     epoch_time: float
-    # Boundary-aware metrics
     val_boundary_f1: float = 0.0
     val_boundary_precision: float = 0.0
     val_boundary_recall: float = 0.0
@@ -171,10 +164,8 @@ class CNNTrainingMetrics:
     val_avg_segment_overlap: float = 0.0
     val_verse_to_chorus_acc: float = 0.0
     val_chorus_to_verse_acc: float = 0.0
-    # Segmentation metrics
     val_window_diff: float = 1.0
     val_pk_metric: float = 1.0
-    # CNN-specific metrics
     cnn_receptive_field_usage: float = 0.0
     cnn_gradient_norm: float = 0.0
     cnn_effective_layers: int = 0
@@ -192,16 +183,16 @@ class CNNEmergencyMonitor:
     
     def __init__(
         self,
-        max_confidence: float = 0.93,  # Slightly lower for CNNs
+        max_confidence: float = 0.93,
         min_chorus_rate: float = 0.05,
         max_chorus_rate: float = 0.85,
-        max_conf_over_95: float = 0.08,  # Tighter for CNNs
-        val_overconf_threshold: float = 0.94,  # More aggressive
+        max_conf_over_95: float = 0.08,
+        val_overconf_threshold: float = 0.94,
         val_f1_collapse_threshold: float = 0.1,
-        emergency_overconf_threshold: float = 0.97,  # Slightly lower
-        emergency_conf95_ratio: float = 0.7,  # More aggressive
+        emergency_overconf_threshold: float = 0.97,
+        emergency_conf95_ratio: float = 0.7,
         emergency_f1_threshold: float = 0.05,
-        max_gradient_norm: float = 5.0  # CNN-specific
+        max_gradient_norm: float = 5.0
     ):
         self.max_confidence = max_confidence
         self.min_chorus_rate = min_chorus_rate
@@ -226,7 +217,6 @@ class CNNEmergencyMonitor:
         """
         warnings = []
         
-        # Standard confidence checks (with CNN-specific thresholds)
         if guardrails['max_prob_mean'] > self.max_confidence:
             warnings.append(f"CNN_OVERCONF: avg_conf={guardrails['max_prob_mean']:.3f}")
         
@@ -239,17 +229,16 @@ class CNNEmergencyMonitor:
         elif guardrails['chorus_rate'] > self.max_chorus_rate:
             warnings.append(f"CNN_CHORUS_OVER: rate={guardrails['chorus_rate']:.2%}")
         
-        # CNN-specific: gradient monitoring
+        # gradient monitoring
         if gradient_norm is not None and gradient_norm > self.max_gradient_norm:
             warnings.append(f"CNN_GRAD_EXPLOSION: norm={gradient_norm:.2f}")
         
-        # Emergency conditions (using configurable thresholds, same as BiLSTM approach)
         conditions = {
             'extreme_overconf': guardrails['max_prob_mean'] > self.emergency_overconf_threshold,
             'high_conf_ratio': guardrails['confidence_over_95'] > self.emergency_conf95_ratio,
-            'chorus_collapse': guardrails['chorus_rate'] < 0.01,  # Keep hardcoded for safety
-            'all_chorus': guardrails['chorus_rate'] > 0.99,  # Keep hardcoded for safety
-            'gradient_explosion': gradient_norm is not None and gradient_norm > self.max_gradient_norm * 2  # CNN-specific
+            'chorus_collapse': guardrails['chorus_rate'] < 0.01,
+            'all_chorus': guardrails['chorus_rate'] > 0.99,
+            'gradient_explosion': gradient_norm is not None and gradient_norm > self.max_gradient_norm * 2
         }
         
         should_stop = any(conditions.values())
@@ -264,15 +253,12 @@ class CNNEmergencyMonitor:
     def check_epoch(self, metrics) -> Tuple[bool, str]:
         """CNN-optimized epoch checking."""
         warnings = []
-        
-        # More aggressive validation monitoring for CNNs
         if metrics.val_max_prob > self.val_overconf_threshold:
             warnings.append(f"CNN_VAL_OVERCONF: {metrics.val_max_prob:.3f}")
         
         if metrics.val_macro_f1 < self.val_f1_collapse_threshold:
             warnings.append(f"CNN_F1_COLLAPSE: {metrics.val_macro_f1:.3f}")
         
-        # CNN-specific gradient monitoring
         if hasattr(metrics, 'cnn_gradient_norm') and metrics.cnn_gradient_norm > self.max_gradient_norm:
             warnings.append(f"CNN_HIGH_GRADIENTS: {metrics.cnn_gradient_norm:.2f}")
         
@@ -298,7 +284,6 @@ def create_cnn_scheduler(optimizer, config, total_steps: int = None):
     scheduler_name = getattr(config, 'scheduler', 'onecycle')
     
     if scheduler_name == 'onecycle':
-        # OneCycleLR is excellent for CNNs
         max_lr = getattr(config, 'learning_rate', 0.001)
         epochs = getattr(config, 'max_epochs', 50)
         steps_per_epoch = total_steps // epochs if total_steps else 100
@@ -324,8 +309,7 @@ def create_cnn_scheduler(optimizer, config, total_steps: int = None):
         return scheduler, 'epoch'
     
     elif scheduler_name == 'cosine_restarts':
-        # Excellent for CNNs - allows escaping local minima
-        T_0 = getattr(config, 'cosine_t0', 8)  # Shorter for CNNs
+        T_0 = getattr(config, 'cosine_t0', 8)
         T_mult = getattr(config, 'cosine_t_mult', 2)
         eta_min = float(getattr(config, 'min_lr', 1e-6))
         scheduler = CosineAnnealingWarmRestarts(
@@ -337,18 +321,16 @@ def create_cnn_scheduler(optimizer, config, total_steps: int = None):
         return scheduler, 'epoch'
     
     elif scheduler_name == 'plateau':
-        # More aggressive for CNNs
         scheduler = ReduceLROnPlateau(
             optimizer,
             mode='max',
-            factor=getattr(config, 'lr_factor', 0.3),  # More aggressive
-            patience=getattr(config, 'lr_patience', 3),  # Shorter patience
+            factor=getattr(config, 'lr_factor', 0.3),
+            patience=getattr(config, 'lr_patience', 3),
             min_lr=float(getattr(config, 'min_lr', 1e-6))
         )
         return scheduler, 'epoch'
     
     else:
-        # Fallback to cosine
         print(f"⚠️  Unknown CNN scheduler '{scheduler_name}', using cosine")
         return create_cnn_scheduler(optimizer, config, total_steps)
 
@@ -364,21 +346,18 @@ def compute_cnn_validation_score(metrics, config: Any) -> float:
     strategy = getattr(config, 'validation_strategy', 'cnn_composite')
     
     if strategy == 'cnn_composite':
-        # CNN-optimized composite score
         composite_score = (
-            0.20 * metrics.val_macro_f1 +                    # Line-level (reduced weight)
-            0.45 * metrics.val_boundary_f1 +                 # Boundary detection (CNNs excel here)
-            0.30 * metrics.val_avg_segment_overlap +         # Segment quality (local consistency)
-            0.05 * (1.0 - metrics.val_window_diff)          # Segmentation quality
+            0.20 * metrics.val_macro_f1 +
+            0.45 * metrics.val_boundary_f1 +
+            0.30 * metrics.val_avg_segment_overlap +
+            0.05 * (1.0 - metrics.val_window_diff)
         )
         return composite_score
     
     elif strategy == 'boundary_focused':
-        # Emphasize boundary detection for CNNs
         return 0.7 * metrics.val_boundary_f1 + 0.3 * metrics.val_macro_f1
     
     else:
-        # Fall back to standard strategies
         if strategy == 'line_f1':
             return metrics.val_macro_f1
         elif strategy == 'boundary_f1':
@@ -415,17 +394,13 @@ class CNNTrainer:
         self.config = config
         self.output_dir = output_dir
         
-        # CNN-specific attributes
         self.is_cnn = hasattr(model, 'cnn_blocks') or 'CNN' in str(type(model))
         self.gradient_history = deque(maxlen=10)
         
-        # Initialize calibration info storage
         self.calibration_info = None
         
-        # Set validation strategy (CNN-optimized default)
         self.validation_strategy = getattr(config, 'validation_strategy', 'cnn_composite')
         
-        # CNN-optimized scheduler
         total_steps = getattr(config, 'max_epochs', 50) * getattr(config, 'steps_per_epoch', 100)
         self.scheduler, self.scheduler_type = create_cnn_scheduler(
             optimizer, 
@@ -436,7 +411,6 @@ class CNNTrainer:
         print(f"🎯 CNN Scheduler: {getattr(config, 'scheduler', 'onecycle')} ({self.scheduler_type}-based)")
         print(f"🎯 CNN Validation Strategy: {self.validation_strategy}")
         
-        # CNN-optimized emergency monitoring
         if not disable_emergency_monitoring:
             self.emergency_monitor = CNNEmergencyMonitor(
                 max_confidence=getattr(config, 'max_confidence_threshold', 0.93),
@@ -454,20 +428,17 @@ class CNNTrainer:
             self.emergency_monitor = None
             print("⚠️  CNN Emergency monitoring DISABLED")
         
-        # Training state
         self.best_val_score = -1.0
         self.patience_counter = 0
         self.training_metrics = []
         self._best_epoch = 0
         
-        # CNN-optimized early stopper
         self.early_stopper = CNNEarlyStopper(
-            patience=getattr(config, 'patience', 6),  # Shorter for CNNs
+            patience=getattr(config, 'patience', 6),
             min_delta=getattr(config, 'min_delta', 0.0),
             convergence_window=getattr(config, 'convergence_window', 5)
         )
         
-        # Create output directory
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self._initialize_metrics_file()
         
@@ -491,7 +462,6 @@ class CNNTrainer:
                 param_count += 1
         
         total_norm = total_norm ** (1. / 2)
-        # Store as float to avoid device issues
         self.gradient_history.append(float(total_norm))
         
         return total_norm
@@ -504,16 +474,13 @@ class CNNTrainer:
             'gradient_stability': 0.0
         }
         
-        # Gradient stability analysis
         if len(self.gradient_history) > 1:
             recent_grads = list(self.gradient_history)[-5:]
             metrics['gradient_stability'] = 1.0 / (1.0 + np.std(recent_grads))
         
-        # Count effective layers (CNN blocks)
         if hasattr(self.model, 'cnn_blocks'):
             metrics['effective_layers'] = len(self.model.cnn_blocks)
         
-        # Receptive field usage (simplified)
         if hasattr(self.model, 'kernel_sizes'):
             avg_kernel = np.mean(self.model.kernel_sizes)
             max_seq_len = getattr(self.model, 'max_seq_length', 1000)
@@ -531,31 +498,24 @@ class CNNTrainer:
         gradient_norms = []
         
         for batch_idx, batch in enumerate(train_loader):
-            # Move to device
             features = batch.features.to(self.device)
             labels = batch.labels.to(self.device)
             mask = batch.mask.to(self.device)
             
-            # Forward pass
             logits = self.model(features, mask)
             
-            # Check for invalid logits with detailed statistics
             if torch.isnan(logits).any() or torch.isinf(logits).any():
                 nan_count = torch.isnan(logits).sum().item()
                 inf_count = torch.isinf(logits).sum().item()
                 print(f"⚠️ Invalid logits in batch {batch_idx}: nan={nan_count}, inf={inf_count}")
                 print(f"   Shape: {logits.shape}, Mask shape: {mask.shape}")
                 
-                # Try to recover by zeroing logits and using a very slight bias toward class 1
                 logits = torch.zeros_like(logits)
-                logits[:, :, 1] = 0.01  # Very slight bias to prevent collapse
+                logits[:, :, 1] = 0.01
                 
             try:
-                # Use label smoothing to prevent overconfident predictions
-                # This is crucial for preventing NaN in CrossEntropyLoss
                 loss = self.loss_function(logits, labels, mask)
                 
-                # Check for invalid loss values before backprop
                 if torch.isnan(loss) or torch.isinf(loss):
                     print(f"⚠️ Invalid loss detected: skipping batch {batch_idx}")
                     continue
@@ -563,59 +523,48 @@ class CNNTrainer:
                 print(f"⚠️ Exception in loss computation: {e}")
                 continue
             
-            # Backward pass
             self.optimizer.zero_grad()
             loss.backward()
             
-            # Gradient monitoring (CNN-specific)
             gradient_norm = self._compute_gradient_norm()
             
-            # More robust gradient handling
             try:
-                # First check for NaN gradients before clipping
                 has_nan_grad = False
                 for param in self.model.parameters():
                     if param.grad is not None and (torch.isnan(param.grad).any() or torch.isinf(param.grad).any()):
                         has_nan_grad = True
                         print(f"⚠️ NaN/Inf gradient detected in parameter of shape {param.shape}")
-                        param.grad = torch.zeros_like(param.grad)  # Zero out NaN gradients
+                        param.grad = torch.zeros_like(param.grad)
                 
                 if has_nan_grad:
                     print(f"⚠️ NaN gradients found and zeroed, skipping optimizer step")
-                    self.optimizer.zero_grad()  # Clear all gradients
+                    self.optimizer.zero_grad() 
                     continue
                 
-                # Use a much lower gradient clip norm (0.5 instead of default)
                 clip_value = min(0.5, self.config.gradient_clip_norm)
                 gradient_norm = nn.utils.clip_grad_norm_(self.model.parameters(), clip_value)
                 
-                # Final check after clipping
                 if torch.isnan(gradient_norm) or torch.isinf(gradient_norm):
                     print(f"⚠️ NaN/Inf gradient norm after clipping: {gradient_norm}")
-                    self.optimizer.zero_grad()  # Clear all gradients
+                    self.optimizer.zero_grad() 
                     continue
             except Exception as e:
                 print(f"⚠️ Exception during gradient handling: {e}")
-                self.optimizer.zero_grad()  # Clear all gradients
+                self.optimizer.zero_grad() 
                 continue
                 
-            # Store gradient norm as Python float to avoid device issues
             gradient_norms.append(float(gradient_norm) if isinstance(gradient_norm, torch.Tensor) else gradient_norm)
             
             self.optimizer.step()
             
-            # Step-based scheduler update (for OneCycleLR)
             if self.scheduler_type == 'step':
                 self.scheduler.step()
             
-            # Track metrics
             total_loss += loss.item()
             
-            # Batch-level guardrails
             guardrails = batch_guardrails(logits, mask)
             all_guardrails.append(guardrails)
             
-            # CNN-optimized emergency monitoring
             should_stop, warning = False, ""
             skip_batches = getattr(self.config, 'skip_batches', 30)  # Shorter for CNNs
             print_batch_every = getattr(self.config, 'print_batch_every', 10)
@@ -625,7 +574,6 @@ class CNNTrainer:
                     guardrails, batch_idx, gradient_norm
                 )
             
-            # Print batch info with CNN-specific metrics
             if batch_idx % print_batch_every == 0 or batch_idx == num_batches - 1:
                 print(f"  CNN Batch {batch_idx+1:3d}/{num_batches}: "
                       f"loss={loss.item():.4f}, "
@@ -640,13 +588,11 @@ class CNNTrainer:
                 print(f"🛑 CNN EMERGENCY STOP at batch {batch_idx+1}")
                 raise RuntimeError("CNN emergency training stop")
         
-        # Aggregate metrics with CNN-specific additions
         avg_metrics = {}
         for key in all_guardrails[0].keys():
             avg_metrics[key] = np.mean([g[key] for g in all_guardrails])
         
         avg_metrics['loss'] = total_loss / num_batches
-        # gradient_norms are now Python floats, no need for CPU conversion
         avg_metrics['avg_gradient_norm'] = np.mean(gradient_norms)
         avg_metrics['gradient_stability'] = 1.0 / (1.0 + np.std(gradient_norms))
         
@@ -690,7 +636,6 @@ class CNNTrainer:
                 guardrails = batch_guardrails(torch.log(probs + 1e-8), mask)
                 all_guardrails.append(guardrails)
                 
-                # Print validation progress (more frequent for CNNs)
                 if batch_idx == 1 or batch_idx % max(1, len(val_loader) // 5) == 0 or batch_idx == len(val_loader):
                     avg_loss = total_loss / batch_idx
                     print(f"  CNN Val {batch_idx:2d}/{len(val_loader)}: "
@@ -700,10 +645,8 @@ class CNNTrainer:
         
         print(f"✅ CNN Validation complete, computing metrics...")
         
-        # Standard metrics computation (same as BiLSTM trainer)
         avg_loss = total_loss / len(val_loader)
         
-        # Aggregate guardrails
         avg_guardrails = {}
         for key in all_guardrails[0].keys():
             avg_guardrails[key] = np.mean([g[key] for g in all_guardrails])
@@ -837,7 +780,7 @@ class CNNTrainer:
                         val_max_prob=val_metrics['max_prob_mean'],
                         val_conf_over_90=val_metrics['confidence_over_90'],
                         val_conf_over_95=val_metrics['confidence_over_95'],
-                        learning_rate=0.0,  # Will be set below
+                        learning_rate=0.0,
                         epoch_time=epoch_time,
                         val_boundary_f1=val_metrics.get('boundary_f1', 0.0),
                         val_boundary_precision=val_metrics.get('boundary_precision', 0.0),
@@ -868,7 +811,6 @@ class CNNTrainer:
                     
                     self._save_epoch_metrics(metrics)
                     
-                    # Print CNN-optimized epoch summary
                     print(f"\n📊 CNN Epoch {epoch} Summary:")
                     print(f"  Train: loss={metrics.train_loss:.4f}, "
                           f"grad_norm={metrics.cnn_gradient_norm:.3f}, "
@@ -887,7 +829,7 @@ class CNNTrainer:
                     
                     # Emergency monitoring
                     should_stop, warning = False, ""
-                    skip_epochs = getattr(self.config, 'skip_epochs', 2)  # Shorter for CNNs
+                    skip_epochs = getattr(self.config, 'skip_epochs', 2)
                     if self.emergency_monitor is not None and epoch >= skip_epochs:
                         should_stop, warning = self.emergency_monitor.check_epoch(metrics)
                     if warning:
@@ -895,15 +837,13 @@ class CNNTrainer:
                     if should_stop:
                         print(f"🛑 CNN EMERGENCY STOP at epoch {epoch}")
                         break
-                    
-                    # CNN-optimized early stopping with safety checks
+
                     stopper_metrics = {
                         'val_loss': metrics.val_loss,
                         'val_f1': metrics.val_macro_f1,
                         'val_ece': metrics.val_conf_over_95
                     }
                     
-                    # Safety check: don't do early stopping if any metrics are NaN
                     has_nan = any(np.isnan(val) or np.isinf(val) for val in stopper_metrics.values())
                     if has_nan:
                         print("⚠️ NaN/Inf detected in early stopping metrics, skipping early stopping check")
@@ -911,14 +851,12 @@ class CNNTrainer:
                     else:
                         should_early_stop = self.early_stopper.step(stopper_metrics)
                     
-                    # Best model tracking
                     if current_val_score > self.best_val_score:
                         self.best_val_score = current_val_score
                         self._best_epoch = epoch
                         best_model_state = {k: v.cpu().clone() for k, v in self.model.state_dict().items()}
                         best_epoch = epoch
                         
-                        # Save best model
                         torch.save(best_model_state, self.output_dir / "best_cnn_model.pt")
                         print(f"  ✅ New best CNN {self.validation_strategy}: {current_val_score:.4f} (epoch {epoch})")
                     else:
@@ -946,7 +884,6 @@ class CNNTrainer:
             self._save_training_log(final=True)
             return self.model, self.calibration_info
         
-        # Load best model and run calibration
         if best_model_state is not None:
             self.model.load_state_dict(best_model_state)
         
@@ -963,7 +900,6 @@ class CNNTrainer:
             output_dir=self.output_dir
         )
         
-        # Save final model and metrics
         torch.save(self.model.state_dict(), self.output_dir / "final_cnn_model.pt")
         self._save_training_log(final=True)
         
@@ -1001,10 +937,8 @@ class CNNTrainer:
         """Save CNN training metrics to file."""
         metrics_file = self.output_dir / "cnn_training_metrics.json"
         
-        # Convert to serializable format
         metrics_data = [asdict(m) for m in self.training_metrics]
         
-        # Create CNN-specific training log
         training_log = {
             "metadata": {
                 "model_info": {
@@ -1013,15 +947,12 @@ class CNNTrainer:
                     "num_layers": getattr(self.model, 'num_layers', 1),
                     "dropout": getattr(self.model, 'dropout_p', 0.2),
                     "layer_dropout": getattr(self.model, 'layer_dropout_p', 0.0),
-                    # CNN-specific parameters
                     "kernel_sizes": getattr(self.model, 'kernel_sizes', [3, 5, 7]),
                     "dilation_rates": getattr(self.model, 'dilation_rates', [1, 2, 4]),
                     "use_residual": getattr(self.model, 'use_residual', True),
-                    # Attention parameters
                     "attention_enabled": getattr(self.model, 'attention_enabled', False),
                     "attention_type": getattr(self.model, 'attention_type', None),
                     "attention_heads": getattr(self.model, 'attention_heads', 8),
-                    # Parameter counts
                     "total_params": sum(p.numel() for p in self.model.parameters()),
                     "cnn_params": (sum(sum(p.numel() for p in block.parameters()) 
                                      for block in self.model.cnn_blocks) 
@@ -1073,11 +1004,8 @@ class CNNTrainer:
 
 if __name__ == "__main__":
     print("🧪 Testing CNN trainer components...")
-    
-    # Test CNN emergency monitor
     monitor = CNNEmergencyMonitor()
     
-    # Test normal batch
     normal_guardrails = {
         'chorus_rate': 0.35,
         'max_prob_mean': 0.75,
@@ -1088,7 +1016,6 @@ if __name__ == "__main__":
     should_stop, warning = monitor.check_batch(normal_guardrails, 0, gradient_norm=2.0)
     print(f"CNN Normal batch: stop={should_stop}, warning='{warning}'")
     
-    # Test problematic batch with high gradients
     problem_guardrails = {
         'chorus_rate': 0.05,
         'max_prob_mean': 0.95,
@@ -1099,10 +1026,8 @@ if __name__ == "__main__":
     should_stop, warning = monitor.check_batch(problem_guardrails, 0, gradient_norm=8.0)
     print(f"CNN Problem batch: stop={should_stop}, warning='{warning}'")
     
-    # Test CNN early stopper
     stopper = CNNEarlyStopper(patience=5, convergence_window=3)
     
-    # Simulate converging metrics
     for i in range(5):
         metrics = {'val_loss': 0.5 + 0.001 * i, 'val_f1': 0.8, 'val_ece': 0.1}
         should_stop = stopper.step(metrics)

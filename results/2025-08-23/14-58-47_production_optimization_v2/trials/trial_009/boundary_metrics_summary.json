@@ -1,0 +1,137 @@
+{
+  "boundary_metrics": {
+    "description": "Boundary-aware evaluation metrics for structural understanding",
+    "line_level_metrics": {
+      "macro_f1": 0.7015197432636604,
+      "verse_f1": 0.7763597094050657,
+      "chorus_f1": 0.626679777122255
+    },
+    "boundary_detection": {
+      "f1": 0.3125618199802176,
+      "precision": 0.26916524701873934,
+      "recall": 0.37264150943396224
+    },
+    "segment_quality": {
+      "complete_segments_detected": 0.16033132435571462,
+      "avg_segment_overlap_iou": 0.520820725462249
+    },
+    "transition_accuracy": {
+      "verse_to_chorus": 0.3008849557522124,
+      "chorus_to_verse": 0.3686868686868687
+    }
+  },
+  "historical_progression": [
+    {
+      "epoch": 1,
+      "boundary_f1": 0.0,
+      "complete_segments": 0.05911640128236099,
+      "verse_to_chorus_acc": 0.0,
+      "chorus_to_verse_acc": 0.0
+    },
+    {
+      "epoch": 2,
+      "boundary_f1": 0.0798611111111111,
+      "complete_segments": 0.041931351515126704,
+      "verse_to_chorus_acc": 0.07079646017699115,
+      "chorus_to_verse_acc": 0.025252525252525252
+    },
+    {
+      "epoch": 3,
+      "boundary_f1": 0.12006861063464837,
+      "complete_segments": 0.06655782429907563,
+      "verse_to_chorus_acc": 0.11061946902654868,
+      "chorus_to_verse_acc": 0.03535353535353535
+    },
+    {
+      "epoch": 4,
+      "boundary_f1": 0.14035087719298245,
+      "complete_segments": 0.07257416293736549,
+      "verse_to_chorus_acc": 0.08849557522123894,
+      "chorus_to_verse_acc": 0.10101010101010101
+    },
+    {
+      "epoch": 5,
+      "boundary_f1": 0.16978417266187049,
+      "complete_segments": 0.08506385873830201,
+      "verse_to_chorus_acc": 0.11946902654867257,
+      "chorus_to_verse_acc": 0.12121212121212122
+    },
+    {
+      "epoch": 6,
+      "boundary_f1": 0.19086021505376344,
+      "complete_segments": 0.08763475640463976,
+      "verse_to_chorus_acc": 0.15486725663716813,
+      "chorus_to_verse_acc": 0.11616161616161616
+    },
+    {
+      "epoch": 7,
+      "boundary_f1": 0.21588089330024818,
+      "complete_segments": 0.0971259985178331,
+      "verse_to_chorus_acc": 0.16371681415929204,
+      "chorus_to_verse_acc": 0.1919191919191919
+    },
+    {
+      "epoch": 8,
+      "boundary_f1": 0.23157894736842105,
+      "complete_segments": 0.1365696707160122,
+      "verse_to_chorus_acc": 0.2168141592920354,
+      "chorus_to_verse_acc": 0.2222222222222222
+    },
+    {
+      "epoch": 9,
+      "boundary_f1": 0.28602620087336245,
+      "complete_segments": 0.1455022341687241,
+      "verse_to_chorus_acc": 0.2610619469026549,
+      "chorus_to_verse_acc": 0.2878787878787879
+    },
+    {
+      "epoch": 10,
+      "boundary_f1": 0.2773722627737226,
+      "complete_segments": 0.15257245012017015,
+      "verse_to_chorus_acc": 0.28761061946902655,
+      "chorus_to_verse_acc": 0.30808080808080807
+    },
+    {
+      "epoch": 11,
+      "boundary_f1": 0.25728643216080405,
+      "complete_segments": 0.14192681357315504,
+      "verse_to_chorus_acc": 0.26991150442477874,
+      "chorus_to_verse_acc": 0.30808080808080807
+    },
+    {
+      "epoch": 12,
+      "boundary_f1": 0.3125618199802176,
+      "complete_segments": 0.16033132435571462,
+      "verse_to_chorus_acc": 0.3008849557522124,
+      "chorus_to_verse_acc": 0.3686868686868687
+    },
+    {
+      "epoch": 13,
+      "boundary_f1": 0.30585898709036746,
+      "complete_segments": 0.15316059128360296,
+      "verse_to_chorus_acc": 0.2831858407079646,
+      "chorus_to_verse_acc": 0.3686868686868687
+    },
+    {
+      "epoch": 14,
+      "boundary_f1": 0.3055555555555555,
+      "complete_segments": 0.16650652508287717,
+      "verse_to_chorus_acc": 0.28761061946902655,
+      "chorus_to_verse_acc": 0.3686868686868687
+    },
+    {
+      "epoch": 15,
+      "boundary_f1": 0.3022571148184495,
+      "complete_segments": 0.15925815225921272,
+      "verse_to_chorus_acc": 0.2831858407079646,
+      "chorus_to_verse_acc": 0.3686868686868687
+    }
+  ],
+  "export_timestamp": 1755981353.9765608,
+  "model_config": {
+    "experiment_name": "hyperopt_trial_009",
+    "batch_size": 32,
+    "learning_rate": 0.00012701407475214274,
+    "scheduler": "cosine"
+  }
+}

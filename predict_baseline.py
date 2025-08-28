@@ -36,59 +36,47 @@ def load_model(model_path: str, device: torch.device, training_config_path: str 
     # Load state dict
     state_dict = torch.load(model_path, map_location=device)
     
-    # Infer model dimensions from state dict
-    # LSTM layer: 'lstm.weight_ih_l0' has shape (4*hidden_size, input_size)
-    # Classifier: 'classifier.weight' has shape (num_classes, 2*hidden_size) for bidirectional
-    
     lstm_weight = state_dict['lstm.weight_ih_l0']
     classifier_weight = state_dict['classifier.weight']
     
     input_size = lstm_weight.shape[1]
-    lstm_4h = lstm_weight.shape[0]  # 4 * hidden_size
-    hidden_size = lstm_4h // 4      # Extract hidden_size
+    lstm_4h = lstm_weight.shape[0]
+    hidden_size = lstm_4h // 4
     num_classes = classifier_weight.shape[0]
-    # Count LSTM layers by looking for weight keys
     forward_layer_keys = [key for key in state_dict.keys() 
                          if key.startswith('lstm.weight_ih_l') and '_reverse' not in key]
     num_layers = len(forward_layer_keys)
     
-    # NEW: Detect attention parameters from state dict and training config
-    attention_enabled = any(key.startswith('attention.') for key in state_dict.keys())
-    attention_type = 'self'  # Default attention type
-    attention_heads = 8  # Default, will be overridden by config
-    attention_dropout = 0.1  # Default, will be overridden by config
-    positional_encoding = False  # Default, will be overridden by config
-    attention_dim = None  # Will be determined from training config or saved weights
-    boundary_temperature = 2.0  # Default boundary temperature
     
-    # Flag to track if config was successfully loaded
+    attention_enabled = any(key.startswith('attention.') for key in state_dict.keys())
+    attention_type = 'self'
+    attention_heads = 8
+    attention_dropout = 0.1
+    positional_encoding = False
+    attention_dim = None
+    boundary_temperature = 2.0
+    
     config_loaded = False
     
-    # Try to read attention config from training config file first
     if training_config_path and os.path.exists(training_config_path):
         try:
             print(f"📋 Loading attention config from training config: {training_config_path}")
             
-            # Load YAML directly since snapshot has flattened structure
             import yaml
             with open(training_config_path, 'r') as f:
                 config_dict = yaml.safe_load(f)
             
-            # Handle both flattened (snapshot) and nested (original config) structures
             def get_config_value(key, config_dict):
-                # Check flattened structure first (training snapshots)
                 if key in config_dict:
                     return config_dict[key]
-                # Check nested structure (original training configs)
                 if 'model' in config_dict and key in config_dict['model']:
                     return config_dict['model'][key]
                 return None
             
-            # Extract attention parameters from config (handle both structures)
             val = get_config_value('attention_enabled', config_dict)
             if val is not None:
                 attention_enabled = val
-            val = get_config_value('attention_type', config_dict)  # NEW: Extract attention type
+            val = get_config_value('attention_type', config_dict)
             if val is not None:
                 attention_type = val
             val = get_config_value('attention_heads', config_dict)
@@ -103,37 +91,32 @@ def load_model(model_path: str, device: torch.device, training_config_path: str 
             val = get_config_value('positional_encoding', config_dict)
             if val is not None:
                 positional_encoding = val
-            val = get_config_value('boundary_temperature', config_dict)  # NEW: Extract boundary temperature
+            val = get_config_value('boundary_temperature', config_dict)
             if val is not None:
                 boundary_temperature = val
                 
             config_loaded = True
             print(f"🎯 Loaded attention config from training config:")
             print(f"   Attention enabled: {attention_enabled}")
-            print(f"   Attention type: {attention_type}")  # NEW: Show attention type
+            print(f"   Attention type: {attention_type}")
             print(f"   Attention heads: {attention_heads}")
             print(f"   Attention dimension: {attention_dim}")
             print(f"   Attention dropout: {attention_dropout}")
             print(f"   Positional encoding: {positional_encoding}")
-            if attention_type == 'boundary_aware':  # NEW: Show boundary temperature for boundary_aware
+            if attention_type == 'boundary_aware':
                 print(f"   Boundary temperature: {boundary_temperature}")
             
         except Exception as e:
             print(f"⚠️  Could not load training config, falling back to state dict detection: {e}")
     
-    # Fallback: detect from state dict if training config not available or failed
     if not config_loaded and attention_dim is None and attention_enabled:
-        # Try to infer attention configuration from state dict
         try:
-            # Detect attention dimension from the saved weights
             if 'attention.attention.w_q.weight' in state_dict:
                 saved_attention_dim = state_dict['attention.attention.w_q.weight'].shape[0]
                 attention_dim = saved_attention_dim
                 
-                # NOTE: Can't reliably infer attention_heads from weights, keep default
                 print(f"   ⚠️  Could not read from config, using default attention_heads: {attention_heads}")
             
-            # Check if positional encoding exists
             positional_encoding = 'attention.attention.positional_encoding.pe' in state_dict
             
             print(f"🎯 Detected attention mechanism from state dict:")
@@ -143,8 +126,8 @@ def load_model(model_path: str, device: torch.device, training_config_path: str 
             print(f"   Positional encoding: {positional_encoding}")
         except Exception as e:
             print(f"⚠️  Could not fully determine attention config, using defaults: {e}")
-            attention_dim = None  # Fall back to None to use LSTM output dimension
-            attention_dim = None  # Fall back to None to use LSTM output dimension
+            attention_dim = None 
+            attention_dim = None 
     
     print(f"🔧 Detected model architecture:")
     print(f"   Input size: {input_size}")
@@ -156,22 +139,20 @@ def load_model(model_path: str, device: torch.device, training_config_path: str 
     else:
         print(f"   🎯 Attention: disabled")
     
-    # Create model with detected parameters
     model = BLSTMTagger(
         feat_dim=input_size,
         hidden_dim=hidden_size,
         num_classes=num_classes,
         num_layers=num_layers,
-        dropout=0.0,  # No dropout during inference
-        # NEW: Attention parameters (with safe defaults for older models)
+        dropout=0.0,
         attention_enabled=attention_enabled,
-        attention_type=attention_type,  # Use loaded attention type
+        attention_type=attention_type,
         attention_heads=attention_heads,
         attention_dropout=attention_dropout,
-        attention_dim=attention_dim,  # Use detected attention dimension
+        attention_dim=attention_dim,
         positional_encoding=positional_encoding,
-        window_size=7,  # Default window size
-        boundary_temperature=boundary_temperature  # Use loaded boundary temperature
+        window_size=7,
+        boundary_temperature=boundary_temperature
     )
     
     # Load weights
@@ -204,12 +185,10 @@ def create_feature_extractor_from_training_config(config_path: str) -> FeatureEx
     
     print(f"📋 Loading training config from: {config_path}")
     
-    # Load flattened config directly (training_config_snapshot.yaml is already flattened)
     import yaml
     with open(config_path, 'r') as f:
         config_dict = yaml.safe_load(f)
     
-    # Create a simple object to access config values with dot notation
     class Config:
         def __init__(self, config_dict):
             for key, value in config_dict.items():
@@ -220,11 +199,9 @@ def create_feature_extractor_from_training_config(config_path: str) -> FeatureEx
     
     config = Config(config_dict)
     
-    # Debug: print some key attributes to verify loading
     print(f"🔧 Debug - syllable_pattern_ssm_enabled: {getattr(config, 'syllable_pattern_ssm_enabled', 'NOT_FOUND')}")
     print(f"🔧 Debug - line_syllable_ssm_enabled: {getattr(config, 'line_syllable_ssm_enabled', 'NOT_FOUND')}")
     
-    # Build feature config from training config
     feature_config = {}
     
     if config.head_ssm_enabled:
@@ -271,7 +248,6 @@ def create_feature_extractor_from_training_config(config_path: str) -> FeatureEx
             'similarity_method': config.string_ssm_similarity_method
         }
     
-    # NEW: Syllable SSM features
     if config.syllable_pattern_ssm_enabled:
         print(f"🔧 Adding syllable_pattern_ssm feature (dimension: {config.syllable_pattern_ssm_dimension})")
         feature_config['syllable_pattern_ssm'] = {
@@ -295,7 +271,6 @@ def create_feature_extractor_from_training_config(config_path: str) -> FeatureEx
             'normalize_method': config.line_syllable_ssm_normalize_method
         }
     
-    # Embeddings - converted to flattened format FeatureExtractor expects
     if config.word2vec_enabled:
         feature_config['word2vec_enabled'] = True
         feature_config['word2vec_model'] = config.word2vec_model
@@ -386,7 +361,6 @@ def select_calibration_method(
         params: Dictionary with method-specific parameters
     """
     
-    # Priority 1: CLI overrides everything
     if cli_method is not None:
         method = cli_method
         if method == 'temperature':
@@ -410,17 +384,14 @@ def select_calibration_method(
             if not quiet:
                 print(f"🔧 Using CLI calibration method: none (no calibration)")
         else:
-            # Fall back to auto if invalid CLI method
             method = 'auto'
             params = {}
     else:
         method = config_method
         params = {}
     
-    # Priority 2: Handle auto mode and config fallbacks
     if method == 'auto':
         if calibration_info and 'method' in calibration_info:
-            # Use the pre-selected best method from calibration.json (already excludes isotonic)
             auto_method = calibration_info['method']
             auto_params = calibration_info['params']
             
@@ -436,7 +407,6 @@ def select_calibration_method(
             
             return auto_method, auto_params
         
-        # No calibration info available for auto-selection
         if not quiet:
             print(f"⚠️  'auto' method requires calibration.json but none found")
             print(f"    Falling back to 'none' (no calibration applied)")
@@ -501,50 +471,39 @@ def predict_lyrics_structure(
     if not lines:
         return []
     
-    # Extract features
-    features = feature_extractor(lines)  # (seq_len, feature_dim)
-    features = features.unsqueeze(0).to(device)  # (1, seq_len, feature_dim)
+    features = feature_extractor(lines)
+    features = features.unsqueeze(0).to(device)
     
-    # Create mask (all positions valid for inference)
     mask = torch.ones(1, len(lines), dtype=torch.bool, device=device)
     
-    # Get raw model predictions
     with torch.no_grad():
         if calibration_method == 'temperature':
-            # Use temperature scaling
             predictions, confidences = model.predict_with_temperature(
                 features, mask, temperature=temperature
             )
         elif calibration_method == 'platt':
-            # Get raw predictions and apply Platt scaling
-            logits = model(features, mask)  # (1, seq_len, num_classes)
+            logits = model(features, mask)
             probs = torch.softmax(logits, dim=-1)
             max_probs, predictions = torch.max(probs, dim=-1)
             
-            # Apply Platt scaling: sigmoid(A * confidence + B)
             calibrated_confidences = torch.sigmoid(platt_A * max_probs + platt_B)
             
-            predictions = predictions.squeeze(0)  # (seq_len,)
-            confidences = calibrated_confidences.squeeze(0)  # (seq_len,)
+            predictions = predictions.squeeze(0)
+            confidences = calibrated_confidences.squeeze(0)
         elif calibration_method == 'isotonic':
-            # For isotonic, we can't apply the calibration without the fitted model
-            # Fall back to temperature=1.0 and warn user
             print("⚠️ Isotonic calibration requires fitted model (not available in inference)")
             print("   Falling back to uncalibrated predictions")
             predictions, confidences = model.predict_with_temperature(
                 features, mask, temperature=1.0
             )
         else:
-            # No calibration, use temperature=1.0
             predictions, confidences = model.predict_with_temperature(
                 features, mask, temperature=1.0
             )
     
-    # Convert to results
-    predictions = predictions.squeeze(0).cpu().numpy()  # (seq_len,)
-    confidences = confidences.squeeze(0).cpu().numpy()  # (seq_len,)
+    predictions = predictions.squeeze(0).cpu().numpy()
+    confidences = confidences.squeeze(0).cpu().numpy()
     
-    # Map predictions to labels
     label_map = {0: 'verse', 1: 'chorus'}
     
     results = []
@@ -571,11 +530,10 @@ def parse_lyrics_input(text: str) -> List[str]:
     Parse lyrics text into individual lines.
     Handles multi-line strings, removes empty lines, and normalizes spacing.
     """
-    # Split by newlines and clean up
     lines = []
     for line in text.split('\n'):
         line = line.strip()
-        if line:  # Skip empty lines
+        if line:
             lines.append(line)
     
     return lines
@@ -634,9 +592,7 @@ def create_plain_text_output(predictions: List[Dict[str, Any]]) -> str:
 
 def get_model_name(model_path: str) -> str:
     """Extract model name from path for folder naming."""
-    # Get the parent directory name (session name)
     session_dir = os.path.basename(os.path.dirname(model_path))
-    # Clean up the session name for folder naming
     model_name = session_dir.replace('session_', '').replace('_', '-')
     return model_name
 
@@ -706,7 +662,7 @@ Examples:
     parser.add_argument('--platt-B', type=float, help='Platt scaling B coefficient (overrides config)')
     parser.add_argument('--isotonic-knots', type=int, help='Isotonic calibration knots (informational, overrides config)')
     
-    # Input arguments (mutually exclusive)
+    # Input arguments
     input_group = parser.add_mutually_exclusive_group(required=False)
     input_group.add_argument('--text', help='Text file with lyrics (default: predict_lyric.txt)')
     input_group.add_argument('--lines', nargs='+', help='Lyrics lines as command line arguments')
@@ -739,33 +695,28 @@ Examples:
     calibration_info = None
     
     if args.session:
-        # Use training session directory (PREFERRED - everything in one place)
         pred_config, model_path = create_prediction_config_from_training_session(args.session)
         feature_extractor = get_feature_extractor_from_config(pred_config)
         
-        # Load calibration from session
         calibration_info = load_calibration_from_session(args.session)
         
         if not args.quiet:
             print(f"🎯 Using training session as complete source: {args.session}")
     elif args.train_config_file:
-        # Use training config file as single source of truth for features
         pred_config = create_prediction_config_from_training_config(args.train_config_file)
         feature_extractor = get_feature_extractor_from_config(pred_config)
         model_path = args.model
         if not args.quiet:
             print(f"🔧 Using training config as source of truth: {args.train_config_file}")
     elif args.prediction_config:
-        # Use specified custom prediction config (may include training session)
         config_result = load_prediction_config(args.prediction_config)
         if isinstance(config_result, tuple):
             pred_config, config_model_path = config_result
-            model_path = config_model_path or args.model  # Use config model or fallback to args
+            model_path = config_model_path or args.model
         else:
             pred_config = config_result
             model_path = args.model
         
-        # Check if config references a training session for calibration
         if hasattr(pred_config, 'training_session') and pred_config.training_session:
             calibration_info = load_calibration_from_session(pred_config.training_session)
         
@@ -773,7 +724,6 @@ Examples:
         if not args.quiet:
             print(f"📋 Using prediction config: {args.prediction_config}")
     else:
-        # Try to auto-detect from available sources
         if args.model:
             model_path = args.model
             pred_config = auto_detect_prediction_config(model_path=model_path)
@@ -793,30 +743,24 @@ Examples:
         if not args.quiet:
             print(f"🔧 Auto-detected configuration")
     
-    # Validate we have everything we need
     if not model_path:
         print("❌ No model path specified!")
         print("   Use --model [path] or --session [session_dir]")
         return
 
-    # Try to find training config for better model architecture detection
     training_config_path = None
     
     if args.session:
-        # Session directory should contain training_config_snapshot.yaml
         training_config_path = os.path.join(args.session, 'training_config_snapshot.yaml')
         if not os.path.exists(training_config_path):
             training_config_path = None
     elif args.train_config_file:
-        # Direct training config file path
         training_config_path = args.train_config_file
     elif hasattr(pred_config, 'training_session') and pred_config.training_session:
-        # Training session referenced in prediction config
         training_config_path = os.path.join(pred_config.training_session, 'training_config_snapshot.yaml')
         if not os.path.exists(training_config_path):
             training_config_path = None
 
-    # For session-based prediction, override feature extractor with training config
     if training_config_path and os.path.exists(training_config_path):
         if not args.quiet:
             print(f"🔧 Using feature configuration from training session")
@@ -832,7 +776,6 @@ Examples:
         print("❌ Failed to load prediction configuration!")
         return
     
-    # Select calibration method and parameters using the new system
     calibration_method, calibration_params = select_calibration_method(
         calibration_info=calibration_info,
         config_method=getattr(pred_config, 'calibration_method', 'auto'),
@@ -848,18 +791,14 @@ Examples:
         quiet=args.quiet
     )
     
-    # Extract calibration parameters
     final_temperature = calibration_params.get('temperature', 1.0)
     final_platt_A = calibration_params.get('A', 1.0)
     final_platt_B = calibration_params.get('B', 0.0)
     final_isotonic_knots = calibration_params.get('knots', 0)
-
-    # Override config with command line arguments
     
     if args.quiet:
         pred_config.quiet = True
     
-    # Get input lines
     lines = []
     input_file = None
     
@@ -879,7 +818,6 @@ Examples:
             print(f"⌨️  Loaded {len(lines)} lines from input")
             
     else:
-        # Use specified file or default from config
         input_file = args.text or pred_config.input_file
         
         try:
@@ -895,7 +833,6 @@ Examples:
         print("❌ No input lines provided")
         return
     
-    # Make predictions
     if not args.quiet:
         print(f"🔮 Making predictions...")
     
@@ -911,24 +848,19 @@ Examples:
         isotonic_knots=final_isotonic_knots
     )
     
-    # Print results
     if not pred_config.quiet:
         print_predictions(predictions)
     
-    # Create organized output directory structure
     model_name = get_model_name(model_path)
     output_dir = f"{pred_config.output_dir}/{model_name}"
     
-    # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     
-    # Save plain text output (for AI-less machines)
     plain_text_output = create_plain_text_output(predictions)
     plain_text_file = os.path.join(output_dir, 'predictions.txt')
     with open(plain_text_file, 'w') as f:
         f.write(plain_text_output)
     
-    # Save detailed JSON output
     output_data = {
         'model_path': model_path,
         'model_name': model_name,
@@ -942,7 +874,6 @@ Examples:
     with open(json_file, 'w') as f:
         json.dump(output_data, f, indent=2)
     
-    # Save parameters used
     params_file = save_parameters(output_dir, args, pred_config)
     
     if not pred_config.quiet:
@@ -951,7 +882,6 @@ Examples:
         print(f"   📄 predictions.json (detailed data)")  
         print(f"   📄 parameters.json (run parameters)")
     
-    # Return output directory for external use
     return output_dir
 
 

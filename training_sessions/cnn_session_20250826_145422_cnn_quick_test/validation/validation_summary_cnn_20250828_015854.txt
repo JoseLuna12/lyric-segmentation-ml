@@ -1,0 +1,32 @@
+Model Validation Summary (CNN)
+===============================
+
+Session: training_sessions/cnn_session_20250826_145422_cnn_quick_test
+Model: training_sessions/cnn_session_20250826_145422_cnn_quick_test/best_cnn_model.pt
+Validation data: data/val.jsonl
+Date: 2025-08-28 01:58:54
+
+Basic Metrics:
+  Accuracy: 0.7242
+  F1 Macro: 0.7033
+  F1 Micro: 0.7242
+  Line F1 : 0.7033
+
+Class Metrics:
+  Chorus - F1: 0.6245
+  Verse  - F1: 0.7821
+
+Segmentation Metrics:
+  Pk: 0.3163
+  WindowDiff: 0.5000
+
+Boundary Metrics:
+  Strict (t=0) - F1: 0.4684, Precision: 0.3999, Recall: 0.7543
+  Relaxed (t=1) - F1: 0.5657, Precision: 0.4848, Recall: 0.8849
+  Relaxed (t=2) - F1: 0.6013, Precision: 0.5162, Recall: 0.9307
+
+Class Distribution:
+  Ground Truth: 2851 Verse, 1221 Chorus
+  Predicted:    2302 Verse, 1770 Chorus
+
+Full metrics saved to: training_sessions/cnn_session_20250826_145422_cnn_quick_test/validation/validation_metrics_cnn_20250828_015854.json

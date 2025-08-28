@@ -21,25 +21,24 @@ class PredictionConfig:
     training_session: str = ""
     
     # Calibration configuration
-    calibration_method: str = "auto"  # auto, temperature, platt, isotonic, none
-    temperature: float = 1.0          # Temperature scaling parameter
-    platt_A: float = 1.0             # Platt scaling A coefficient  
-    platt_B: float = 0.0             # Platt scaling B coefficient
-    isotonic_knots: int = 0          # Isotonic calibration knots (informational)
+    calibration_method: str = "auto"
+    temperature: float = 1.0
+    platt_A: float = 1.0
+    platt_B: float = 0.0
+    isotonic_knots: int = 0
     
     # Input/Output parameters  
-    input_file: str = "prediction_results/predict_lyric.txt"  # Single default location
+    input_file: str = "prediction_results/predict_lyric.txt"
     output_dir: str = "prediction_results"
     quiet: bool = False
     
-    # Feature configuration (lightweight)
+    # Feature configuration
     features: Dict[str, Any] = field(default_factory=lambda: {
         'head_ssm': {'dim': 12, 'enabled': True},
         'tail_ssm': {'dim': 12, 'enabled': True}, 
         'phonetic_ssm': {'dim': 12, 'enabled': True, 'mode': 'rhyme', 'binary': True},
         'pos_ssm': {'dim': 12, 'enabled': True, 'mode': 'simplified', 'combined': True, 'threshold': 0.3},
         'string_ssm': {'dim': 12, 'enabled': True, 'threshold': 0.1},
-        # NEW: Embedding features
         'word2vec_embeddings': {'enabled': False, 'model': 'word2vec-google-news-300', 'mode': 'summary', 'normalize': True, 'similarity_metric': 'cosine', 'high_sim_threshold': 0.8},
         'contextual_embeddings': {'enabled': False, 'model': 'all-MiniLM-L6-v2', 'mode': 'summary', 'normalize': True, 'similarity_metric': 'cosine', 'high_sim_threshold': 0.7}
     })
@@ -82,14 +81,11 @@ def load_prediction_config(config_path: str) -> tuple[PredictionConfig, str]:
     with open(config_path, 'r') as f:
         config_dict = yaml.safe_load(f)
     
-    # Flatten nested structure if present
     flattened = {}
     
-    # Extract prediction-specific sections
     if 'prediction' in config_dict:
         pred_section = config_dict['prediction']
         
-        # Handle calibration configuration
         if 'calibration' in pred_section:
             calib_config = pred_section['calibration']
             if 'method' in calib_config:
@@ -103,12 +99,10 @@ def load_prediction_config(config_path: str) -> tuple[PredictionConfig, str]:
             if 'isotonic_knots' in calib_config:
                 flattened['isotonic_knots'] = calib_config['isotonic_knots']
         
-        # Handle other prediction parameters
         for key in ['input_file', 'output_dir', 'quiet']:
             if key in pred_section:
                 flattened[key] = pred_section[key]
         
-        # Handle legacy temperature field (backward compatibility)
         if 'temperature' in pred_section and 'temperature' not in flattened:
             flattened['temperature'] = pred_section['temperature']
     
@@ -121,17 +115,13 @@ def load_prediction_config(config_path: str) -> tuple[PredictionConfig, str]:
     if 'device' in config_dict:
         flattened['device'] = config_dict['device']
     
-    # Check if training_session is specified (preferred approach)
     if 'training_session' in config_dict:
         training_session_dir = config_dict['training_session']
         if os.path.exists(training_session_dir):
-            # Load from training session (features + model)
             session_config, model_path = create_prediction_config_from_training_session(training_session_dir)
             
-            # Override with prediction-specific settings from config file
             prediction_params = config_dict.get('prediction', {})
             
-            # Handle calibration configuration
             if 'calibration' in prediction_params:
                 calib_config = prediction_params['calibration']
                 if calib_config.get('method') is not None:
@@ -145,7 +135,6 @@ def load_prediction_config(config_path: str) -> tuple[PredictionConfig, str]:
                 if calib_config.get('isotonic_knots') is not None:
                     session_config.isotonic_knots = calib_config['isotonic_knots']
             
-            # Handle legacy temperature field (backward compatibility)
             if prediction_params.get('temperature') is not None:
                 session_config.temperature = prediction_params['temperature']
                 
@@ -156,7 +145,6 @@ def load_prediction_config(config_path: str) -> tuple[PredictionConfig, str]:
             if prediction_params.get('quiet') is not None:
                 session_config.quiet = prediction_params['quiet']
             
-            # Override device if specified
             if 'device' in config_dict:
                 session_config.device = config_dict['device']
             
@@ -164,12 +152,10 @@ def load_prediction_config(config_path: str) -> tuple[PredictionConfig, str]:
         else:
             raise FileNotFoundError(f"Training session directory not found: {training_session_dir}")
     
-    # Handle direct top-level keys (for simple configs - backward compatibility)
     for key in ['temperature', 'input_file', 'output_dir', 'quiet', 'calibration_method', 'platt_A', 'platt_B', 'isotonic_knots']:
         if key in config_dict:
             flattened[key] = config_dict[key]
     
-    # Create config object with available parameters
     config_params = {}
     for field_name in PredictionConfig.__dataclass_fields__.keys():
         if field_name in flattened:
@@ -179,7 +165,6 @@ def load_prediction_config(config_path: str) -> tuple[PredictionConfig, str]:
 
 
 def create_default_prediction_config() -> PredictionConfig:
-    """Create a default prediction configuration."""
     return PredictionConfig()
 
 
@@ -227,22 +212,18 @@ def create_prediction_config_from_training_session(session_dir: str) -> tuple[Pr
     if not os.path.exists(session_dir):
         raise FileNotFoundError(f"Training session directory not found: {session_dir}")
     
-    # Look for training config snapshot in session directory
     config_snapshot_path = os.path.join(session_dir, 'training_config_snapshot.yaml')
     if not os.path.exists(config_snapshot_path):
         raise FileNotFoundError(f"No training config snapshot found in {session_dir}")
     
-    # Look for trained model in session directory
     model_path = os.path.join(session_dir, 'best_model.pt')
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"No trained model found in {session_dir}")
     
-    # Load training configuration from snapshot (this has the exact parameters used)
     import yaml
     with open(config_snapshot_path, 'r') as f:
         train_config_dict = yaml.safe_load(f)
     
-    # Extract feature configuration from training config snapshot
     features = {}
     
     if train_config_dict.get('head_ssm_enabled', False):
@@ -284,7 +265,6 @@ def create_prediction_config_from_training_session(session_dir: str) -> tuple[Pr
             'threshold': train_config_dict.get('string_ssm_similarity_threshold', 0.0)
         }
     
-    # NEW: Extract embedding feature configurations from training session
     if train_config_dict.get('word2vec_enabled', False):
         features['word2vec_embeddings'] = {
             'enabled': True,
@@ -305,10 +285,9 @@ def create_prediction_config_from_training_session(session_dir: str) -> tuple[Pr
             'high_sim_threshold': train_config_dict.get('contextual_high_sim_threshold', 0.7)
         }
     
-    # Create prediction config with extracted features
     pred_config = PredictionConfig(features=features)
     pred_config.model_path = model_path
-    pred_config.training_session = session_dir  # Set the training session reference
+    pred_config.training_session = session_dir
     
     return pred_config, model_path
 
@@ -329,10 +308,8 @@ def create_prediction_config_from_training_config(training_config_path: str) -> 
     if not os.path.exists(training_config_path):
         raise FileNotFoundError(f"Training config not found: {training_config_path}")
     
-    # Load training configuration
     train_config = load_training_config(training_config_path)
     
-    # Extract feature configuration from training config
     features = {}
     
     if train_config.head_ssm_enabled:
@@ -374,7 +351,6 @@ def create_prediction_config_from_training_config(training_config_path: str) -> 
             'threshold': train_config.string_ssm_similarity_threshold
         }
     
-    # NEW: Extract embedding feature configurations
     if train_config.word2vec_enabled:
         features['word2vec_embeddings'] = {
             'enabled': True,
@@ -395,7 +371,6 @@ def create_prediction_config_from_training_config(training_config_path: str) -> 
             'high_sim_threshold': train_config.contextual_high_sim_threshold
         }
     
-    # Create prediction config with extracted features
     pred_config = PredictionConfig(features=features)
     return pred_config
 
@@ -405,8 +380,6 @@ def auto_detect_prediction_config(model_path: str = None) -> PredictionConfig:
     Auto-detect prediction configuration from available sources.
     Priority: Training sessions > Training configs > Prediction configs
     """
-    
-    # PRIORITY 1: Look for default/best training session first
     default_session = "training_sessions/session_20250817_024332_Aggressive_Maximum_Performance_v1"
     if os.path.exists(default_session):
         try:
@@ -415,7 +388,6 @@ def auto_detect_prediction_config(model_path: str = None) -> PredictionConfig:
         except:
             pass
     
-    # PRIORITY 2: Try to create from training configs
     training_configs = [
         "configs/training/aggressive_config.yaml",
         "configs/training/training_config.yaml"
@@ -429,7 +401,6 @@ def auto_detect_prediction_config(model_path: str = None) -> PredictionConfig:
             except:
                 continue
     
-    # PRIORITY 3: Try explicit prediction configs
     prediction_configs = [
         "configs/prediction/default.yaml",
         "configs/prediction/production.yaml"
@@ -462,8 +433,6 @@ def get_feature_extractor_from_config(config: PredictionConfig):
     """
     from segmodel.features.extractor import FeatureExtractor
     
-    # Convert prediction config features to extractor format
-    # The FeatureExtractor expects a flattened config structure
     feature_config = {}
     
     for feature_name, feature_data in config.features.items():
@@ -471,7 +440,6 @@ def get_feature_extractor_from_config(config: PredictionConfig):
             continue
             
         if feature_name == 'word2vec_embeddings':
-            # Convert to flattened structure expected by FeatureExtractor
             feature_config['word2vec_enabled'] = True
             feature_config['word2vec_model'] = feature_data.get('model', 'word2vec-google-news-300')
             feature_config['word2vec_mode'] = feature_data.get('mode', 'summary')
@@ -480,7 +448,6 @@ def get_feature_extractor_from_config(config: PredictionConfig):
             feature_config['word2vec_high_sim_threshold'] = feature_data.get('high_sim_threshold', 0.8)
             
         elif feature_name == 'contextual_embeddings':
-            # Convert to flattened structure expected by FeatureExtractor
             feature_config['contextual_enabled'] = True
             feature_config['contextual_model'] = feature_data.get('model', 'all-MiniLM-L6-v2')
             feature_config['contextual_mode'] = feature_data.get('mode', 'summary')
@@ -489,21 +456,17 @@ def get_feature_extractor_from_config(config: PredictionConfig):
             feature_config['contextual_high_sim_threshold'] = feature_data.get('high_sim_threshold', 0.7)
             
         else:
-            # Handle traditional features (they already have the right structure)
             feature_config[feature_name] = feature_data
     
     return FeatureExtractor(feature_config=feature_config)
 
 
 if __name__ == "__main__":
-    # Test the configuration system
     print("🧪 Testing prediction config system...")
     
-    # Create default config
     config = create_default_prediction_config()
     print(f"✅ Default config created: {config.temperature}")
     
-    # Test auto-detection
     detected_config = auto_detect_prediction_config()
     print(f"✅ Auto-detection works: {detected_config.device}")
     

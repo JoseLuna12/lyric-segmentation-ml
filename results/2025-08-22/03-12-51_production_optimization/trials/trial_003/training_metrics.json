@@ -1,0 +1,135 @@
+{
+  "metadata": {
+    "model_info": {
+      "hidden_dim": 512,
+      "num_layers": 1,
+      "dropout": 0.1906778319054666,
+      "layer_dropout": 0.0,
+      "attention_enabled": true,
+      "attention_heads": 8,
+      "attention_dropout": 0.18506993229449578,
+      "attention_dim": 512,
+      "positional_encoding": true,
+      "max_seq_length": 1000,
+      "total_params": 7289859,
+      "lstm_params": 5054464,
+      "attention_params": 2233345,
+      "classifier_params": 2050
+    },
+    "training_info": {
+      "batch_size": 64,
+      "learning_rate": 0.009698768701664338,
+      "scheduler": "cosine",
+      "label_smoothing": 0.0,
+      "weighted_sampling": true,
+      "total_epochs": 3,
+      "validation_strategy": "boundary_f1",
+      "weight_decay": 3.483431465532763e-05,
+      "gradient_clip_norm": 1.513473847543734,
+      "max_epochs": 27,
+      "patience": 5
+    },
+    "calibration_info": {
+      "temperature": {
+        "ece_before": 0.299852652259332,
+        "ece_after": 0.299852652259332,
+        "improvement": 0.0,
+        "params": {
+          "temperature": 4.999995161920035
+        }
+      },
+      "platt": {
+        "ece_before": 0.299852652259332,
+        "ece_after": 0.299852652259332,
+        "improvement": 0.0,
+        "params": {
+          "A": 1.0,
+          "B": 0.0
+        }
+      }
+    }
+  },
+  "metrics": [
+    {
+      "epoch": 1,
+      "train_loss": 17.4941928088665,
+      "train_chorus_rate": 0.5344722241163253,
+      "train_max_prob": 0.9346777558326721,
+      "train_conf_over_90": 0.8429404914379119,
+      "train_conf_over_95": 0.8205865293741226,
+      "val_loss": 36.74475288391113,
+      "val_macro_f1": 0.41181568684096487,
+      "val_verse_f1": 0.8236313736819297,
+      "val_chorus_f1": 0.0,
+      "val_chorus_rate": 0.0,
+      "val_max_prob": 1.0,
+      "val_conf_over_90": 1.0,
+      "val_conf_over_95": 1.0,
+      "learning_rate": 0.009665982280333319,
+      "epoch_time": 69.97988080978394,
+      "val_boundary_f1": 0.0,
+      "val_boundary_precision": 0.0,
+      "val_boundary_recall": 0.0,
+      "val_complete_segments": 0.05860871647509579,
+      "val_avg_segment_overlap": 0.16652069003437917,
+      "val_verse_to_chorus_acc": 0.0,
+      "val_chorus_to_verse_acc": 0.0,
+      "val_window_diff": 0.26503295450423625,
+      "val_pk_metric": 0.2713936688312747
+    },
+    {
+      "epoch": 2,
+      "train_loss": 10.08988184928894,
+      "train_chorus_rate": 0.39564988017082214,
+      "train_max_prob": 0.9647600829601288,
+      "train_conf_over_90": 0.888681510090828,
+      "train_conf_over_95": 0.8020846528932453,
+      "val_loss": 3.506430149078369,
+      "val_macro_f1": 0.23068203287360667,
+      "val_verse_f1": 0.0,
+      "val_chorus_f1": 0.46136406574721334,
+      "val_chorus_rate": 1.0,
+      "val_max_prob": 0.9998902678489685,
+      "val_conf_over_90": 1.0,
+      "val_conf_over_95": 1.0,
+      "learning_rate": 0.00956806639644419,
+      "epoch_time": 60.71863031387329,
+      "val_boundary_f1": 0.0,
+      "val_boundary_precision": 0.0,
+      "val_boundary_recall": 0.0,
+      "val_complete_segments": 0.0,
+      "val_avg_segment_overlap": 0.06144865862462465,
+      "val_verse_to_chorus_acc": 0.0,
+      "val_chorus_to_verse_acc": 0.0,
+      "val_window_diff": 0.26503295450423625,
+      "val_pk_metric": 0.2713936688312747
+    },
+    {
+      "epoch": 3,
+      "train_loss": 1.4072435200214386,
+      "train_chorus_rate": 0.5960123878903687,
+      "train_max_prob": 0.8381223797798156,
+      "train_conf_over_90": 0.5067183203529566,
+      "train_conf_over_95": 0.46709807515144347,
+      "val_loss": 1.30776047706604,
+      "val_macro_f1": 0.41181568684096487,
+      "val_verse_f1": 0.8236313736819297,
+      "val_chorus_f1": 0.0,
+      "val_chorus_rate": 0.0,
+      "val_max_prob": 0.9537478685379028,
+      "val_conf_over_90": 1.0,
+      "val_conf_over_95": 1.0,
+      "learning_rate": 0.00940634519435343,
+      "epoch_time": 60.51034188270569,
+      "val_boundary_f1": 0.0,
+      "val_boundary_precision": 0.0,
+      "val_boundary_recall": 0.0,
+      "val_complete_segments": 0.05860871647509579,
+      "val_avg_segment_overlap": 0.16652069003437917,
+      "val_verse_to_chorus_acc": 0.0,
+      "val_chorus_to_verse_acc": 0.0,
+      "val_window_diff": 0.26503295450423625,
+      "val_pk_metric": 0.2713936688312747
+    }
+  ]
+}

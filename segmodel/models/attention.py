@@ -402,22 +402,18 @@ class LocalizedAttention(nn.Module):
         self.d_k = d_model // num_heads
         self.window_size = window_size
         
-        # Linear projections for Q, K, V (same as your implementation)
         self.w_q = nn.Linear(d_model, d_model)
         self.w_k = nn.Linear(d_model, d_model)
         self.w_v = nn.Linear(d_model, d_model)
         self.w_o = nn.Linear(d_model, d_model)
         
-        # Dropout and layer norm (same as your implementation)
         self.attention_dropout = nn.Dropout(dropout)
         self.layer_norm = nn.LayerNorm(d_model)
         
-        # Optional positional encoding (same as your implementation)
         self.use_positional_encoding = positional_encoding
         if positional_encoding:
             self.positional_encoding = PositionalEncoding(d_model, max_seq_length)
         
-        # Initialize parameters (same as your implementation)
         self._initialize_parameters()
     
     def _initialize_parameters(self):
@@ -437,29 +433,23 @@ class LocalizedAttention(nn.Module):
         batch_size, seq_length, d_model = x.shape
         residual = x
         
-        # Apply positional encoding if enabled (same as your code)
         if self.use_positional_encoding:
             x_pe = x.transpose(0, 1)
             x_pe = self.positional_encoding(x_pe)
             x = x_pe.transpose(0, 1)
         
-        # Linear projections (same as your code)
         Q = self.w_q(x).view(batch_size, seq_length, self.num_heads, self.d_k).transpose(1, 2)
         K = self.w_k(x).view(batch_size, seq_length, self.num_heads, self.d_k).transpose(1, 2)
         V = self.w_v(x).view(batch_size, seq_length, self.num_heads, self.d_k).transpose(1, 2)
         
-        # Create localized attention mask
         local_mask = self._create_local_mask(seq_length, self.window_size, x.device)
         
-        # Compute attention with local masking
         attention_output, attention_weights = self._scaled_dot_product_attention(Q, K, V, mask, local_mask)
         
-        # Concatenate heads (same as your code)
         attention_output = attention_output.transpose(1, 2).contiguous().view(
             batch_size, seq_length, self.d_model
         )
         
-        # Output projection and residual connection (same as your code)
         output = self.w_o(attention_output)
         output = self.layer_norm(residual + output)
         
@@ -490,24 +480,19 @@ class LocalizedAttention(nn.Module):
         """
         d_k = Q.size(-1)
         
-        # Compute attention scores
         scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(d_k)
         
-        # Apply local mask first
         if local_mask is not None:
             scores = scores.masked_fill(~local_mask.unsqueeze(0).unsqueeze(0), -1e9)
         
-        # Apply input mask if provided (same as your code)
         if mask is not None:
             mask_expanded = mask.unsqueeze(1)
             attention_mask = mask_expanded.unsqueeze(-1) * mask_expanded.unsqueeze(-2)
             scores = scores.masked_fill(~attention_mask, -1e9)
         
-        # Apply softmax and dropout (same as your code)
         attention_weights = F.softmax(scores, dim=-1)
         attention_weights = self.attention_dropout(attention_weights)
         
-        # Apply attention to values
         output = torch.matmul(attention_weights, V)
         
         return output, attention_weights
@@ -549,7 +534,6 @@ class BoundaryAwareAttention(nn.Module):
         self.d_k = d_model // num_heads
         self.boundary_temperature = boundary_temperature
         
-        # Standard attention components (same as your implementation)
         self.w_q = nn.Linear(d_model, d_model)
         self.w_k = nn.Linear(d_model, d_model)
         self.w_v = nn.Linear(d_model, d_model)
@@ -558,7 +542,6 @@ class BoundaryAwareAttention(nn.Module):
         self.attention_dropout = nn.Dropout(dropout)
         self.layer_norm = nn.LayerNorm(d_model)
         
-        # Boundary prediction components
         self.boundary_predictor = nn.Sequential(
             nn.Linear(d_model, d_model // 2),
             nn.ReLU(),
@@ -566,12 +549,10 @@ class BoundaryAwareAttention(nn.Module):
             nn.Linear(d_model // 2, 1)
         )
         
-        # Optional positional encoding (same as your implementation)
         self.use_positional_encoding = positional_encoding
         if positional_encoding:
             self.positional_encoding = PositionalEncoding(d_model, max_seq_length)
         
-        # Initialize parameters (same as your implementation)
         self._initialize_parameters()
     
     def _initialize_parameters(self):
@@ -591,35 +572,28 @@ class BoundaryAwareAttention(nn.Module):
         batch_size, seq_length, d_model = x.shape
         residual = x
         
-        # Apply positional encoding if enabled (same as your code)
         if self.use_positional_encoding:
             x_pe = x.transpose(0, 1)
             x_pe = self.positional_encoding(x_pe)
             x = x_pe.transpose(0, 1)
         
-        # Predict boundary probabilities
-        boundary_logits = self.boundary_predictor(x)  # (batch, seq, 1)
+        boundary_logits = self.boundary_predictor(x)
         boundary_probs = torch.sigmoid(boundary_logits / self.boundary_temperature)
         
-        # Linear projections (same as your code)
         Q = self.w_q(x).view(batch_size, seq_length, self.num_heads, self.d_k).transpose(1, 2)
         K = self.w_k(x).view(batch_size, seq_length, self.num_heads, self.d_k).transpose(1, 2)
         V = self.w_v(x).view(batch_size, seq_length, self.num_heads, self.d_k).transpose(1, 2)
         
-        # Create boundary bias
         boundary_bias = self._compute_boundary_bias(boundary_probs, seq_length)
         
-        # Compute attention with boundary bias
         attention_output, attention_weights = self._scaled_dot_product_attention(
             Q, K, V, mask, boundary_bias
         )
         
-        # Concatenate heads (same as your code)
         attention_output = attention_output.transpose(1, 2).contiguous().view(
             batch_size, seq_length, self.d_model
         )
         
-        # Output projection and residual connection (same as your code)
         output = self.w_o(attention_output)
         output = self.layer_norm(residual + output)
         
@@ -627,12 +601,11 @@ class BoundaryAwareAttention(nn.Module):
     
     def _compute_boundary_bias(self, boundary_probs: torch.Tensor, seq_length: int) -> torch.Tensor:
         """Compute attention bias based on boundary probabilities - OPTIMIZED VERSION"""
-        boundary_scores = boundary_probs.squeeze(-1)  # (batch, seq)
+        boundary_scores = boundary_probs.squeeze(-1)
         
-        # Vectorized computation instead of nested loops (much faster!)
-        scores_i = boundary_scores.unsqueeze(-1)  # (batch, seq, 1)
-        scores_j = boundary_scores.unsqueeze(-2)  # (batch, 1, seq)
-        bias = (scores_i + scores_j) * 0.5  # (batch, seq, seq)
+        scores_i = boundary_scores.unsqueeze(-1)
+        scores_j = boundary_scores.unsqueeze(-2)
+        bias = (scores_i + scores_j) * 0.5
         
         return bias
     
@@ -649,24 +622,19 @@ class BoundaryAwareAttention(nn.Module):
         """
         d_k = Q.size(-1)
         
-        # Compute attention scores
         scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(d_k)
         
-        # Apply boundary bias
         if boundary_bias is not None:
-            scores = scores + boundary_bias.unsqueeze(1)  # Add bias to all heads
+            scores = scores + boundary_bias.unsqueeze(1)
         
-        # Apply input mask if provided (same as your code)
         if mask is not None:
             mask_expanded = mask.unsqueeze(1)
             attention_mask = mask_expanded.unsqueeze(-1) * mask_expanded.unsqueeze(-2)
             scores = scores.masked_fill(~attention_mask, -1e9)
         
-        # Apply softmax and dropout (same as your code)
         attention_weights = F.softmax(scores, dim=-1)
         attention_weights = self.attention_dropout(attention_weights)
         
-        # Apply attention to values
         output = torch.matmul(attention_weights, V)
         
         return output, attention_weights
@@ -685,24 +653,20 @@ class BoundaryAwareAttention(nn.Module):
 
 
 if __name__ == "__main__":
-    # Test the attention mechanisms
     print("🧪 Testing Attention Mechanisms...")
     
-    # Test parameters
     batch_size, seq_length, input_dim = 2, 10, 128
     
-    # Create test data
     x = torch.randn(batch_size, seq_length, input_dim)
     mask = torch.ones(batch_size, seq_length, dtype=torch.bool)
-    mask[0, 8:] = False  # Mask last 2 positions of first sequence
-    mask[1, 6:] = False  # Mask last 4 positions of second sequence
+    mask[0, 8:] = False
+    mask[1, 6:] = False
     
     print(f"📊 Test Setup:")
     print(f"   Input shape: {x.shape}")
     print(f"   Mask shape: {mask.shape}")
     print(f"   Sequence lengths: {mask.sum(dim=1).tolist()}")
     
-    # Test 1: MultiHeadSelfAttention
     print(f"\n🧪 Test 1: MultiHeadSelfAttention")
     attention = MultiHeadSelfAttention(
         d_model=input_dim,
@@ -718,11 +682,10 @@ if __name__ == "__main__":
     print(f"   Attention weights shape: {weights.shape}")
     print(f"   Parameters: {attention.get_attention_info()['total_params']:,}")
     
-    # Test 2: AttentionModule with projection
     print(f"\n🧪 Test 2: AttentionModule (with projection)")
     attention_module = AttentionModule(
         input_dim=input_dim,
-        attention_dim=64,  # Different dimension to test projection
+        attention_dim=64,
         num_heads=4,
         dropout=0.1,
         use_projection=True
@@ -738,11 +701,10 @@ if __name__ == "__main__":
     print(f"   Total parameters: {module_info['total_params']:,}")
     print(f"   Projection parameters: {module_info['projection_params']:,}")
     
-    # Test 3: AttentionModule without projection
     print(f"\n🧪 Test 3: AttentionModule (no projection)")
     attention_simple = AttentionModule(
         input_dim=input_dim,
-        attention_dim=input_dim,  # Same dimension
+        attention_dim=input_dim,
         num_heads=8,
         dropout=0.1,
         use_projection=False
@@ -755,21 +717,16 @@ if __name__ == "__main__":
     print(f"   Attention weights shape: {weights3.shape}")
     print(f"   Parameters: {attention_simple.get_module_info()['total_params']:,}")
     
-    # Test attention weight statistics
     print(f"\n📈 Attention Weight Analysis:")
     with torch.no_grad():
-        # Get attention weights for first sequence
-        first_seq_weights = weights[0, :, :mask[0].sum(), :mask[0].sum()]  # (num_heads, seq_len, seq_len)
+        first_seq_weights = weights[0, :, :mask[0].sum(), :mask[0].sum()]
         
-        # Check if attention is properly normalized
-        weight_sums = first_seq_weights.sum(dim=-1)  # Should be all 1.0
+        weight_sums = first_seq_weights.sum(dim=-1)
         print(f"   Attention weight sums (should be ~1.0): {weight_sums[0, :3].tolist()}")
         
-        # Check attention diversity (entropy)
         attention_entropy = -(first_seq_weights * torch.log(first_seq_weights + 1e-9)).sum(dim=-1)
         print(f"   Attention entropy (higher = more diverse): {attention_entropy[0, :3].tolist()}")
     
-    # Test 4: LocalizedAttention
     print(f"\n🧪 Test 4: LocalizedAttention")
     localized_module = AttentionModule(
         input_dim=input_dim,
@@ -789,7 +746,6 @@ if __name__ == "__main__":
     print(f"   Total parameters: {localized_info['total_params']:,}")
     print(f"   Window size: {localized_info['attention_info']['window_size']}")
     
-    # Test 5: BoundaryAwareAttention
     print(f"\n🧪 Test 5: BoundaryAwareAttention")
     boundary_module = AttentionModule(
         input_dim=input_dim,

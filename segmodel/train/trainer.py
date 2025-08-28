@@ -52,10 +52,9 @@ class EarlyStopper:
         self.counter = 0
         self.should_stop = False
         
-        # New buffers for optional ECE + F1 logic
         self.f1_hist = deque(maxlen=3)
         self.ece_hist = deque(maxlen=3)
-        self.mode = "uninitialized"  # Track which stopping mode we're using
+        self.mode = "uninitialized" 
     
     def step(self, metrics: Dict[str, float]) -> bool:
         """
@@ -70,7 +69,6 @@ class EarlyStopper:
             bool: True if training should stop
         """
         
-        # --- Priority path: ECE + F1 based calibration-aware stopping ---
         if "val_f1" in metrics and "val_ece" in metrics:
             if self.mode != "calibration":
                 self.mode = "calibration"
@@ -79,13 +77,11 @@ class EarlyStopper:
             self.f1_hist.append(metrics["val_f1"])
             self.ece_hist.append(metrics["val_ece"])
             
-            # Only evaluate once we have enough history
             if len(self.f1_hist) == self.f1_hist.maxlen:
                 ece_increasing = all(self.ece_hist[i] <= self.ece_hist[i+1] 
                                    for i in range(len(self.ece_hist)-1))
                 f1_gain = max(self.f1_hist) - min(self.f1_hist)
                 
-                # Stop if calibration is degrading and F1 improvement is minimal
                 if ece_increasing and f1_gain < 0.005:
                     self.should_stop = True
                     print(f"  🛑 Calibration-aware early stop triggered:")
@@ -95,19 +91,15 @@ class EarlyStopper:
                     print(f"     Recent F1: {list(self.f1_hist)}")
                     return True
                 else:
-                    # Reset counter if we're still improving
                     self.counter = 0
                     return False
             
-            # Not enough history yet, continue
             return False
-        
-        # --- Fallback path: Traditional patience on validation loss ---
         if self.mode != "traditional":
             self.mode = "traditional"
             print(f"  📉 EarlyStopper: Using traditional mode (val_loss patience)")
         
-        score = -metrics.get("val_loss", 0.0)  # Higher is better (lower loss)
+        score = -metrics.get("val_loss", 0.0)
         
         if self.best_score is None:
             self.best_score = score
@@ -156,7 +148,7 @@ class TrainingMetrics:
     val_conf_over_95: float
     learning_rate: float
     epoch_time: float
-    # Boundary-aware metrics (Phase 2)
+    # Boundary-aware metrics
     val_boundary_f1: float = 0.0
     val_boundary_precision: float = 0.0
     val_boundary_recall: float = 0.0
@@ -164,7 +156,7 @@ class TrainingMetrics:
     val_avg_segment_overlap: float = 0.0
     val_verse_to_chorus_acc: float = 0.0
     val_chorus_to_verse_acc: float = 0.0
-    # Segmentation metrics (Phase 3)
+    # Segmentation metrics
     val_window_diff: float = 1.0
     val_pk_metric: float = 1.0
 
@@ -225,7 +217,6 @@ class EmergencyMonitor:
         elif guardrails['chorus_rate'] > self.max_chorus_rate:
             warnings.append(f"CHORUS_OVERPREDICT: rate={guardrails['chorus_rate']:.2%}")
         
-        # Emergency stop conditions (debug version)
         conditions = {
             'extreme_overconf': guardrails['max_prob_mean'] > 0.99,
             'high_conf_ratio': guardrails['confidence_over_95'] > 0.8,
@@ -238,7 +229,6 @@ class EmergencyMonitor:
         if should_stop:
             triggered = [k for k, v in conditions.items() if v]
             warnings.append(f"EMERGENCY_TRIGGERED: {triggered}")
-            # Debug info
             warnings.append(f"max_prob={guardrails['max_prob_mean']:.3f}, conf>95={guardrails['confidence_over_95']:.3f}, chorus_rate={guardrails['chorus_rate']:.3f}")
         
         warning_msg = " | ".join(warnings) if warnings else ""
@@ -249,7 +239,6 @@ class EmergencyMonitor:
         """Check epoch-level metrics for emergency conditions."""
         warnings = []
         
-        # Check validation overconfidence
         if metrics.val_max_prob > self.val_overconf_threshold:
             warnings.append(f"VAL_OVERCONF: {metrics.val_max_prob:.3f}")
         
@@ -288,13 +277,13 @@ def create_scheduler(optimizer, config, total_steps: int = None):
             mode='max',
             factor=getattr(config, 'lr_factor', 0.5),
             patience=getattr(config, 'lr_patience', config.patience // 2),
-            min_lr=float(getattr(config, 'min_lr', 1e-6))  # Ensure float conversion
+            min_lr=float(getattr(config, 'min_lr', 1e-6))
         )
         return scheduler, 'epoch'
     
     elif scheduler_name == 'cosine':
         T_max = getattr(config, 'cosine_t_max', config.max_epochs)
-        eta_min = float(getattr(config, 'min_lr', 1e-6))  # Ensure float conversion
+        eta_min = float(getattr(config, 'min_lr', 1e-6))
         scheduler = CosineAnnealingLR(
             optimizer,
             T_max=T_max,
@@ -305,7 +294,7 @@ def create_scheduler(optimizer, config, total_steps: int = None):
     elif scheduler_name == 'cosine_restarts':
         T_0 = getattr(config, 'cosine_t0', 10)
         T_mult = getattr(config, 'cosine_t_mult', 2)
-        eta_min = float(getattr(config, 'min_lr', 1e-6))  # Ensure float conversion
+        eta_min = float(getattr(config, 'min_lr', 1e-6))
         scheduler = CosineAnnealingWarmRestarts(
             optimizer,
             T_0=T_0,
@@ -325,17 +314,14 @@ def create_scheduler(optimizer, config, total_steps: int = None):
         return scheduler, 'epoch'
     
     elif scheduler_name == 'warmup_cosine':
-        # Implement warmup + cosine annealing
         warmup_epochs = getattr(config, 'warmup_epochs', 5)
         if total_steps is None:
             raise ValueError("total_steps required for warmup_cosine scheduler")
         
-        # Create warmup scheduler (linearly increase LR for first few epochs)
         def lr_lambda(step):
             if step < warmup_epochs:
                 return step / warmup_epochs
             else:
-                # Cosine decay after warmup
                 progress = (step - warmup_epochs) / (config.max_epochs - warmup_epochs)
                 return 0.5 * (1 + np.cos(np.pi * progress))
         
@@ -360,28 +346,21 @@ def compute_validation_score(metrics: TrainingMetrics, config: Any) -> float:
     strategy = getattr(config, 'validation_strategy', 'line_f1')
     
     if strategy == 'line_f1':
-        # Line-level macro F1 (original method)
         return metrics.val_macro_f1
     
     elif strategy == 'boundary_f1':
-        # Boundary detection F1 (structural understanding) - RECOMMENDED
         return metrics.val_boundary_f1
     
     elif strategy == 'windowdiff':
-        # WindowDiff (lower is better, so invert for "higher is better")
         return 1.0 - metrics.val_window_diff
     
     elif strategy == 'pk':
-        # Pk metric (lower is better, so invert for "higher is better") 
         return 1.0 - metrics.val_pk_metric
     
     elif strategy == 'segment_iou':
-        # Segment IoU (complete segment quality)
         return metrics.val_avg_segment_overlap
     
     elif strategy == 'composite':
-        # Composite score with sensible hardcoded weights
-        # Emphasize structural understanding while maintaining some line-level performance
         composite_score = (
             0.25 * metrics.val_macro_f1 +                    # Line-level performance
             0.40 * metrics.val_boundary_f1 +                 # Boundary detection (most important)
@@ -391,7 +370,6 @@ def compute_validation_score(metrics: TrainingMetrics, config: Any) -> float:
         return composite_score
     
     else:
-        # Fallback to line-level F1
         print(f"⚠️  Unknown validation strategy '{strategy}', falling back to line_f1")
         return metrics.val_macro_f1
 
@@ -418,23 +396,19 @@ class Trainer:
         self.config = config
         self.output_dir = output_dir
         
-        # Initialize calibration info storage
         self.calibration_info = None
         
-        # Set validation strategy first
         self.validation_strategy = getattr(config, 'validation_strategy', 'line_f1')
         
-        # Set up scheduler using factory function
         self.scheduler, self.scheduler_type = create_scheduler(
             optimizer, 
             config,
-            total_steps=config.max_epochs  # For cosine scheduling
+            total_steps=config.max_epochs
         )
         
         print(f"🎯 Scheduler: {getattr(config, 'scheduler', 'plateau')} ({self.scheduler_type}-based)")
         print(f"🎯 Validation Strategy: {self.validation_strategy} (for best model selection)")
         
-        # Set up emergency monitoring using flattened configuration parameters
         if not disable_emergency_monitoring:
             self.emergency_monitor = EmergencyMonitor(
                 max_confidence=getattr(config, 'max_confidence_threshold', 0.95),
@@ -452,21 +426,18 @@ class Trainer:
             print("⚠️  Emergency monitoring DISABLED for debugging")
         
         # Training state
-        self.best_val_score = -1.0  # Now tracks configurable validation metric
+        self.best_val_score = -1.0
         self.patience_counter = 0
         self.training_metrics = []
-        self._best_epoch = 0  # Track which epoch produced the best model
+        self._best_epoch = 0
         
-        # Initialize intelligent early stopper (replaces manual patience logic)
         self.early_stopper = EarlyStopper(
             patience=getattr(config, 'patience', 8),
             min_delta=getattr(config, 'min_delta', 0.0)
         )
         
-        # Create output directory
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Initialize empty metrics file
         self._initialize_metrics_file()
         
         print(f"🚀 Trainer initialized:")
@@ -483,7 +454,6 @@ class Trainer:
         """
         print(f"\n🌡️ Running model calibration...")
         
-        # Get calibration methods from config
         calibration_methods = None
         if hasattr(self.config, 'calibration') and hasattr(self.config.calibration, 'methods'):
             calibration_methods = self.config.calibration.methods
@@ -537,7 +507,7 @@ class Trainer:
             guardrails = batch_guardrails(logits, mask)
             all_guardrails.append(guardrails)
             
-            # Emergency monitoring (skip first N batches to allow model to stabilize)
+            # Emergency monitoring
             should_stop, warning = False, ""
             skip_batches = getattr(self.config, 'skip_batches', 50)
             print_batch_every = getattr(self.config, 'print_batch_every', 10)
@@ -602,8 +572,8 @@ class Trainer:
                 all_targets.append(labels)
                 all_masks.append(mask)
                 
-                # Track guardrails (use probs for confidence metrics)
-                guardrails = batch_guardrails(torch.log(probs + 1e-8), mask)  # Convert back to logits for guardrails
+                # Track guardrails
+                guardrails = batch_guardrails(torch.log(probs + 1e-8), mask)
                 all_guardrails.append(guardrails)
                 
                 # Print validation progress
@@ -616,29 +586,23 @@ class Trainer:
         
         print(f"✅ Validation complete, computing boundary metrics...")
         
-        # Compute aggregate metrics
         avg_loss = total_loss / len(val_loader)
         
-        # Aggregate guardrails
         avg_guardrails = {}
         for key in all_guardrails[0].keys():
             avg_guardrails[key] = np.mean([g[key] for g in all_guardrails])
         
-        # Compute line-level F1 scores (existing functionality)
         all_pred_flat = torch.cat([pred.flatten() for pred in all_predictions], dim=0)
         all_targ_flat = torch.cat([targ.flatten() for targ in all_targets], dim=0) 
         all_mask_flat = torch.cat([mask.flatten() for mask in all_masks], dim=0)
         
         f1_scores = sequence_f1_score(all_pred_flat, all_targ_flat, all_mask_flat)
         
-        # Compute boundary-aware metrics (Phase 2 enhancement)
-        # For boundary analysis, we compute metrics per batch and then aggregate
         boundary_metrics_batch = []
         segment_metrics_batch = []
         transition_metrics_batch = []
         
         for pred_batch, targ_batch, mask_batch in zip(all_predictions, all_targets, all_masks):
-            # Compute boundary metrics for this batch
             batch_boundary = compute_boundary_metrics(pred_batch, targ_batch, mask_batch)
             batch_segment = compute_segment_metrics(pred_batch, targ_batch, mask_batch)
             batch_transition = compute_transition_metrics(pred_batch, targ_batch, mask_batch)
@@ -647,7 +611,6 @@ class Trainer:
             segment_metrics_batch.append(batch_segment)
             transition_metrics_batch.append(batch_transition)
         
-        # Aggregate boundary metrics across all batches
         total_pred_boundaries = sum(bm.total_boundaries_predicted for bm in boundary_metrics_batch)
         total_true_boundaries = sum(bm.total_boundaries_actual for bm in boundary_metrics_batch)  
         total_correct_boundaries = sum(bm.correct_boundaries for bm in boundary_metrics_batch)
@@ -669,7 +632,7 @@ class Trainer:
         v2c_accuracy = total_v2c_correct / total_v2c if total_v2c > 0 else 0.0
         c2v_accuracy = total_c2v_correct / total_c2v if total_c2v > 0 else 0.0
         
-        # Compute segmentation metrics (Phase 3 - WindowDiff and Pk)
+        # Compute segmentation metrics
         segmentation_metrics_batch = []
         for pred_batch, targ_batch, mask_batch in zip(all_predictions, all_targets, all_masks):
             batch_segmentation = compute_segmentation_metrics(pred_batch, targ_batch, mask_batch)
@@ -684,17 +647,13 @@ class Trainer:
             'loss': avg_loss,
             **avg_guardrails,
             **f1_scores,
-            # Boundary metrics (aggregated across batches)
             'boundary_f1': boundary_f1,
             'boundary_precision': boundary_precision,
             'boundary_recall': boundary_recall,
-            # Segment metrics (averaged across batches)
             'complete_segments': avg_complete_segments,
             'avg_segment_overlap': avg_segment_overlap,
-            # Transition metrics (aggregated across batches)
             'verse_to_chorus_acc': v2c_accuracy,
             'chorus_to_verse_acc': c2v_accuracy,
-            # Segmentation metrics (Phase 3 - WindowDiff and Pk)
             'window_diff': avg_window_diff,
             'pk_metric': avg_pk_metric,
         }
@@ -732,11 +691,8 @@ class Trainer:
                     # Validation  
                     val_metrics = self.evaluate(val_loader)
                     
-                    # Learning rate scheduling (use selected validation metric)  
-                    # First, calculate epoch time for metrics
                     epoch_time = time.time() - epoch_start
                     
-                    # Create TrainingMetrics with all required fields
                     metrics = TrainingMetrics(
                         epoch=epoch,
                         train_loss=train_metrics['loss'],
@@ -752,7 +708,7 @@ class Trainer:
                         val_max_prob=val_metrics['max_prob_mean'],
                         val_conf_over_90=val_metrics['confidence_over_90'],
                         val_conf_over_95=val_metrics['confidence_over_95'],
-                        learning_rate=0.0,  # Will be set below
+                        learning_rate=0.0,
                         epoch_time=epoch_time,
                         val_boundary_f1=val_metrics.get('boundary_f1', 0.0),
                         val_boundary_precision=val_metrics.get('boundary_precision', 0.0),
@@ -767,19 +723,16 @@ class Trainer:
                     
                     current_val_score = compute_validation_score(metrics, self.config)
                     
-                    # Learning rate scheduling (use selected validation metric)
                     if isinstance(self.scheduler, ReduceLROnPlateau):
                         self.scheduler.step(current_val_score)
                     else:
                         self.scheduler.step()
                     current_lr = self.optimizer.param_groups[0]['lr']
                     
-                    # Update learning rate in metrics object
                     metrics.learning_rate = current_lr
                     
                     self._save_epoch_metrics(metrics)
                     
-                    # Print epoch summary with boundary-aware metrics
                     print(f"\n📊 Epoch {epoch} Summary:")
                     
                     print(f"  Train: loss={metrics.train_loss:.4f}, "
@@ -800,7 +753,6 @@ class Trainer:
                     print(f"  📊 Line-level F1: {metrics.val_macro_f1:.4f} (for reference)")
                     print(f"  Time: {epoch_time:.1f}s, LR: {current_lr:.2e}")
                     
-                    # Emergency monitoring (skip first N epochs to allow model to stabilize)
                     should_stop, warning = False, ""
                     skip_epochs = getattr(self.config, 'skip_epochs', 3)
                     if self.emergency_monitor is not None and epoch >= skip_epochs:
@@ -811,19 +763,14 @@ class Trainer:
                         print(f"🛑 EMERGENCY STOP at epoch {epoch}")
                         break
                     
-                    # Intelligent early stopping with automatic ECE + F1 detection
-                    # Prepare metrics for early stopper (auto-detects available metrics)
                     stopper_metrics = {
                         'val_loss': metrics.val_loss,
                         'val_f1': metrics.val_macro_f1,
-                        # Use confidence over 95% as a proxy for poor calibration (higher = worse calibration)
-                        'val_ece': metrics.val_conf_over_95  # Proxy for calibration quality
+                        'val_ece': metrics.val_conf_over_95
                     }
                     
-                    # Check if we should stop
                     should_early_stop = self.early_stopper.step(stopper_metrics)
                     
-                    # Traditional best model tracking (still track best validation score)
                     current_val_score = compute_validation_score(metrics, self.config)
                     
                     if current_val_score > self.best_val_score:
@@ -832,11 +779,9 @@ class Trainer:
                         best_model_state = {k: v.cpu().clone() for k, v in self.model.state_dict().items()}
                         best_epoch = epoch
                         
-                        # Save best model
                         torch.save(best_model_state, self.output_dir / "best_model.pt")
                         print(f"  ✅ New best {self.validation_strategy}: {current_val_score:.4f} (epoch {epoch})")
                     else:
-                        # Show patience progress when no improvement
                         if self.early_stopper.mode == "traditional":
                             print(f"  📉 Patience: {self.early_stopper.counter}/{self.early_stopper.patience} (no improvement)")
                         elif self.early_stopper.mode == "calibration":
@@ -844,7 +789,6 @@ class Trainer:
                         else:
                             print(f"  📊 Early stopping: monitoring mode not yet determined")
                     
-                    # Always show current best model info
                     print(f"  🏆 Best model: {self.validation_strategy}={self.best_val_score:.4f} from epoch {self._best_epoch}")
                     
                     if should_early_stop:
@@ -861,45 +805,36 @@ class Trainer:
         except KeyboardInterrupt:
             print(f"\n⚠️  Training interrupted by user at epoch {epoch}")
             
-            # Load best model if available
             if best_model_state is not None:
                 print(f"📦 Loading best model state (epoch {best_epoch})")
                 self.model.load_state_dict(best_model_state)
             
-            # Run calibration even on interruption
             print(f"🌡️ Running calibration on interrupted training...")
             self._run_calibration(val_loader)
             
-            # Save final model and metrics
             torch.save(self.model.state_dict(), self.output_dir / "final_model.pt")
             self._save_training_log(final=True)
             print(f"💾 Saved interrupted training state")
             
-            # Return what we have so far
             return self.model, self.calibration_info
             
         except Exception as e:
             print(f"\n❌ Training failed with exception: {e}")
-            # Save metrics even if training failed
             if self.training_metrics:
                 print(f"📝 Saving partial training metrics...")
                 self._save_training_log()
             raise
         
         finally:
-            # Always save metrics, even if training stopped early
             if self.training_metrics:
                 print(f"📝 Ensuring training metrics are saved...")
                 self._save_training_log()
         
-        # Load best model
         if best_model_state is not None:
             self.model.load_state_dict(best_model_state)
         
-        # Run calibration
         print(f"\n� Running model calibration...")
         
-        # Get calibration methods from config
         calibration_methods = None
         if hasattr(self.config, 'calibration') and hasattr(self.config.calibration, 'methods'):
             calibration_methods = self.config.calibration.methods
@@ -912,17 +847,14 @@ class Trainer:
             output_dir=self.output_dir
         )
         
-        # Save final model and metrics
         torch.save(self.model.state_dict(), self.output_dir / "final_model.pt")
         self._save_training_log(final=True)
         
-        # Save dedicated boundary metrics summary (Phase 2 enhancement)
         self._save_boundary_metrics_summary(val_loader)
         
-        # Generate final boundary-aware metrics report
         if self.training_metrics:
             print(f"\n📊 Final Boundary-Aware Metrics Report:")
-            final_metrics = self.training_metrics[-1]  # Get latest metrics
+            final_metrics = self.training_metrics[-1]
             
             print(f"   Line-Level Metrics:")
             print(f"      Macro F1: {final_metrics.val_macro_f1:.4f}")  
@@ -961,10 +893,8 @@ class Trainer:
         """Save training metrics to file."""
         metrics_file = self.output_dir / "training_metrics.json"
         
-        # Convert to serializable format
         metrics_data = [asdict(m) for m in self.training_metrics]
         
-        # Create complete training log with metadata
         training_log = {
             "metadata": {
                 "model_info": {
@@ -972,14 +902,12 @@ class Trainer:
                     "num_layers": getattr(self.model, 'num_layers', 1),
                     "dropout": getattr(self.model, 'dropout_p', 0.2),
                     "layer_dropout": getattr(self.model, 'layer_dropout_p', 0.0),
-                    # NEW: Attention parameters
                     "attention_enabled": getattr(self.model, 'attention_enabled', False),
                     "attention_heads": getattr(self.model, 'attention_heads', 8),
                     "attention_dropout": getattr(self.model, 'attention_dropout', 0.1),
                     "attention_dim": getattr(self.model, 'attention_dim', None),
                     "positional_encoding": getattr(self.model, 'positional_encoding', True),
                     "max_seq_length": getattr(self.model, 'max_seq_length', 1000),
-                    # Model architecture summary
                     "total_params": sum(p.numel() for p in self.model.parameters()),
                     "lstm_params": sum(p.numel() for p in self.model.lstm.parameters()),
                     "attention_params": (sum(p.numel() for p in self.model.attention.parameters()) 
@@ -994,7 +922,6 @@ class Trainer:
                     "weighted_sampling": getattr(self.config, 'weighted_sampling', False),
                     "total_epochs": len(self.training_metrics),
                     "validation_strategy": self.validation_strategy,
-                    # NEW: Additional training parameters
                     "weight_decay": getattr(self.config, 'weight_decay', 0.01),
                     "gradient_clip_norm": getattr(self.config, 'gradient_clip_norm', 1.0),
                     "max_epochs": getattr(self.config, 'max_epochs', 60),
@@ -1011,7 +938,7 @@ class Trainer:
             
             if final:
                 print(f"📝 Final training log saved to: {metrics_file}")
-            elif len(metrics_data) % 5 == 0:  # Print every 5 epochs to avoid spam
+            elif len(metrics_data) % 5 == 0:
                 print(f"📝 Training metrics updated: {len(metrics_data)} epochs saved")
         
         except Exception as e:
@@ -1033,17 +960,15 @@ class Trainer:
     def _save_epoch_metrics(self, metrics: TrainingMetrics):
         """Save metrics after each epoch (incremental)."""
         self.training_metrics.append(metrics)
-        self._save_training_log()  # Save immediately after each epoch
+        self._save_training_log()
     
     def _save_boundary_metrics_summary(self, val_loader: DataLoader):
         """Save detailed boundary metrics summary for analysis."""
         boundary_summary_file = self.output_dir / "boundary_metrics_summary.json"
         
         try:
-            # Get final detailed boundary metrics
             final_val_metrics = self.evaluate(val_loader)
             
-            # Create boundary metrics summary
             boundary_summary = {
                 "boundary_metrics": {
                     "description": "Boundary-aware evaluation metrics for structural understanding",

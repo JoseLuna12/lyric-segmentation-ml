@@ -1,0 +1,130 @@
+{
+  "boundary_metrics": {
+    "description": "Boundary-aware evaluation metrics for structural understanding",
+    "line_level_metrics": {
+      "macro_f1": 0.7367879478425605,
+      "verse_f1": 0.8341996773615343,
+      "chorus_f1": 0.6393762183235868
+    },
+    "boundary_detection": {
+      "f1": 0.3702359346642468,
+      "precision": 0.3008849557522124,
+      "recall": 0.4811320754716981
+    },
+    "segment_quality": {
+      "complete_segments_detected": 0.26636310223266746,
+      "avg_segment_overlap_iou": 0.6292947504068789
+    },
+    "transition_accuracy": {
+      "verse_to_chorus": 0.4247787610619469,
+      "chorus_to_verse": 0.45454545454545453
+    }
+  },
+  "historical_progression": [
+    {
+      "epoch": 1,
+      "boundary_f1": 0.14492753623188406,
+      "complete_segments": 0.025582238426883182,
+      "verse_to_chorus_acc": 0.10176991150442478,
+      "chorus_to_verse_acc": 0.08080808080808081
+    },
+    {
+      "epoch": 2,
+      "boundary_f1": 0.2675438596491228,
+      "complete_segments": 0.10354841472285799,
+      "verse_to_chorus_acc": 0.26548672566371684,
+      "chorus_to_verse_acc": 0.20707070707070707
+    },
+    {
+      "epoch": 3,
+      "boundary_f1": 0.20702402957486138,
+      "complete_segments": 0.08435331256115985,
+      "verse_to_chorus_acc": 0.17699115044247787,
+      "chorus_to_verse_acc": 0.2828282828282828
+    },
+    {
+      "epoch": 4,
+      "boundary_f1": 0.33994334277620397,
+      "complete_segments": 0.19895002941132314,
+      "verse_to_chorus_acc": 0.38495575221238937,
+      "chorus_to_verse_acc": 0.36363636363636365
+    },
+    {
+      "epoch": 5,
+      "boundary_f1": 0.3339285714285714,
+      "complete_segments": 0.20401160894268,
+      "verse_to_chorus_acc": 0.37168141592920356,
+      "chorus_to_verse_acc": 0.42424242424242425
+    },
+    {
+      "epoch": 6,
+      "boundary_f1": 0.24040920716112532,
+      "complete_segments": 0.10319568356418833,
+      "verse_to_chorus_acc": 0.25663716814159293,
+      "chorus_to_verse_acc": 0.37373737373737376
+    },
+    {
+      "epoch": 7,
+      "boundary_f1": 0.3379310344827587,
+      "complete_segments": 0.21846590947863484,
+      "verse_to_chorus_acc": 0.3893805309734513,
+      "chorus_to_verse_acc": 0.45454545454545453
+    },
+    {
+      "epoch": 8,
+      "boundary_f1": 0.3702359346642468,
+      "complete_segments": 0.26636310223266746,
+      "verse_to_chorus_acc": 0.4247787610619469,
+      "chorus_to_verse_acc": 0.45454545454545453
+    },
+    {
+      "epoch": 9,
+      "boundary_f1": 0.3310225303292894,
+      "complete_segments": 0.20750840031062726,
+      "verse_to_chorus_acc": 0.37168141592920356,
+      "chorus_to_verse_acc": 0.4494949494949495
+    },
+    {
+      "epoch": 10,
+      "boundary_f1": 0.3394898856640281,
+      "complete_segments": 0.2142631610553138,
+      "verse_to_chorus_acc": 0.38495575221238937,
+      "chorus_to_verse_acc": 0.4444444444444444
+    },
+    {
+      "epoch": 11,
+      "boundary_f1": 0.35701598579040855,
+      "complete_segments": 0.25064131697217595,
+      "verse_to_chorus_acc": 0.4026548672566372,
+      "chorus_to_verse_acc": 0.4595959595959596
+    },
+    {
+      "epoch": 12,
+      "boundary_f1": 0.3330396475770925,
+      "complete_segments": 0.21492394341015764,
+      "verse_to_chorus_acc": 0.37168141592920356,
+      "chorus_to_verse_acc": 0.4393939393939394
+    },
+    {
+      "epoch": 13,
+      "boundary_f1": 0.34397163120567376,
+      "complete_segments": 0.23277318751868065,
+      "verse_to_chorus_acc": 0.3938053097345133,
+      "chorus_to_verse_acc": 0.4393939393939394
+    },
+    {
+      "epoch": 14,
+      "boundary_f1": 0.33509700176366847,
+      "complete_segments": 0.22202403130292847,
+      "verse_to_chorus_acc": 0.37168141592920356,
+      "chorus_to_verse_acc": 0.4393939393939394
+    }
+  ],
+  "export_timestamp": 1756004420.5310972,
+  "model_config": {
+    "experiment_name": "hyperopt_trial_011",
+    "batch_size": 32,
+    "learning_rate": 0.0005228401343287477,
+    "scheduler": "cosine"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "boundary_metrics": {
+    "description": "Boundary-aware evaluation metrics for structural understanding",
+    "line_level_metrics": {
+      "macro_f1": 0.41181568684096487,
+      "verse_f1": 0.8236313736819297,
+      "chorus_f1": 0.0
+    },
+    "boundary_detection": {
+      "f1": 0.0,
+      "precision": 0.0,
+      "recall": 0.0
+    },
+    "segment_quality": {
+      "complete_segments_detected": 0.05860871647509579,
+      "avg_segment_overlap_iou": 0.16652069003437917
+    },
+    "transition_accuracy": {
+      "verse_to_chorus": 0.0,
+      "chorus_to_verse": 0.0
+    }
+  },
+  "historical_progression": [
+    {
+      "epoch": 1,
+      "boundary_f1": 0.0,
+      "complete_segments": 0.05860871647509579,
+      "verse_to_chorus_acc": 0.0,
+      "chorus_to_verse_acc": 0.0
+    },
+    {
+      "epoch": 2,
+      "boundary_f1": 0.0,
+      "complete_segments": 0.0,
+      "verse_to_chorus_acc": 0.0,
+      "chorus_to_verse_acc": 0.0
+    },
+    {
+      "epoch": 3,
+      "boundary_f1": 0.0,
+      "complete_segments": 0.05860871647509579,
+      "verse_to_chorus_acc": 0.0,
+      "chorus_to_verse_acc": 0.0
+    }
+  ],
+  "export_timestamp": 1755830333.702573,
+  "model_config": {
+    "experiment_name": "hyperopt_trial_003",
+    "batch_size": 64,
+    "learning_rate": 0.009698768701664338,
+    "scheduler": "cosine"
+  }
+}

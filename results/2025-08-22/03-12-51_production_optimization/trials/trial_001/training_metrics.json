@@ -1,0 +1,135 @@
+{
+  "metadata": {
+    "model_info": {
+      "hidden_dim": 256,
+      "num_layers": 1,
+      "dropout": 0.17889199846258244,
+      "layer_dropout": 0.0,
+      "attention_enabled": true,
+      "attention_heads": 8,
+      "attention_dropout": 0.19365751570238524,
+      "attention_dim": 256,
+      "positional_encoding": true,
+      "max_seq_length": 1000,
+      "total_params": 1162755,
+      "lstm_params": 602112,
+      "attention_params": 559617,
+      "classifier_params": 1026
+    },
+    "training_info": {
+      "batch_size": 16,
+      "learning_rate": 5.244459265920605e-05,
+      "scheduler": "cosine_restarts",
+      "label_smoothing": 0.0,
+      "weighted_sampling": true,
+      "total_epochs": 3,
+      "validation_strategy": "line_f1",
+      "weight_decay": 0.00030571821256850687,
+      "gradient_clip_norm": 1.1054059322694745,
+      "max_epochs": 30,
+      "patience": 8
+    },
+    "calibration_info": {
+      "temperature": {
+        "ece_before": 0.05350925283019809,
+        "ece_after": 0.05399334137940919,
+        "improvement": -0.0004840885492111008,
+        "params": {
+          "temperature": 1.2080171396087656
+        }
+      },
+      "platt": {
+        "ece_before": 0.05350925283019809,
+        "ece_after": 0.03870404198443727,
+        "improvement": 0.014805210845760822,
+        "params": {
+          "A": 0.7551998784340359,
+          "B": -0.068044134743015
+        }
+      }
+    }
+  },
+  "metrics": [
+    {
+      "epoch": 1,
+      "train_loss": 0.6086300901877575,
+      "train_chorus_rate": 0.49494880283526027,
+      "train_max_prob": 0.5370039206284744,
+      "train_conf_over_90": 0.0,
+      "train_conf_over_95": 0.0,
+      "val_loss": 0.6366712972521782,
+      "val_macro_f1": 0.4869244468779354,
+      "val_verse_f1": 0.5126286248830683,
+      "val_chorus_f1": 0.46122026887280254,
+      "val_chorus_rate": 0.6513160467147827,
+      "val_max_prob": 0.5298743322491646,
+      "val_conf_over_90": 0.0,
+      "val_conf_over_95": 0.0,
+      "learning_rate": 5.1185653867946894e-05,
+      "epoch_time": 113.48145484924316,
+      "val_boundary_f1": 0.05444646098003629,
+      "val_boundary_precision": 0.11811023622047244,
+      "val_boundary_recall": 0.03537735849056604,
+      "val_complete_segments": 0.016822701701588307,
+      "val_avg_segment_overlap": 0.20685144682081025,
+      "val_verse_to_chorus_acc": 0.035398230088495575,
+      "val_chorus_to_verse_acc": 0.0,
+      "val_window_diff": 0.44135072550683657,
+      "val_pk_metric": 0.4399533379651345
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.5930548936892779,
+      "train_chorus_rate": 0.48356632047738785,
+      "train_max_prob": 0.538157385129195,
+      "train_conf_over_90": 0.0,
+      "train_conf_over_95": 0.0,
+      "val_loss": 0.6348668411374092,
+      "val_macro_f1": 0.49156429592217116,
+      "val_verse_f1": 0.5174106099555971,
+      "val_chorus_f1": 0.46571798188874525,
+      "val_chorus_rate": 0.6508891731500626,
+      "val_max_prob": 0.5375527068972588,
+      "val_conf_over_90": 0.0,
+      "val_conf_over_95": 0.0,
+      "learning_rate": 4.753207119460021e-05,
+      "epoch_time": 127.2265088558197,
+      "val_boundary_f1": 0.050816696914700546,
+      "val_boundary_precision": 0.11023622047244094,
+      "val_boundary_recall": 0.0330188679245283,
+      "val_complete_segments": 0.015701951486600963,
+      "val_avg_segment_overlap": 0.21320978065806712,
+      "val_verse_to_chorus_acc": 0.03982300884955752,
+      "val_chorus_to_verse_acc": 0.0,
+      "val_window_diff": 0.4576849545048418,
+      "val_pk_metric": 0.4692215349310441
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.579142010364777,
+      "train_chorus_rate": 0.5234763897382296,
+      "train_max_prob": 0.547078305330032,
+      "train_conf_over_90": 0.0,
+      "train_conf_over_95": 0.0,
+      "val_loss": 0.6288522854447365,
+      "val_macro_f1": 0.4904299891875193,
+      "val_verse_f1": 0.5014423076923077,
+      "val_chorus_f1": 0.4794176706827309,
+      "val_chorus_rate": 0.6757748760282993,
+      "val_max_prob": 0.5493007227778435,
+      "val_conf_over_90": 0.0,
+      "val_conf_over_95": 0.0,
+      "learning_rate": 4.184148276724049e-05,
+      "epoch_time": 150.38437294960022,
+      "val_boundary_f1": 0.050816696914700546,
+      "val_boundary_precision": 0.11023622047244094,
+      "val_boundary_recall": 0.0330188679245283,
+      "val_complete_segments": 0.031127099347545182,
+      "val_avg_segment_overlap": 0.218333173796305,
+      "val_verse_to_chorus_acc": 0.04424778761061947,
+      "val_chorus_to_verse_acc": 0.0,
+      "val_window_diff": 0.3947046382830857,
+      "val_pk_metric": 0.4005925524217244
+    }
+  ]
+}
