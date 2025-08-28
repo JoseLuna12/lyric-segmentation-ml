@@ -206,6 +206,7 @@ $RECYCLE.BIN/
 # Machine Learning specific
 # Model files (keep training checkpoints out of git due to size)
 *.pt
+!training_sessions/**/*.pt
 *.pth
 *.h5
 *.hdf5
@@ -216,9 +217,21 @@ $RECYCLE.BIN/
 
 # Training outputs and logs
 logs/
+!training_sessions/**/logs/
+!results/**/logs/
+!cnn_optuna_results/**/logs/
 tensorboard_logs/
+!training_sessions/**/tensorboard_logs/
+!results/**/tensorboard_logs/
+!cnn_optuna_results/**/tensorboard_logs/
 wandb/
+!training_sessions/**/wandb/
+!results/**/wandb/
+!cnn_optuna_results/**/wandb/
 mlruns/
+!training_sessions/**/mlruns/
+!results/**/mlruns/
+!cnn_optuna_results/**/mlruns/
 
 # Data files (usually too large for git, manage separately)
 data/raw/
@@ -229,9 +242,7 @@ data/external/
 !cnn_optuna_results/**/*.csv
 *.tsv
 *.json
-!training_sessions/*/training_metrics.json
-!training_sessions/*/boundary_metrics_summary.json
-!training_sessions/*/calibration.json
+!training_sessions/**/*.json
 !results/**/*.json
 !cnn_optuna_results/**/*.json
 *.jsonl
@@ -253,8 +264,17 @@ data/external/
 # Metrics and results
 metrics/
 !segmodel/metrics/
+!training_sessions/**/metrics/
+!results/**/metrics/
+!cnn_optuna_results/**/metrics/
 outputs/
+!training_sessions/**/outputs/
+!results/**/outputs/
+!cnn_optuna_results/**/outputs/
 checkpoints/
+!training_sessions/**/checkpoints/
+!results/**/checkpoints/
+!cnn_optuna_results/**/checkpoints/
 
 # Temporary files
 tmp/
@@ -268,7 +288,18 @@ config.secret.yaml
 
 # Experiment tracking
 experiments/
+!training_sessions/**/experiments/
+!results/**/experiments/
+!cnn_optuna_results/**/experiments/
 runs/
+!training_sessions/**/runs/
+!results/**/runs/
+!cnn_optuna_results/**/runs/
+
+# Make sure we include all files in these directories
+!training_sessions/**/*.*
+!results/**/*.*
+!cnn_optuna_results/**/*.*
 
 # Large files
 *.zip

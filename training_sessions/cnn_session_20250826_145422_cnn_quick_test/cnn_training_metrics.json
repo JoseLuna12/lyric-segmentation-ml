@@ -1,0 +1,149 @@
+{
+  "metadata": {
+    "model_info": {
+      "architecture": "CNN",
+      "hidden_dim": 128,
+      "num_layers": 2,
+      "dropout": 0.3,
+      "layer_dropout": 0.1,
+      "kernel_sizes": [
+        3,
+        5,
+        7
+      ],
+      "dilation_rates": [
+        1,
+        2,
+        4
+      ],
+      "use_residual": true,
+      "attention_enabled": true,
+      "attention_type": "boundary_aware",
+      "attention_heads": 4,
+      "total_params": 275711,
+      "cnn_params": 194556,
+      "attention_params": 74625
+    },
+    "training_info": {
+      "batch_size": 32,
+      "learning_rate": 0.002,
+      "scheduler": "onecycle",
+      "scheduler_type": "step",
+      "validation_strategy": "cnn_composite",
+      "total_epochs": 3,
+      "early_stopping_mode": "cnn_calibration",
+      "convergence_window": 5
+    },
+    "calibration_info": {
+      "temperature": {
+        "ece_before": 0.05390673332750682,
+        "ece_after": 0.03961368606284934,
+        "improvement": 0.01429304726465748,
+        "params": {
+          "temperature": 0.8066187505163179
+        }
+      },
+      "platt": {
+        "ece_before": 0.05390673332750682,
+        "ece_after": 0.04296046138278156,
+        "improvement": 0.010946271944725257,
+        "params": {
+          "A": 1.173885058437771,
+          "B": 0.0
+        }
+      }
+    }
+  },
+  "metrics": [
+    {
+      "epoch": 1,
+      "train_loss": 0.5775163815571711,
+      "train_chorus_rate": 0.35308104982742894,
+      "train_max_prob": 0.5950195926886338,
+      "train_conf_over_90": 0.0,
+      "train_conf_over_95": 0.0,
+      "val_loss": 0.5808523495992025,
+      "val_macro_f1": 0.6526540429725531,
+      "val_verse_f1": 0.7442673921492422,
+      "val_chorus_f1": 0.561040693795864,
+      "val_chorus_rate": 0.4359251757462819,
+      "val_max_prob": 0.5927878220876058,
+      "val_conf_over_90": 0.0,
+      "val_conf_over_95": 0.0,
+      "learning_rate": 0.00017931464606064473,
+      "epoch_time": 28.016611099243164,
+      "val_boundary_f1": 0.26906906906906913,
+      "val_boundary_precision": 0.18049959709911362,
+      "val_boundary_recall": 0.5283018867924528,
+      "val_complete_segments": 0.1562330623306233,
+      "val_avg_segment_overlap": 0.5249707051585567,
+      "val_verse_to_chorus_acc": 0.47345132743362833,
+      "val_chorus_to_verse_acc": 0.4090909090909091,
+      "val_window_diff": 0.535552798506006,
+      "val_pk_metric": 0.3772365678309746,
+      "cnn_receptive_field_usage": 0.5,
+      "cnn_gradient_norm": 1.105261977990779,
+      "cnn_effective_layers": 2
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.5545367231735816,
+      "train_chorus_rate": 0.40329341017282927,
+      "train_max_prob": 0.6223981151214013,
+      "train_conf_over_90": 0.0,
+      "train_conf_over_95": 0.0,
+      "val_loss": 0.5328129132588705,
+      "val_macro_f1": 0.6975647924334262,
+      "val_verse_f1": 0.7629240710823911,
+      "val_chorus_f1": 0.6322055137844612,
+      "val_chorus_rate": 0.48505764206250507,
+      "val_max_prob": 0.659288227558136,
+      "val_conf_over_90": 0.0,
+      "val_conf_over_95": 0.0,
+      "learning_rate": 0.0004567098364880969,
+      "epoch_time": 26.40548801422119,
+      "val_boundary_f1": 0.3491204330175913,
+      "val_boundary_precision": 0.24478178368121442,
+      "val_boundary_recall": 0.6084905660377359,
+      "val_complete_segments": 0.28597560975609754,
+      "val_avg_segment_overlap": 0.615198958236728,
+      "val_verse_to_chorus_acc": 0.5973451327433629,
+      "val_chorus_to_verse_acc": 0.5202020202020202,
+      "val_window_diff": 0.4880683284166263,
+      "val_pk_metric": 0.34119264507614067,
+      "cnn_receptive_field_usage": 0.5,
+      "cnn_gradient_norm": 0.7974096577581972,
+      "cnn_effective_layers": 2
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.5152456554082724,
+      "train_chorus_rate": 0.38186718408878034,
+      "train_max_prob": 0.6750874427648691,
+      "train_conf_over_90": 0.005027822765091864,
+      "train_conf_over_95": 0.0,
+      "val_loss": 0.5177688995997111,
+      "val_macro_f1": 0.690750944623777,
+      "val_verse_f1": 0.7493806771263418,
+      "val_chorus_f1": 0.6321212121212121,
+      "val_chorus_rate": 0.5148085554440817,
+      "val_max_prob": 0.694585382938385,
+      "val_conf_over_90": 0.005396557816614707,
+      "val_conf_over_95": 0.0,
+      "learning_rate": 0.0008547909772068829,
+      "epoch_time": 31.092657804489136,
+      "val_boundary_f1": 0.30964846671652957,
+      "val_boundary_precision": 0.2267250821467689,
+      "val_boundary_recall": 0.4882075471698113,
+      "val_complete_segments": 0.20432636469221835,
+      "val_avg_segment_overlap": 0.6028802331468642,
+      "val_verse_to_chorus_acc": 0.4247787610619469,
+      "val_chorus_to_verse_acc": 0.5050505050505051,
+      "val_window_diff": 0.500839466363875,
+      "val_pk_metric": 0.35379439016967923,
+      "cnn_receptive_field_usage": 0.5,
+      "cnn_gradient_norm": 0.8919007275720463,
+      "cnn_effective_layers": 2
+    }
+  ]
+}
