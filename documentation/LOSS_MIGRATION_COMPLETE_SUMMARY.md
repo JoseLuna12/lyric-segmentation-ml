@@ -207,30 +207,6 @@ python train_with_config.py configs/training/legacy_cross_entropy_comprehensive.
 python train_with_config.py configs/training/boundary_aware_comprehensive.yaml
 ```
 
-### 2. Parameter Optimization
-- Use variants from `CONFIGURATION_VARIANTS.yaml`
-- Focus on boundary_weight and segment_consistency_lambda
-- Monitor val_boundary_f1 and val_complete_segments
-
-### 3. Production Deployment
-- Start with conservative boundary-aware settings
-- Gradually increase boundary focus based on results
-- Monitor calibration metrics for confidence thresholds
-
-## 🏆 Success Metrics
-
-### Primary Indicators
-- **val_boundary_f1** ↗️ (should improve with boundary-aware)
-- **val_window_diff** ↘️ (lower is better)  
-- **val_pk_metric** ↘️ (lower is better)
-- **val_complete_segments** ↗️ (higher is better)
-
-### Secondary Indicators  
-- **val_macro_f1** ≈ (should maintain or improve)
-- **Calibration curves** (more reliable confidence)
-- **Training stability** (smooth loss curves)
-- **Convergence speed** (epochs to optimal performance)
-
 ---
 
 **Migration Status**: 🎉 **COMPLETE AND VALIDATED**  

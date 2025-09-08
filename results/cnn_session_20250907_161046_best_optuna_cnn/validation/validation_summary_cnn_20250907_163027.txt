@@ -1,0 +1,32 @@
+Model Validation Summary (CNN)
+===============================
+
+Session: results/cnn_session_20250907_161046_best_optuna_cnn
+Model: results/cnn_session_20250907_161046_best_optuna_cnn/best_cnn_model.pt
+Validation data: data/val.jsonl
+Date: 2025-09-07 16:30:27
+
+Basic Metrics:
+  Accuracy: 0.7399
+  F1 Macro: 0.7041
+  F1 Micro: 0.7399
+  Line F1 : 0.7041
+
+Class Metrics:
+  Chorus - F1: 0.6011
+  Verse  - F1: 0.8071
+
+Segmentation Metrics:
+  Pk: 0.3177
+  WindowDiff: 0.4104
+
+Boundary Metrics:
+  Strict (t=0) - F1: 0.4877, Precision: 0.4820, Recall: 0.6733
+  Relaxed (t=1) - F1: 0.6055, Precision: 0.5969, Recall: 0.8048
+  Relaxed (t=2) - F1: 0.6576, Precision: 0.6454, Recall: 0.8632
+
+Class Distribution:
+  Ground Truth: 2851 Verse, 1221 Chorus
+  Predicted:    2638 Verse, 1434 Chorus
+
+Full metrics saved to: results/cnn_session_20250907_161046_best_optuna_cnn/validation/validation_metrics_cnn_20250907_163027.json

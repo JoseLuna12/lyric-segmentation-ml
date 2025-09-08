@@ -5,7 +5,7 @@
 # LOSS CONFIGURATION - BOUNDARY-AWARE CROSS-ENTROPY
 # =============================================================================
 loss:
-  type: "boundary_aware_cross_entropy"
+  type: "cross_entropy"
   
   # Core parameters
   num_classes: 2
@@ -123,7 +123,7 @@ calibration:
   methods: ["temperature", "platt"]
   enabled: true
 
-validation_strategy: "line_f1"
+validation_strategy: "boundary_f1"
 
 # =============================================================================
 # FEATURE CONFIGURATION

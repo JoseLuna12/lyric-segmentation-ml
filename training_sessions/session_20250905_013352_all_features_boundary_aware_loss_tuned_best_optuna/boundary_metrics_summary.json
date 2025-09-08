@@ -1,0 +1,137 @@
+{
+  "boundary_metrics": {
+    "description": "Boundary-aware evaluation metrics for structural understanding",
+    "line_level_metrics": {
+      "macro_f1": 0.7827186255732592,
+      "verse_f1": 0.8639857015192135,
+      "chorus_f1": 0.7014515496273048
+    },
+    "boundary_detection": {
+      "f1": 0.4653679653679654,
+      "precision": 0.43,
+      "recall": 0.5070754716981132
+    },
+    "segment_quality": {
+      "complete_segments_detected": 0.3409719691665609,
+      "avg_segment_overlap_iou": 0.6698923092421666
+    },
+    "transition_accuracy": {
+      "verse_to_chorus": 0.5088495575221239,
+      "chorus_to_verse": 0.4494949494949495
+    }
+  },
+  "historical_progression": [
+    {
+      "epoch": 1,
+      "boundary_f1": 0.11011904761904763,
+      "complete_segments": 0.029207422844750523,
+      "verse_to_chorus_acc": 0.07964601769911504,
+      "chorus_to_verse_acc": 0.04040404040404041
+    },
+    {
+      "epoch": 2,
+      "boundary_f1": 0.12610340479192936,
+      "complete_segments": 0.03701606090259325,
+      "verse_to_chorus_acc": 0.10619469026548672,
+      "chorus_to_verse_acc": 0.09090909090909091
+    },
+    {
+      "epoch": 3,
+      "boundary_f1": 0.3688212927756654,
+      "complete_segments": 0.23888231512833846,
+      "verse_to_chorus_acc": 0.4336283185840708,
+      "chorus_to_verse_acc": 0.37373737373737376
+    },
+    {
+      "epoch": 4,
+      "boundary_f1": 0.40634291377601583,
+      "complete_segments": 0.28911450080591117,
+      "verse_to_chorus_acc": 0.41150442477876104,
+      "chorus_to_verse_acc": 0.4494949494949495
+    },
+    {
+      "epoch": 5,
+      "boundary_f1": 0.3279445727482679,
+      "complete_segments": 0.18763721303488007,
+      "verse_to_chorus_acc": 0.26548672566371684,
+      "chorus_to_verse_acc": 0.35353535353535354
+    },
+    {
+      "epoch": 6,
+      "boundary_f1": 0.3897131552917903,
+      "complete_segments": 0.2444518200218094,
+      "verse_to_chorus_acc": 0.5176991150442478,
+      "chorus_to_verse_acc": 0.32323232323232326
+    },
+    {
+      "epoch": 7,
+      "boundary_f1": 0.43184079601990044,
+      "complete_segments": 0.3376855267629393,
+      "verse_to_chorus_acc": 0.49557522123893805,
+      "chorus_to_verse_acc": 0.4595959595959596
+    },
+    {
+      "epoch": 8,
+      "boundary_f1": 0.4455852156057495,
+      "complete_segments": 0.3355843572704654,
+      "verse_to_chorus_acc": 0.4823008849557522,
+      "chorus_to_verse_acc": 0.4797979797979798
+    },
+    {
+      "epoch": 9,
+      "boundary_f1": 0.4529147982062781,
+      "complete_segments": 0.310930008557262,
+      "verse_to_chorus_acc": 0.4336283185840708,
+      "chorus_to_verse_acc": 0.4696969696969697
+    },
+    {
+      "epoch": 10,
+      "boundary_f1": 0.4527472527472528,
+      "complete_segments": 0.3285897850585019,
+      "verse_to_chorus_acc": 0.4646017699115044,
+      "chorus_to_verse_acc": 0.45454545454545453
+    },
+    {
+      "epoch": 11,
+      "boundary_f1": 0.44594594594594594,
+      "complete_segments": 0.3187924024615435,
+      "verse_to_chorus_acc": 0.42035398230088494,
+      "chorus_to_verse_acc": 0.4696969696969697
+    },
+    {
+      "epoch": 12,
+      "boundary_f1": 0.4446680080482897,
+      "complete_segments": 0.32699312894169735,
+      "verse_to_chorus_acc": 0.4690265486725664,
+      "chorus_to_verse_acc": 0.5151515151515151
+    },
+    {
+      "epoch": 13,
+      "boundary_f1": 0.461340206185567,
+      "complete_segments": 0.30991059230719886,
+      "verse_to_chorus_acc": 0.40707964601769914,
+      "chorus_to_verse_acc": 0.3888888888888889
+    },
+    {
+      "epoch": 14,
+      "boundary_f1": 0.4653679653679654,
+      "complete_segments": 0.3409719691665609,
+      "verse_to_chorus_acc": 0.5088495575221239,
+      "chorus_to_verse_acc": 0.4494949494949495
+    },
+    {
+      "epoch": 15,
+      "boundary_f1": 0.45270988310308186,
+      "complete_segments": 0.34338900330416766,
+      "verse_to_chorus_acc": 0.48672566371681414,
+      "chorus_to_verse_acc": 0.46464646464646464
+    }
+  ],
+  "export_timestamp": 1757033927.845641,
+  "model_config": {
+    "experiment_name": "all_features_boundary_aware_loss_tuned_best_optuna",
+    "batch_size": 32,
+    "learning_rate": 0.0009433388164864008,
+    "scheduler": "cosine"
+  }
+}

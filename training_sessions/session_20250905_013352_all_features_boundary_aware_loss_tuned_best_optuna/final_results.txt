@@ -1,0 +1,80 @@
+BLSTM Training Results - all_features_boundary_aware_loss_tuned_best_optuna
+==================================================
+
+Configuration: configs/training/best_optuna_features_config_legacy_loss.yaml
+Training time: 24.3 minutes
+Feature dimension: 96
+
+Feature Configuration:
+-------------------------
+  Head-SSM: Enabled (12D)
+    Head words: 2
+  Tail-SSM: Enabled (12D)
+    Tail words: 2
+  Phonetic-SSM: Enabled (12D)
+    Mode: combined
+    Similarity: binary
+    Normalize: True (minmax)
+    High sim threshold: 0.2727493356070135
+  POS-SSM: Enabled (12D)
+    Tagset: universal
+    Similarity: combined
+    High sim threshold: 0.224909011250082
+  String-SSM: Enabled (12D)
+    Case sensitive: False
+    Remove punctuation: False
+    Similarity threshold: 0.05576041358568054
+    Similarity method: jaccard
+  SyllablePattern-SSM: Enabled (12D)
+    Similarity method: cosine
+    Normalize: True (zscore)
+  LineSyllable-SSM: Disabled
+
+  Word2Vec Embeddings: Enabled (12D)
+    Model: word2vec-google-news-300
+    Mode: summary (12D statistical features)
+    Normalize: True
+    Similarity metric: cosine
+    High similarity threshold: 0.8190738671197406
+  Contextual Embeddings: Enabled (12D)
+    Model: all-MiniLM-L6-v2
+    Mode: summary (12D statistical features)
+    Normalize: False
+    Similarity metric: dot
+    High similarity threshold: 0.6520090621350382
+
+  Total Feature Dimension: 96D (Head-SSM: 12D + Tail-SSM: 12D + Phonetic-SSM: 12D + POS-SSM: 12D + String-SSM: 12D + SyllablePattern-SSM: 12D + Word2Vec: 12D + Contextual: 12D)
+
+Model Architecture:
+------------------
+  Input dimension: 96D
+  Hidden dimension: 256D
+  LSTM layers: 1
+  Single-layer BiLSTM (backward compatible)
+      Total parameters: 1,252,610
+  Attention type: localized
+    Window size: 7
+  Positional encoding: True
+    PE max length: 1000
+  Output dropout: 0.2693664447156089
+  Batch size: 32
+  Learning rate: 0.0009433388164864008
+  Loss type: cross_entropy
+  Label smoothing: 0.2432852130016866
+  Weighted sampling: True
+
+Test Results:
+-------------
+  Macro F1: 0.7757
+  Verse F1: 0.8634
+  Chorus F1: 0.6880
+  Confidence: 0.826
+  Chorus rate: 33.34%
+  Calibration: ['temperature', 'platt']
+
+Calibration Details:
+--------------------
+  temperature: ECE 0.0480 → 0.0275 (Δ+0.0204)
+    T = 0.765
+  platt: ECE 0.0480 → 0.0322 (Δ+0.0157)
+    A = 1.116, B = 0.000

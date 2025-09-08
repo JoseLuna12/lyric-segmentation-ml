@@ -12,7 +12,6 @@ import sys
 import numpy as np
 from pathlib import Path
 from typing import List, Dict, Any, Tuple, Sequence
-from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, confusion_matrix
 
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))

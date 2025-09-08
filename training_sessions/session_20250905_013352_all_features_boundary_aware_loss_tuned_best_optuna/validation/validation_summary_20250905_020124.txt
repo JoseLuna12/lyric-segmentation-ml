@@ -1,0 +1,31 @@
+Model Validation Summary
+======================
+
+Session: training_sessions/session_20250905_013352_all_features_boundary_aware_loss_tuned_best_optuna
+Model: training_sessions/session_20250905_013352_all_features_boundary_aware_loss_tuned_best_optuna/best_model.pt
+Validation data: data/val.jsonl
+Date: 2025-09-05 02:01:24
+
+Basic Metrics:
+  Accuracy: 0.8129
+  F1 Macro: 0.7823
+  F1 Micro: 0.8129
+
+Class Metrics:
+  Chorus - F1: 0.7007
+  Verse  - F1: 0.8639
+
+Segmentation Metrics:
+  Pk: 0.2466
+  WindowDiff: 0.3012
+
+Boundary Metrics:
+  Strict (t=0) - F1: 0.5961, Precision: 0.6086, Recall: 0.6889
+  Relaxed (t=1) - F1: 0.7164, Precision: 0.7275, Recall: 0.8159
+  Relaxed (t=2) - F1: 0.7470, Precision: 0.7570, Recall: 0.8489
+
+Class Distribution:
+  Ground Truth: 2851 Verse, 1221 Chorus
+  Predicted:    2747 Verse, 1325 Chorus
+
+Full metrics saved to: training_sessions/session_20250905_013352_all_features_boundary_aware_loss_tuned_best_optuna/validation/validation_metrics_20250905_020124.json

@@ -1,0 +1,206 @@
+# Enhanced BiLSTM Configuration with BOUNDARY-AWARE LOSS (Tuned)
+
+# =============================================================================
+# LOSS CONFIGURATION - BOUNDARY-AWARE CROSS-ENTROPY
+# =============================================================================
+loss:
+  type: "cross_entropy"
+  
+  # Core parameters
+  num_classes: 2
+  ignore_index: -100
+  
+  # Phase 1: Enhanced safety mechanisms
+  label_smoothing: 0.2432852130016866
+  entropy_lambda: 0.040201951712345675
+  
+  # Phase 2: Boundary awareness
+  boundary_weight: 1.8934129306817018
+  
+  # Phase 3: Segment consistency
+  segment_consistency_lambda: 0.029695574147194325
+  
+  # Phase 4: Confidence control & calibration
+  conf_penalty_lambda: 0.006858414507117138
+  conf_threshold: 0.9131696194549355
+  
+  # Advanced options
+  use_boundary_as_primary: true
+
+# =============================================================================
+# DATA CONFIGURATION
+# =============================================================================
+data:
+  train_file: "data/train.jsonl"
+  val_file: "data/val.jsonl"
+  test_file: "data/test.jsonl"
+
+# =============================================================================
+# MODEL ARCHITECTURE
+# =============================================================================
+model:
+  hidden_dim: 256
+  num_layers: 1
+  layer_dropout: 0.30
+  num_classes: 2
+  dropout: 0.2693664447156089
+
+  attention_enabled: true
+  attention_type: "localized"
+  attention_heads: 4
+  attention_dropout: 0.264388399111532
+  attention_dim: 256
+  positional_encoding: true
+  max_seq_length: 1000
+
+# =============================================================================
+# TRAINING PARAMETERS
+# =============================================================================
+training:
+  batch_size: 32
+  learning_rate: 0.0009433388164864008
+  weight_decay: 0.018209751373407586
+  max_epochs: 15
+  patience: 8
+  min_delta: 0.0006914129599128736
+  gradient_clip_norm: 0.36561638664216023
+
+  scheduler: "cosine"
+  min_lr: 1e-6
+  cosine_t_max: 45
+
+# =============================================================================
+# ANTI-COLLAPSE SYSTEM
+# =============================================================================
+anti_collapse:
+  weighted_sampling: true
+
+# =============================================================================
+# EMERGENCY MONITORING
+# =============================================================================
+emergency_monitoring:
+  enabled: true
+  
+  max_confidence_threshold: 0.930197622987764
+  min_chorus_rate: 0.055321705859671916
+  max_chorus_rate: 0.7887566888545828
+  max_conf_over_95_ratio: 0.17918655290415203
+
+  val_overconf_threshold: 0.93
+  val_f1_collapse_threshold: 0.10
+  emergency_overconf_threshold: 0.95
+  emergency_conf95_ratio: 0.65
+  emergency_f1_threshold: 0.05
+
+  skip_batches: 30
+  skip_epochs: 3
+  print_batch_every: 10
+
+# =============================================================================
+# CALIBRATION & VALIDATION
+# =============================================================================
+calibration:
+  methods: ['temperature', 'platt']
+  enabled: true
+
+validation_strategy: "composite"
+
+# =============================================================================
+# FEATURE CONFIGURATION
+# =============================================================================
+features:
+  head_ssm:
+    enabled: true
+    dimension: 12
+    head_words: 2
+  
+  tail_ssm:
+    enabled: true
+    dimension: 12
+    tail_words: 2
+  
+  phonetic_ssm:
+    enabled: true
+    dimension: 12
+    mode: "combined"
+    similarity_method: "binary"
+    normalize: true
+    normalize_method: "minmax"
+    high_sim_threshold: 0.2727493356070135
+  
+  pos_ssm:
+    enabled: true
+    dimension: 12
+    tagset: "universal"
+    similarity_method: "combined"
+    high_sim_threshold: 0.224909011250082
+  
+  string_ssm:
+    enabled: true
+    dimension: 12
+    case_sensitive: false
+    remove_punctuation: false
+    similarity_threshold: 0.05576041358568054
+    similarity_method: "jaccard"
+
+  syllable_pattern_ssm:
+    enabled: true
+    dimension: 12
+    similarity_method: "cosine"
+    levenshtein_weight: 0.7145173172587339
+    cosine_weight: 0.211408343907407
+    normalize: true
+    normalize_method: "zscore"
+
+  line_syllable_ssm:
+    enabled: false
+    dimension: 12
+    similarity_method: "cosine"
+    ratio_threshold: 0.09766340365571138
+    normalize: true
+    normalize_method: "minmax"
+
+# =============================================================================
+# EMBEDDINGS CONFIGURATION
+# =============================================================================
+embeddings:
+  word2vec:
+    enabled: true
+    model: "word2vec-google-news-300"
+    mode: "summary"
+    normalize: true
+    similarity_metric: "cosine"
+    high_sim_threshold: 0.8190738671197406
+
+  contextual:
+    enabled: true
+    model: "all-MiniLM-L6-v2"
+    mode: "summary"
+    normalize: false
+    similarity_metric: "dot"
+    high_sim_threshold: 0.6520090621350382
+
+# =============================================================================
+# OUTPUT & SYSTEM CONFIGURATION
+# =============================================================================
+output:
+  base_dir: "training_sessions"
+  save_best_model: true
+  save_final_model: true
+  save_training_metrics: true
+  save_config_snapshot: true
+
+system:
+  seed: 42
+  device: "auto"
+  num_workers: 0
+  deterministic: true
+
+# =============================================================================
+# EXPERIMENT METADATA
+# =============================================================================
+experiment:
+  name: "all_features_boundary_aware_loss_tuned_best_optuna"
+  description: "BiLSTM with boundary-aware loss (tuned for less overfitting, better calibration)"
+  tags: ["boundary_aware", "segmentation", "tuned"]
+  notes: "Adjustments focus on calibration, regularization, and boundary sensitivity"

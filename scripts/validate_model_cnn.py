@@ -90,6 +90,100 @@ def _cfg_get(cfg: Dict[str, Any], key: str, default=None):
     return default
 
 
+def _load_session_sidecar_configs(model_path: str) -> Dict[str, Any]:
+    """Load additional CNN architecture hints from session files next to the model.
+
+    Looks for:
+      - cnn_model_metadata.json (primary)
+      - cnn_enhanced_config_snapshot.yaml (secondary)
+
+    Returns a flat dict with possible keys:
+      hidden_dim, num_layers, kernel_sizes, dilation_rates, use_residual
+    """
+    from pathlib import Path as _Path
+    sidecar: Dict[str, Any] = {}
+    session_dir = _Path(model_path).parent
+
+    # 1) Try metadata JSON
+    meta_path = session_dir / "cnn_model_metadata.json"
+    if meta_path.exists():
+        try:
+            with open(meta_path, "r") as f:
+                meta = json.load(f)
+            arch = meta.get("architecture_config", {})
+            if isinstance(arch, dict):
+                if "hidden_dim" in arch:
+                    sidecar["hidden_dim"] = arch["hidden_dim"]
+                if "num_layers" in arch:
+                    sidecar["num_layers"] = arch["num_layers"]
+                if "kernel_sizes" in arch and isinstance(arch["kernel_sizes"], list):
+                    sidecar["kernel_sizes"] = arch["kernel_sizes"]
+                if "dilation_rates" in arch and isinstance(arch["dilation_rates"], list):
+                    sidecar["dilation_rates"] = arch["dilation_rates"]
+                if "use_residual" in arch:
+                    sidecar["use_residual"] = arch["use_residual"]
+        except Exception:
+            pass
+
+    # 2) Try enhanced YAML snapshot
+    enh_path = session_dir / "cnn_enhanced_config_snapshot.yaml"
+    if enh_path.exists():
+        try:
+            import yaml
+            with open(enh_path, "r") as f:
+                enh = yaml.safe_load(f) or {}
+            if "hidden_dim" in enh:
+                sidecar.setdefault("hidden_dim", enh.get("hidden_dim"))
+            if "num_layers" in enh:
+                sidecar.setdefault("num_layers", enh.get("num_layers"))
+            if "cnn_kernel_sizes" in enh and isinstance(enh["cnn_kernel_sizes"], list):
+                sidecar.setdefault("kernel_sizes", enh["cnn_kernel_sizes"])
+            if "cnn_dilation_rates" in enh and isinstance(enh["cnn_dilation_rates"], list):
+                sidecar.setdefault("dilation_rates", enh["cnn_dilation_rates"])
+            if "cnn_use_residual" in enh:
+                sidecar.setdefault("use_residual", enh["cnn_use_residual"])
+        except Exception:
+            pass
+
+    return sidecar
+
+
+def _infer_kernel_sizes_from_state(state_dict: Dict[str, Any]) -> List[int]:
+    """Infer kernel sizes from conv weight shapes in block 0.
+
+    Looks for keys like 'cnn_blocks.0.convs.{i}.weight' and extracts the last
+    dimension (kernel size) in index order.
+    """
+    ks: List[Tuple[int, int]] = []  # (idx, kernel_size)
+    prefix = "cnn_blocks.0.convs."
+    suffix = ".weight"
+    for k, v in state_dict.items():
+        if k.startswith(prefix) and k.endswith(suffix) and isinstance(v, torch.Tensor):
+            try:
+                idx = int(k[len(prefix):].split(".")[0])
+                kernel_size = int(v.shape[-1])
+                ks.append((idx, kernel_size))
+            except Exception:
+                continue
+    if not ks:
+        return []
+    ks.sort(key=lambda x: x[0])
+    return [k for _, k in ks]
+
+
+def _infer_num_blocks_from_state(state_dict: Dict[str, Any]) -> int:
+    """Infer number of CNN blocks by scanning cnn_blocks.{i}.convs.0.weight keys."""
+    blocks = set()
+    for k in state_dict.keys():
+        if k.startswith("cnn_blocks.") and ".convs.0.weight" in k:
+            try:
+                bi = int(k.split(".")[1])
+                blocks.add(bi)
+            except Exception:
+                continue
+    return (max(blocks) + 1) if blocks else 1
+
+
 def load_cnn_model(model_path: str, device: torch.device, training_config_path: str = None) -> CNNTagger:
     """
     Load a CNNTagger with hyperparams from training_config_snapshot.yaml when possible,
@@ -118,6 +212,7 @@ def load_cnn_model(model_path: str, device: torch.device, training_config_path: 
         print("⚠️  Unexpected model save format - attempting to load anyway")
 
     cfg = _read_yaml_config(training_config_path)
+    sidecar_cfg = _load_session_sidecar_configs(model_path)
 
     # Infer dimensions from state_dict if needed
     try:
@@ -166,7 +261,10 @@ def load_cnn_model(model_path: str, device: torch.device, training_config_path: 
     # If still None, this will be inferred later from the feature extractor
 
     # CNN hyperparams with safe defaults (override from cfg if available)
-    num_layers = _cfg_get(cfg, "num_layers", 3)
+    # Layers: prefer sidecar/session, then cfg, then infer from state
+    num_layers = sidecar_cfg.get("num_layers", _cfg_get(cfg, "num_layers", None))
+    if num_layers is None:
+        num_layers = _infer_num_blocks_from_state(state_dict)
     # Use detected hidden_dim if available, otherwise from config or default
     if 'hidden_dim_detected' in locals() and hidden_dim_detected:
         # Config takes precedence if explicitly specified
@@ -180,13 +278,30 @@ def load_cnn_model(model_path: str, device: torch.device, training_config_path: 
             hidden_dim = detected_hidden_dim
     else:
         hidden_dim = _cfg_get(cfg, "hidden_dim", 128)
-    kernel_sizes = _cfg_get(cfg, "kernel_sizes", [3, 5, 7])
     # CNN-specific params
-    cnn_kernel_sizes = _cfg_get(cfg, "cnn_kernel_sizes", kernel_sizes)
-    dilation_rates = _cfg_get(cfg, "dilation_rates", [1, 2, 4]) 
-    cnn_dilation_rates = _cfg_get(cfg, "cnn_dilation_rates", dilation_rates)
-    use_residual = _cfg_get(cfg, "use_residual", True)
-    cnn_use_residual = _cfg_get(cfg, "cnn_use_residual", use_residual)
+    # Kernel sizes: strongest signal is actual conv weight shapes in state
+    ks_from_state = _infer_kernel_sizes_from_state(state_dict)
+    kernel_sizes = (
+        ks_from_state
+        if ks_from_state
+        else sidecar_cfg.get("kernel_sizes",
+                             _cfg_get(cfg, "cnn_kernel_sizes",
+                                      _cfg_get(cfg, "kernel_sizes", [3, 5, 7])))
+    )
+
+    # Dilation rates: use sidecar or config; not inferable from weights
+    cnn_dilation_rates = sidecar_cfg.get(
+        "dilation_rates",
+        _cfg_get(cfg, "cnn_dilation_rates", _cfg_get(cfg, "dilation_rates", [1, 2, 4]))
+    )
+    # Ensure we have at least as many dilation entries as layers
+    if isinstance(cnn_dilation_rates, list) and len(cnn_dilation_rates) < max(1, int(num_layers)):
+        # pad by repeating last
+        last = cnn_dilation_rates[-1] if cnn_dilation_rates else 1
+        cnn_dilation_rates = list(cnn_dilation_rates) + [last] * (int(num_layers) - len(cnn_dilation_rates))
+
+    # Residual usage
+    cnn_use_residual = sidecar_cfg.get("use_residual", _cfg_get(cfg, "cnn_use_residual", _cfg_get(cfg, "use_residual", True)))
     
     # Dropout parameters
     dropout = _cfg_get(cfg, "dropout", 0.3)
@@ -205,7 +320,7 @@ def load_cnn_model(model_path: str, device: torch.device, training_config_path: 
 
     print(f"🔧 CNN Model parameters:")
     print(f"   Layers: {num_layers}, Hidden dim: {hidden_dim}")
-    print(f"   Kernel sizes: {cnn_kernel_sizes}, Dilation rates: {cnn_dilation_rates}")
+    print(f"   Kernel sizes: {kernel_sizes}, Dilation rates: {cnn_dilation_rates}")
     print(f"   Residual connections: {cnn_use_residual}")
     print(f"   Attention enabled: {attention_enabled}")
     if attention_enabled:
@@ -228,7 +343,7 @@ def load_cnn_model(model_path: str, device: torch.device, training_config_path: 
         max_seq_length=max_seq_length,
         window_size=window_size,
         boundary_temperature=boundary_temperature,
-        kernel_sizes=cnn_kernel_sizes,
+        kernel_sizes=tuple(kernel_sizes),
         dilation_rates=cnn_dilation_rates,
         use_residual=cnn_use_residual
     )
