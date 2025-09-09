@@ -478,10 +478,13 @@ def predict_lyrics_structure(
     
     with torch.no_grad():
         if calibration_method == 'temperature':
+            print("using temperature")
+            print(temperature)
             predictions, confidences = model.predict_with_temperature(
                 features, mask, temperature=temperature
             )
         elif calibration_method == 'platt':
+            print("using platt")
             logits = model(features, mask)
             probs = torch.softmax(logits, dim=-1)
             max_probs, predictions = torch.max(probs, dim=-1)

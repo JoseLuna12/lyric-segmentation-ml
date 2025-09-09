@@ -53,8 +53,8 @@ training:
   batch_size: 32
   learning_rate: 0.0009364363515835176
   weight_decay: 0.018187351635761986
-  max_epochs: 15
-  patience: 8
+  max_epochs: 25
+  patience: 12
   min_delta: 0.0005181153062950438
   gradient_clip_norm: 0.34503498859907583
 

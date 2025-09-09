@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 # Configuration file path
-CONFIG_FILE="configs/training/best_optuna_features_config_legacy_loss.yaml"
+CONFIG_FILE="configs/training/best_optuna_features_config_lite.yaml"
 
 echo "Starting BLSTM Training with $(basename $CONFIG_FILE)..."
 echo "=================================================="

@@ -4,7 +4,7 @@
 # LOSS CONFIGURATION - BOUNDARY-AWARE CROSS-ENTROPY
 # =============================================================================
 loss:
-  type: "boundary_aware_cross_entropy"
+  type: "cross_entropy"
   
   # Core parameters
   num_classes: 2
@@ -60,8 +60,8 @@ training:
   batch_size: 32
   learning_rate: 0.0009433388164864008
   weight_decay: 0.018209751373407586
-  max_epochs: 15
-  patience: 8
+  max_epochs: 25
+  patience: 15
   min_delta: 0.0006914129599128736
   gradient_clip_norm: 0.36561638664216023
 

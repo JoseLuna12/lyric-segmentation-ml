@@ -4,7 +4,7 @@
 # No feature specifications needed - they're loaded from training session!
 
 # Training session directory (contains model + exact config + results)
-training_session: "training_sessions/session_20250827_183606_all_features_boundary_aware_loss_tuned_best_optuna_lite"
+training_session: "training_sessions/session_20250827_180301_all_features_boundary_aware_loss_tuned_best_optuna"
 
 prediction:
   # Calibration configuration
