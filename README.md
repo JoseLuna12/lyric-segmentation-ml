@@ -1,3 +1,7 @@
+# SEEEM-TM
+
+SEGMENTAÇÃO E EXTRAÇÃO DE ESTRUTURAS EMOCIONAIS EM MÚSICAS
+
 # Lyric Segmentation ML
 
 ## Overview
