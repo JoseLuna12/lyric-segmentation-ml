@@ -38,6 +38,13 @@ python predict_baseline.py --session training_sessions/[session_dir]
 For CNN:
 python predict_cnn.py --session training_sessions/[cnn_session_dir]
 
+## Client
+
+Client was built using Streamlit, it uses the best 3 models with different training configuration.
+
+To run:
+`streamlit run client/app.py`
+
 ## Configuration
 
 YAML configs in configs/ define parameters.
